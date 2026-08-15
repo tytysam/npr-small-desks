@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_KEY = 'AIzaSyD22MEI-MxB8FqBAk6qE4RuG_1GkO7k-Ic';
+const API_KEY = process.env.REACT_APP_YOUTUBE_API_KEY;
 
 const fetchVideos = async (query) => {
     console.log("trying to fetchVideos!!! -> query: ", query)
