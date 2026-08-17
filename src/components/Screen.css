@@ -1,0 +1,40 @@
+.screen {
+  width: 100%;
+  height: 100%;
+  border-radius: 30px / 25px;
+  overflow: hidden;
+  background: #000;
+  position: relative;
+}
+
+.screen-black {
+  background: #0a0a0a;
+}
+
+.screen-no-signal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #1a1a2e;
+}
+
+.no-signal-text {
+  font-family: 'Courier New', monospace;
+  font-size: 24px;
+  color: #aaa;
+  letter-spacing: 4px;
+  animation: flicker 2s infinite;
+}
+
+.no-signal-sub {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #666;
+  margin-top: 12px;
+}
+
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}

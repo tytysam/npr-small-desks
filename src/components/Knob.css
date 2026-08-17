@@ -1,0 +1,44 @@
+.knob {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #4a4a4a, #1a1a1a);
+  border: 3px solid #2a2a2a;
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.5),
+    inset 0 1px 2px rgba(255, 255, 255, 0.1);
+  cursor: grab;
+  position: relative;
+  transition: box-shadow 0.1s;
+  user-select: none;
+}
+
+.knob:hover {
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.7),
+    inset 0 1px 2px rgba(255, 255, 255, 0.15);
+}
+
+.knob-active {
+  cursor: grabbing;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.5),
+    inset 0 1px 2px rgba(255, 255, 255, 0.2);
+}
+
+.knob-indicator {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 12px;
+  background: #c4a24e;
+  border-radius: 2px;
+}
+
+.knob-channel {
+  /* Slightly different style for the channel knob - more tactile ridges */
+  background: radial-gradient(circle at 35% 35%, #3a3a3a, #111);
+  border: 3px solid #333;
+}

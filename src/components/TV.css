@@ -1,0 +1,141 @@
+.tv-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 800px;
+  width: 90vw;
+  margin: 0 auto;
+}
+
+.tv-body {
+  display: flex;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: linear-gradient(145deg, #8b6914, #5c4a0e, #3d2f06);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Wood grain texture overlay */
+.tv-body::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  border-radius: 20px;
+  pointer-events: none;
+}
+
+.tv-screen-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+
+.tv-bezel {
+  width: 100%;
+  height: 100%;
+  background: #1a1a1a;
+  border-radius: 40px / 35px;
+  padding: 12px;
+  box-shadow:
+    inset 0 4px 12px rgba(0, 0, 0, 0.8),
+    0 2px 4px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.tv-controls-panel {
+  width: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 10px;
+}
+
+.tv-brand {
+  font-family: 'Georgia', serif;
+  font-size: 14px;
+  font-weight: bold;
+  color: #c4a24e;
+  letter-spacing: 3px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.tv-knobs {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+}
+
+.knob-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.knob-label {
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  color: #c4a24e;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.tv-label {
+  margin-top: 12px;
+  padding: 6px 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tv-artist-name {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  color: #c4a24e;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 400px;
+}
+
+.tv-legs {
+  display: flex;
+  gap: 200px;
+  margin-top: -4px;
+}
+
+.tv-leg {
+  width: 8px;
+  height: 40px;
+  background: linear-gradient(145deg, #5c4a0e, #3d2f06);
+  border-radius: 0 0 4px 4px;
+}
+
+.tv-leg-left {
+  transform: rotate(-5deg);
+}
+
+.tv-leg-right {
+  transform: rotate(5deg);
+}
