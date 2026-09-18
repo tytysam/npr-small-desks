@@ -1,0 +1,24 @@
+.tv3d-wrapper {
+  position: relative;
+  width: min(96vw, 1100px);
+  height: min(80vh, 760px);
+  margin: 0 auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tv3d-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  transform: translateX(-50%);
+  margin: 0;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #6f6448;
+  pointer-events: none;
+  white-space: nowrap;
+}

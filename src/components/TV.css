@@ -1,141 +1,349 @@
-.tv-container {
+:root {
+  --walnut-light: #8a5a2b;
+  --walnut-mid: #5e3818;
+  --walnut-dark: #33200d;
+  --brass: #c9a24a;
+  --brass-light: #e6cb7a;
+  --brass-dark: #7c5d22;
+  --metal-light: #c9c5b9;
+  --metal-mid: #a09c91;
+  --metal-dark: #6f6b62;
+}
+
+.tv-svg-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.tv-set {
   display: flex;
   flex-direction: column;
   align-items: center;
-  max-width: 800px;
-  width: 90vw;
+  width: min(92vw, 900px);
   margin: 0 auto;
 }
 
-.tv-body {
-  display: flex;
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  background: linear-gradient(145deg, #8b6914, #5c4a0e, #3d2f06);
-  border-radius: 20px;
-  padding: 20px;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.6),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+/* ---- Cabinet ------------------------------------------------------------ */
+
+.tv-console {
   position: relative;
+  width: 100%;
+  padding: 22px 22px 18px;
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 12%, transparent 88%, rgba(0, 0, 0, 0.35)),
+    repeating-linear-gradient(
+      178deg,
+      var(--walnut-mid) 0px,
+      #6a4220 9px,
+      var(--walnut-mid) 16px,
+      #4c2d12 27px,
+      var(--walnut-mid) 41px,
+      #70472a 58px,
+      var(--walnut-mid) 74px
+    );
+  box-shadow:
+    inset 0 2px 0 rgba(255, 220, 170, 0.25),
+    inset 2px 0 0 rgba(255, 220, 170, 0.12),
+    inset -3px -3px 0 rgba(0, 0, 0, 0.45),
+    0 24px 48px rgba(0, 0, 0, 0.7),
+    0 4px 8px rgba(0, 0, 0, 0.5);
   overflow: hidden;
 }
 
-/* Wood grain texture overlay */
-.tv-body::before {
+/* organic grain layer */
+.tv-console::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(
-    90deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.03) 2px,
-    rgba(0, 0, 0, 0.03) 4px
-  );
-  border-radius: 20px;
+  border-radius: inherit;
+  filter: url(#tv-wood-grain);
+  opacity: 0.7;
+  mix-blend-mode: multiply;
   pointer-events: none;
 }
 
-.tv-screen-area {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px;
+/* varnish sheen */
+.tv-console::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.1), transparent 35%, transparent 70%, rgba(255, 255, 255, 0.04));
+  pointer-events: none;
 }
 
-.tv-bezel {
-  width: 100%;
-  height: 100%;
-  background: #1a1a1a;
-  border-radius: 40px / 35px;
-  padding: 12px;
+/* ---- Faceplate ---------------------------------------------------------- */
+
+.tv-faceplate {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 18px;
+  padding: 18px;
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent 30%, rgba(0, 0, 0, 0.12) 100%),
+    repeating-linear-gradient(0deg, var(--metal-mid) 0px, var(--metal-light) 1px, var(--metal-mid) 2px, var(--metal-dark) 3px),
+    var(--metal-mid);
   box-shadow:
-    inset 0 4px 12px rgba(0, 0, 0, 0.8),
-    0 2px 4px rgba(0, 0, 0, 0.3);
+    inset 0 0 0 1px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* ---- Bezel + tube ------------------------------------------------------- */
+
+.tv-bezel {
+  flex: 1;
+  min-width: 0;
+  padding: 16px;
+  border-radius: 20px;
+  background: linear-gradient(160deg, #2a2a2a, #121212 55%, #1c1c1c);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.9),
+    0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.tv-tube {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 10% / 12%;
+  background: #000;
+  box-shadow:
+    inset 0 0 0 2px #000,
+    inset 0 6px 22px rgba(0, 0, 0, 0.9),
+    inset 0 -4px 14px rgba(0, 0, 0, 0.8);
   overflow: hidden;
 }
 
-.tv-controls-panel {
-  width: 120px;
+/* ---- Control panel ------------------------------------------------------ */
+
+.tv-panel {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 10px;
+  gap: 14px;
+  width: 160px;
+  flex: none;
+  padding: 8px 0;
 }
 
-.tv-brand {
-  font-family: 'Georgia', serif;
-  font-size: 14px;
-  font-weight: bold;
-  color: #c4a24e;
-  letter-spacing: 3px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-}
-
-.tv-knobs {
+.tv-panel-top {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 30px;
+  gap: 10px;
+}
+
+.tv-brandplate {
+  padding: 4px 14px;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 15px;
+  font-weight: bold;
+  letter-spacing: 4px;
+  color: #1a1a1a;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  background: linear-gradient(180deg, var(--metal-light), var(--metal-mid));
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  border-radius: 3px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.tv-lamp {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #6b1f1a, #2a0b09);
+  border: 2px solid #1b1b1b;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.8);
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+.tv-lamp.is-on {
+  background: radial-gradient(circle at 40% 35%, #ffb3a8, #ff3b2f 50%, #b8140d);
+  box-shadow:
+    0 0 6px 2px rgba(255, 70, 50, 0.9),
+    0 0 14px 4px rgba(255, 70, 50, 0.45),
+    inset 0 1px 2px rgba(255, 255, 255, 0.5);
 }
 
 .knob-group {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 2px;
 }
 
 .knob-label {
   font-family: 'Courier New', monospace;
   font-size: 10px;
-  color: #c4a24e;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #2b2b2b;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.tv-buttons {
+  display: flex;
+  gap: 18px;
+}
+
+.tv-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.tv-button-cap {
+  width: 22px;
+  height: 14px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #4a4a4a, #1d1d1d);
+  box-shadow: 0 3px 0 #0a0a0a, 0 4px 4px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.tv-button-label {
+  font-family: 'Courier New', monospace;
+  font-size: 8px;
   letter-spacing: 2px;
   text-transform: uppercase;
+  color: #2b2b2b;
 }
 
-.tv-label {
-  margin-top: 12px;
-  padding: 6px 20px;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 4px;
-  min-height: 24px;
+/* ---- Speaker cloth + nameplate ------------------------------------------ */
+
+.tv-lower {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 18px;
+  margin-top: 16px;
 }
 
-.tv-artist-name {
-  font-family: 'Courier New', monospace;
-  font-size: 14px;
-  color: #c4a24e;
-  letter-spacing: 1px;
+.tv-grille {
+  flex: 1;
+  height: 54px;
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.35) 0 2px, transparent 2px 5px),
+    repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.35) 0 2px, transparent 2px 5px),
+    linear-gradient(180deg, #4a3a25, #2c2115);
+  box-shadow:
+    inset 0 0 0 2px rgba(0, 0, 0, 0.6),
+    inset 0 4px 10px rgba(0, 0, 0, 0.7),
+    0 1px 0 rgba(255, 220, 170, 0.15);
+}
+
+.tv-nameplate {
+  flex: none;
+  max-width: 45%;
+  padding: 7px 16px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--brass-light), var(--brass) 45%, var(--brass-dark));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(0, 0, 0, 0.4), 0 2px 3px rgba(0, 0, 0, 0.6);
+}
+
+.tv-nameplate-text {
+  display: block;
+  font-family: 'Georgia', serif;
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #2a1c05;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 400px;
 }
+
+/* ---- Legs --------------------------------------------------------------- */
 
 .tv-legs {
   display: flex;
-  gap: 200px;
-  margin-top: -4px;
+  justify-content: space-between;
+  width: 78%;
+  margin-top: -2px;
 }
 
 .tv-leg {
-  width: 8px;
-  height: 40px;
-  background: linear-gradient(145deg, #5c4a0e, #3d2f06);
-  border-radius: 0 0 4px 4px;
+  position: relative;
+  width: 16px;
+  height: 64px;
+  background: linear-gradient(90deg, var(--walnut-light), var(--walnut-mid) 55%, var(--walnut-dark));
+  clip-path: polygon(0 0, 100% 0, 72% 100%, 28% 100%);
+  transform-origin: top center;
 }
 
-.tv-leg-left {
-  transform: rotate(-5deg);
+.tv-leg::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 10px;
+  background: linear-gradient(90deg, var(--brass-light), var(--brass), var(--brass-dark));
 }
 
-.tv-leg-right {
-  transform: rotate(5deg);
+.tv-leg-1 { transform: rotate(-9deg); }
+.tv-leg-2 { transform: rotate(-3deg); }
+.tv-leg-3 { transform: rotate(3deg); }
+.tv-leg-4 { transform: rotate(9deg); }
+
+/* ---- Small screens ------------------------------------------------------ */
+
+@media (max-width: 680px) {
+  .tv-console {
+    padding: 14px 14px 12px;
+  }
+
+  .tv-faceplate {
+    flex-direction: column;
+    gap: 14px;
+    padding: 12px;
+  }
+
+  .tv-panel {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    padding: 0;
+  }
+
+  .tv-panel-top {
+    flex-direction: row;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .tv-lower {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .tv-grille {
+    flex: none;
+    width: 100%;
+    height: 40px;
+  }
+
+  .tv-nameplate {
+    max-width: 100%;
+  }
+
+  .tv-legs {
+    width: 86%;
+  }
+
+  .tv-leg {
+    height: 44px;
+  }
 }

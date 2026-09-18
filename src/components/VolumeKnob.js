@@ -1,56 +1,55 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useRef, useCallback } from 'react';
+import useKnobDrag from '../hooks/useKnobDrag';
 import './Knob.css';
 
+const SWEEP_DEG = 270;
+
+// Map volume (0–1) onto a 270° sweep centred on twelve o'clock.
+export const volumeToAngle = (vol) => vol * SWEEP_DEG - SWEEP_DEG / 2;
+const clamp01 = (v) => Math.min(1, Math.max(0, v));
+
 const VolumeKnob = ({ volume, onVolumeChange }) => {
-  const knobRef = useRef(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStartRef = useRef({ angle: 0, startVolume: 0 });
+  const volumeRef = useRef(volume);
+  volumeRef.current = volume;
 
-  // Map volume (0-1) to rotation angle (-135 to 135 degrees, 270° range)
-  const volumeToAngle = (vol) => vol * 270 - 135;
-  const angleToVolume = (angle) => Math.min(1, Math.max(0, (angle + 135) / 270));
+  const onDelta = useCallback(
+    (delta) => {
+      const next = clamp01(volumeRef.current + delta / SWEEP_DEG);
+      if (next !== volumeRef.current) onVolumeChange(next);
+    },
+    [onVolumeChange]
+  );
 
-  const getAngleFromEvent = useCallback((e, rect) => {
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    return Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI);
-  }, []);
-
-  const handleMouseDown = useCallback((e) => {
-    e.preventDefault();
-    const rect = knobRef.current.getBoundingClientRect();
-    const angle = getAngleFromEvent(e, rect);
-    dragStartRef.current = { angle, startVolume: volume };
-    setIsDragging(true);
-
-    const handleMouseMove = (moveEvent) => {
-      const currentAngle = getAngleFromEvent(moveEvent, rect);
-      const delta = currentAngle - dragStartRef.current.angle;
-      const volumeDelta = delta / 270;
-      const newVolume = Math.min(1, Math.max(0, dragStartRef.current.startVolume + volumeDelta));
-      onVolumeChange(newVolume);
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-  }, [volume, onVolumeChange, getAngleFromEvent]);
-
-  const rotation = volumeToAngle(volume);
+  const { ref, isDragging, handlers } = useKnobDrag({ onDelta, keyStep: 13.5, wheelStep: 9 });
 
   return (
-    <div
-      ref={knobRef}
-      className={`knob ${isDragging ? 'knob-active' : ''}`}
-      onMouseDown={handleMouseDown}
-      style={{ transform: `rotate(${rotation}deg)` }}
-    >
-      <div className="knob-indicator"></div>
+    <div className="dial dial-volume">
+      <div className="dial-ticks" aria-hidden="true">
+        {Array.from({ length: 11 }, (_, i) => (
+          <span
+            key={i}
+            className={`dial-tick ${i % 5 === 0 ? 'dial-tick-major' : ''}`}
+            style={{ transform: `rotate(${-135 + i * 27}deg) translateY(-44px)` }}
+          />
+        ))}
+      </div>
+      <div
+        ref={ref}
+        className={`knob knob-volume ${isDragging ? 'knob-active' : ''}`}
+        role="slider"
+        aria-label="Volume"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(volume * 100)}
+        tabIndex={0}
+        style={{ transform: `rotate(${volumeToAngle(volume)}deg)` }}
+        {...handlers}
+      >
+        <div className="knob-ridges" />
+        <div className="knob-face" />
+        <div className="knob-cap" />
+        <div className="knob-indicator" />
+      </div>
     </div>
   );
 };
