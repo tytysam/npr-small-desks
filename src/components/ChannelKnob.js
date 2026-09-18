@@ -1,55 +1,68 @@
-import React, { useRef, useCallback, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
+import useKnobDrag from '../hooks/useKnobDrag';
 import './Knob.css';
 
-const ChannelKnob = ({ onChannelChange }) => {
-  const knobRef = useRef(null);
-  const [rotation, setRotation] = useState(0);
-  const dragStartRef = useRef({ angle: 0 });
-  const hasChangedRef = useRef(false);
+const DETENT_DEG = 30;
+const CHANNEL_NUMBERS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
 
-  const getAngleFromEvent = useCallback((e, rect) => {
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    return Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI);
+/**
+ * Twelve-position VHF channel selector. Every 30° of rotation clicks to the
+ * next detent and changes the channel in that direction.
+ */
+const ChannelKnob = ({ onChannelChange }) => {
+  const [detent, setDetent] = useState(0);
+  const accumulatedRef = useRef(0);
+
+  const onDelta = useCallback(
+    (delta) => {
+      accumulatedRef.current += delta;
+      while (Math.abs(accumulatedRef.current) >= DETENT_DEG) {
+        const direction = accumulatedRef.current > 0 ? 1 : -1;
+        accumulatedRef.current -= direction * DETENT_DEG;
+        onChannelChange(direction);
+        setDetent((prev) => prev + direction);
+      }
+    },
+    [onChannelChange]
+  );
+
+  const onEnd = useCallback(() => {
+    accumulatedRef.current = 0;
   }, []);
 
-  const handleMouseDown = useCallback((e) => {
-    e.preventDefault();
-    const rect = knobRef.current.getBoundingClientRect();
-    const angle = getAngleFromEvent(e, rect);
-    dragStartRef.current = { angle };
-    hasChangedRef.current = false;
-
-    const handleMouseMove = (moveEvent) => {
-      const currentAngle = getAngleFromEvent(moveEvent, rect);
-      const delta = currentAngle - dragStartRef.current.angle;
-
-      // Trigger channel change at 30° threshold (one detent)
-      if (!hasChangedRef.current && Math.abs(delta) > 30) {
-        hasChangedRef.current = true;
-        const direction = delta > 0 ? 1 : -1;
-        onChannelChange(direction);
-        setRotation((prev) => prev + direction * 15);
-      }
-    };
-
-    const handleMouseUp = () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-  }, [onChannelChange, getAngleFromEvent]);
+  const { ref, isDragging, handlers } = useKnobDrag({ onDelta, onEnd, keyStep: DETENT_DEG });
 
   return (
-    <div
-      ref={knobRef}
-      className="knob knob-channel"
-      onMouseDown={handleMouseDown}
-      style={{ transform: `rotate(${rotation}deg)` }}
-    >
-      <div className="knob-indicator"></div>
+    <div className="dial dial-channel">
+      <div className="dial-ring" aria-hidden="true">
+        {CHANNEL_NUMBERS.map((n, i) => (
+          <span
+            key={n}
+            className="dial-ring-number"
+            style={{ transform: `rotate(${i * DETENT_DEG}deg) translateY(-62px) rotate(${-i * DETENT_DEG}deg)` }}
+          >
+            {n}
+          </span>
+        ))}
+        <span className="dial-ring-pointer" />
+      </div>
+      <div
+        ref={ref}
+        className={`knob knob-channel ${isDragging ? 'knob-active' : ''}`}
+        role="slider"
+        aria-label="Channel"
+        aria-valuemin={0}
+        aria-valuemax={CHANNEL_NUMBERS.length - 1}
+        aria-valuenow={((detent % CHANNEL_NUMBERS.length) + CHANNEL_NUMBERS.length) % CHANNEL_NUMBERS.length}
+        tabIndex={0}
+        style={{ transform: `rotate(${detent * DETENT_DEG}deg)` }}
+        {...handlers}
+      >
+        <div className="knob-ridges" />
+        <div className="knob-face" />
+        <div className="knob-cap" />
+        <div className="knob-indicator" />
+      </div>
     </div>
   );
 };

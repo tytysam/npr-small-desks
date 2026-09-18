@@ -68,3 +68,16 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+## Modes
+
+The set can be viewed as a CSS-built console (**2D**) or a three.js scene (**3D**). The switch in the top-right corner powers the set down CRT-style, swaps modes, and powers it back up; the video resumes where it left off and the chosen mode is remembered in `localStorage`.
+
+### How the 3D screen works
+
+A cross-origin YouTube iframe can't be used as a WebGL texture, so in 3D the picture tube is the same DOM `<Screen>` component placed in the scene with drei's `<Html transform occlude="blending">`. drei keeps the element behind the canvas and renders a depth-only "hole" in the scene where the screen sits, so the iframe shows through while the cabinet still occludes it correctly.
+
+### Dependency notes
+
+- `@react-three/fiber` is pinned to v8 and `@react-three/drei` to v9 because the app is on React 18 (R3F v9 requires React 19).
+- `three` is pinned to `0.174.0`, the release contemporary with those versions.
