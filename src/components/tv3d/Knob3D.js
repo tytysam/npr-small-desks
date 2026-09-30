@@ -2,8 +2,14 @@ import React, { useRef, useMemo, useCallback, useState } from 'react';
 import * as THREE from 'three';
 import { normalizeDelta } from '../../hooks/useKnobDrag';
 import { makeKnurlTexture, PALETTE } from './materials';
+import useDisposable from './useDisposable';
 
 const RAD_TO_DEG = 180 / Math.PI;
+
+const FINISHES = {
+  chrome: { rim: PALETTE.chrome, face: '#d6d6d6', bar: '#1a1a1a', metalness: 0.75 },
+  black: { rim: '#1e1e1e', face: '#262626', bar: '#6a665c', metalness: 0.25 },
+};
 const DEG_TO_RAD = Math.PI / 180;
 
 /**
@@ -23,6 +29,7 @@ const Knob3D = ({
   onDragStart,
   onDragEnd,
   ridgeCount = 60,
+  finish = 'chrome',
   label,
 }) => {
   const rootRef = useRef(null);
@@ -100,8 +107,9 @@ const Knob3D = ({
     if (!dragging) document.body.style.cursor = '';
   }, [dragging]);
 
-  const knurl = useMemo(() => makeKnurlTexture(ridgeCount), [ridgeCount]);
+  const knurl = useDisposable(() => makeKnurlTexture(ridgeCount), [ridgeCount]);
   const lit = hovered || dragging;
+  const look = FINISHES[finish];
 
   return (
     <group
@@ -121,8 +129,8 @@ const Knob3D = ({
         <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, height / 2]} castShadow>
           <cylinderGeometry args={[radius, radius, height, 96, 1, true]} />
           <meshStandardMaterial
-            color={PALETTE.chrome}
-            metalness={0.75}
+            color={look.rim}
+            metalness={look.metalness}
             roughness={0.35}
             roughnessMap={knurl}
             bumpMap={knurl}
@@ -134,14 +142,14 @@ const Knob3D = ({
         {/* rounded shoulder where the rim meets the face */}
         <mesh position={[0, 0, height]}>
           <torusGeometry args={[radius * 0.955, radius * 0.05, 12, 64]} />
-          <meshStandardMaterial color={PALETTE.chrome} metalness={0.8} roughness={0.25} />
+          <meshStandardMaterial color={look.rim} metalness={look.metalness} roughness={0.25} />
         </mesh>
         {/* spun-metal face: part diffuse, since it faces the viewer and a pure mirror would read black */}
         <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, height]}>
           <cylinderGeometry args={[radius * 0.93, radius * 0.93, 0.02, 64]} />
           <meshStandardMaterial
-            color="#d6d6d6"
-            metalness={0.55}
+            color={look.face}
+            metalness={look.metalness * 0.7}
             roughness={0.3}
             emissive="#ffffff"
             emissiveIntensity={lit ? 0.06 : 0}
@@ -150,7 +158,7 @@ const Knob3D = ({
         {/* dark grip bar across the face */}
         <mesh position={[0, 0, height + 0.035]} castShadow>
           <boxGeometry args={[radius * 0.36, radius * 1.72, 0.06]} />
-          <meshStandardMaterial color="#1a1a1a" roughness={0.45} metalness={0.2} />
+          <meshStandardMaterial color={look.bar} roughness={0.45} metalness={0.2} />
         </mesh>
         {/* cream tip marks the pointing end */}
         <mesh position={[0, radius * 0.76, height + 0.066]}>

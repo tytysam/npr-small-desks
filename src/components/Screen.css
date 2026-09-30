@@ -6,6 +6,30 @@
   background: #000;
   position: relative;
   isolation: isolate;
+  container-type: size; /* lets the OSD size itself in cq units */
+}
+
+.screen-picture {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* Fill the 4:3 tube with the 16:9 frame (cropping its sides) with a touch of
+   overscan, the way a CRT hides the picture's edges. */
+.screen-player {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: calc(100% * (16 / 9) / (4 / 3));
+  transform: translateX(-50%) scale(1.02);
+}
+
+/* Keeps the pointer off the iframe so YouTube never draws its hover UI. */
+.screen-shield {
+  position: absolute;
+  inset: 0;
 }
 
 .screen iframe {
@@ -18,11 +42,14 @@
 }
 
 .screen-no-signal {
+  background: radial-gradient(ellipse at center, #22223a 0%, #0f0f1c 75%);
+}
+
+.screen-no-signal .screen-picture {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(ellipse at center, #22223a 0%, #0f0f1c 75%);
 }
 
 .no-signal-text {
@@ -45,11 +72,13 @@
   50% { opacity: 0.7; }
 }
 
-/* ---- CRT overlays (all non-interactive) -------------------------------- */
+/* ---- CRT overlays (all non-interactive) --------------------------------
+   Stacking: picture < scanlines 3 < OSD 4 < power 5 < vignette 6 < glare 7 < static 8 */
 
 .screen-scanlines,
 .screen-vignette,
 .screen-glare,
+.screen-power,
 .screen-static {
   position: absolute;
   inset: 0;
@@ -70,7 +99,7 @@
 }
 
 .screen-vignette {
-  z-index: 4;
+  z-index: 6;
   /* curved glass falls away at the edges and darkens hardest in the corners */
   background:
     radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.4) 82%, rgba(0, 0, 0, 0.8) 100%),
@@ -79,7 +108,7 @@
 }
 
 .screen-glare {
-  z-index: 5;
+  z-index: 7;
   /* soft vertical window reflection on the left of the dome, plus a faint sheen */
   background:
     radial-gradient(ellipse 9% 34% at 12% 30%, rgba(255, 255, 255, 0.22), transparent 100%),
@@ -88,11 +117,16 @@
 }
 
 .screen-static {
-  z-index: 6;
+  z-index: 8;
   width: 100%;
   height: 100%;
   opacity: 0.85;
   animation: static-fade 0.38s ease-out forwards;
+}
+
+.screen-static.is-tuning {
+  animation: none;
+  opacity: 0.85;
 }
 
 .screen-static-frame {
@@ -112,4 +146,39 @@
   0% { opacity: 0.95; }
   70% { opacity: 0.85; }
   100% { opacity: 0; }
+}
+
+/* ---- Power: collapse to a line and a dot, or bloom back from one ----------
+   Reuses the keyframes from CrtTransition.css, played inside the tube. */
+
+.screen-power {
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #050605;
+}
+
+.screen-power-beam {
+  width: 100%;
+  height: 100%;
+  background: #eef6ee;
+  box-shadow: 0 0 24px 6px rgba(230, 255, 235, 0.8);
+  opacity: 0;
+}
+
+.screen-power-powering-off {
+  animation: crt-bg-in 0.45s linear forwards;
+}
+
+.screen-power-powering-off .screen-power-beam {
+  animation: crt-collapse 0.45s cubic-bezier(0.6, 0, 0.9, 0.4) forwards;
+}
+
+.screen-power-warming {
+  animation: crt-bg-out 0.9s ease-in forwards;
+}
+
+.screen-power-warming .screen-power-beam {
+  animation: crt-bloom 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }

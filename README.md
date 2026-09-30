@@ -1,3 +1,36 @@
+# NPR Small Desk
+
+A vintage TV (2D and 3D) that tunes through every NPR Music Tiny Desk concert.
+What's next is tracked in [docs/ROADMAP.md](docs/ROADMAP.md).
+
+## Channel data
+
+The lineup lives in `public/channels.json`, built by
+`scripts/fetch-channels.mjs` from NPR Music's uploads playlist. The app only
+fetches that static file, so no YouTube API key reaches the browser.
+
+- `npm run channels` refreshes it (roughly 100–200 quota units for ~1,900 videos).
+- It also runs automatically before `npm run build`. Without a key, the
+  existing file is kept, so commit it.
+- Put the key in `.env` as `YOUTUBE_API_KEY=...` (the older
+  `REACT_APP_YOUTUBE_API_KEY` name still works for the script, but the
+  `REACT_APP_` prefix is meant for values that are safe to ship to browsers).
+
+## Controls
+
+| Key | Action |
+|---|---|
+| ↑ / ↓ | Channel up / down |
+| ← / → | Volume down / up |
+| M | Mute / unmute |
+| Space | Pause / play |
+| P | Power |
+
+The chrome slide switch is power, the lever on the rail is play/pause, and
+the small black knob on the rail is brightness. Links carry the current video as `?v=<id>`.
+
+---
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useCallback } from 'react';
 import useKnobDrag from '../hooks/useKnobDrag';
 import './Knob.css';
 
@@ -7,10 +7,11 @@ const CHANNEL_NUMBERS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
 
 /**
  * Twelve-position VHF channel selector. Every 30° of rotation clicks to the
- * next detent and changes the channel in that direction.
+ * next detent and changes the channel in that direction. `dialPosition` is
+ * the app's cumulative detent count, so the dial also turns when the channel
+ * changes some other way (keyboard, the other set).
  */
-const ChannelKnob = ({ onChannelChange }) => {
-  const [detent, setDetent] = useState(0);
+const ChannelKnob = ({ dialPosition = 0, onChannelChange }) => {
   const accumulatedRef = useRef(0);
 
   const onDelta = useCallback(
@@ -20,7 +21,6 @@ const ChannelKnob = ({ onChannelChange }) => {
         const direction = accumulatedRef.current > 0 ? 1 : -1;
         accumulatedRef.current -= direction * DETENT_DEG;
         onChannelChange(direction);
-        setDetent((prev) => prev + direction);
       }
     },
     [onChannelChange]
@@ -53,9 +53,9 @@ const ChannelKnob = ({ onChannelChange }) => {
         aria-label="Channel"
         aria-valuemin={0}
         aria-valuemax={CHANNEL_NUMBERS.length - 1}
-        aria-valuenow={((detent % CHANNEL_NUMBERS.length) + CHANNEL_NUMBERS.length) % CHANNEL_NUMBERS.length}
+        aria-valuenow={((dialPosition % CHANNEL_NUMBERS.length) + CHANNEL_NUMBERS.length) % CHANNEL_NUMBERS.length}
         tabIndex={0}
-        style={{ transform: `rotate(${detent * DETENT_DEG}deg)` }}
+        style={{ transform: `rotate(${dialPosition * DETENT_DEG}deg)` }}
         {...handlers}
       >
         <div className="knob-ridges" />

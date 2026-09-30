@@ -2,6 +2,7 @@ import React from 'react';
 import Screen from './Screen';
 import VolumeKnob from './VolumeKnob';
 import ChannelKnob from './ChannelKnob';
+import BrightnessKnob from './BrightnessKnob';
 import './TV.css';
 
 // feTurbulence has no source image, so these filters paint organic grain onto
@@ -38,14 +39,21 @@ const TV = ({
   volume,
   onVolumeChange,
   onChannelChange,
+  dialPosition,
+  brightness,
+  onBrightnessChange,
+  isOn,
+  onPowerToggle,
+  paused,
+  onPauseToggle,
+  playing,
   isLoading,
   error,
   artistName,
-  isPlaying,
   resumeAt,
   onProgress,
-  onPlay,
-  onPause,
+  onEnded,
+  osd,
 }) => {
   return (
     <div className="tv-set">
@@ -65,20 +73,22 @@ const TV = ({
               <Screen
                 video={video}
                 volume={volume}
+                playing={playing}
+                isOn={isOn}
+                brightness={brightness}
                 isLoading={isLoading}
                 error={error}
                 resumeAt={resumeAt}
                 onProgress={onProgress}
-                onPlay={onPlay}
-                onPause={onPause}
-                onEnded={() => onChannelChange(1)}
+                onEnded={onEnded}
+                osd={osd}
               />
             </div>
           </div>
 
           <div className="tv-column">
             <div className="knob-group">
-              <ChannelKnob onChannelChange={onChannelChange} />
+              <ChannelKnob dialPosition={dialPosition} onChannelChange={onChannelChange} />
               <span className="knob-label">Channel</span>
             </div>
 
@@ -89,9 +99,16 @@ const TV = ({
 
             <div className="tv-speaker" aria-hidden="true" />
 
-            <div className="tv-switch" aria-hidden="true">
+            <button
+              type="button"
+              className={`tv-switch ${isOn ? 'is-on' : ''}`}
+              role="switch"
+              aria-checked={isOn}
+              aria-label="Power"
+              onClick={onPowerToggle}
+            >
               <span className="tv-switch-slider" />
-            </div>
+            </button>
           </div>
         </div>
 
@@ -111,8 +128,21 @@ const TV = ({
             ))}
           </div>
 
-          <div className={`tv-lamp ${isPlaying ? 'is-on' : ''}`} title={isPlaying ? 'On' : 'Standby'} />
-          <span className="tv-mini-knob" aria-hidden="true" />
+          <button
+            type="button"
+            className={`tv-lever ${paused ? '' : 'is-up'}`}
+            role="switch"
+            aria-checked={!paused}
+            aria-label="Play"
+            title={paused ? 'Paused' : 'Playing'}
+            onClick={onPauseToggle}
+          >
+            <span className="tv-lever-handle" />
+            <span className="tv-lever-nut" />
+          </button>
+
+          <div className={`tv-lamp ${isOn ? 'is-on' : ''}`} title={isOn ? 'On' : 'Off'} />
+          <BrightnessKnob brightness={brightness} onBrightnessChange={onBrightnessChange} />
         </div>
       </div>
 

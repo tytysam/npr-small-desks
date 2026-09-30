@@ -1,6 +1,8 @@
 import React, { useMemo, useRef, useCallback, useState } from 'react';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import Knob3D from './Knob3D';
+import useDisposable from './useDisposable';
+import { BRIGHTNESS_MIN, BRIGHTNESS_MAX } from '../../js/picture';
 import ScreenSurface, { SCREEN_W, SCREEN_H } from './ScreenSurface';
 import {
   PALETTE,
@@ -45,6 +47,9 @@ const PANEL_Z = BOARD_Z + 0.02; // face of the column's inset panel
 const RAIL_Y = -1.77;
 
 const LEG = { width: 0.46, depth: 0.22, length: 0.85, spreadX: 2.7, spreadZ: 1.2, splayX: 0.3, splayZ: 0.12 };
+
+const LEVER = { length: 0.17, base: 0.018, tip: 0.013 };
+const LEVER_TILT = 0.5; // radians forward of vertical
 
 const VOLUME_SWEEP = 270;
 const CHANNEL_DETENT = 30;
@@ -182,30 +187,37 @@ const TVModel = ({
   isLoading,
   error,
   artistName,
-  isPlaying,
+  dialPosition,
+  brightness,
+  onBrightnessChange,
+  isOn,
+  onPowerToggle,
+  paused,
+  onPauseToggle,
+  playing,
   resumeAt,
   onProgress,
-  onPlay,
-  onPause,
+  onEnded,
+  osd,
   onKnobDragging,
 }) => {
   // --- materials ---------------------------------------------------------
-  const walnutWood = useMemo(() => makeWoodTexture({ palette: PALETTE.walnut }), []);
+  const walnutWood = useDisposable(() => makeWoodTexture({ palette: PALETTE.walnut }), []);
   // The bezel is cut farther from the pith, so its grain runs straighter and finer.
-  const honeyWood = useMemo(
+  const honeyWood = useDisposable(
     () => makeWoodTexture({ palette: PALETTE.honey, seed: 42, size: 512, ringPx: 11, pithDepth: 0.3, taper: 0.2, warp: 1.2 }),
     []
   );
-  const walnut = useMemo(() => makeWoodMaterial(walnutWood), [walnutWood]);
-  const walnutShade = useMemo(() => makeWoodMaterial(walnutWood, { tint: '#bfae9c', clearcoat: 0.35 }), [walnutWood]);
-  const honey = useMemo(() => makeWoodMaterial(honeyWood, { clearcoat: 0.7 }), [honeyWood]);
-  const parts = useMemo(makeWoodParts, []);
+  const walnut = useDisposable(() => makeWoodMaterial(walnutWood), [walnutWood]);
+  const walnutShade = useDisposable(() => makeWoodMaterial(walnutWood, { tint: '#bfae9c', clearcoat: 0.35 }), [walnutWood]);
+  const honey = useDisposable(() => makeWoodMaterial(honeyWood, { clearcoat: 0.7 }), [honeyWood]);
+  const parts = useDisposable(makeWoodParts, []);
 
-  const perforated = useMemo(() => makePerforatedTexture({ repeat: [10, 8] }), []);
-  const glareTexture = useMemo(makeGlareTexture, []);
-  const channelRingTexture = useMemo(makeChannelRingTexture, []);
-  const volumeTicksTexture = useMemo(makeVolumeTicksTexture, []);
-  const badgeTexture = useMemo(
+  const perforated = useDisposable(() => makePerforatedTexture({ repeat: [10, 8] }), []);
+  const glareTexture = useDisposable(makeGlareTexture, []);
+  const channelRingTexture = useDisposable(makeChannelRingTexture, []);
+  const volumeTicksTexture = useDisposable(makeVolumeTicksTexture, []);
+  const badgeTexture = useDisposable(
     () =>
       makeLabelTexture('NPR', {
         width: 256,
@@ -216,7 +228,7 @@ const TVModel = ({
       }),
     []
   );
-  const tuningTexture = useMemo(
+  const tuningTexture = useDisposable(
     () =>
       makeLabelTexture((artistName || 'Tiny Desk').toUpperCase(), {
         width: 1380,
@@ -231,7 +243,7 @@ const TVModel = ({
   );
 
   // --- non-wood geometry -------------------------------------------------
-  const throatGeometry = useMemo(
+  const throatGeometry = useDisposable(
     () =>
       makeFrameGeometry({
         outerW: OPENING.w + 0.04,
@@ -245,7 +257,7 @@ const TVModel = ({
       }),
     []
   );
-  const columnTrimGeometry = useMemo(
+  const columnTrimGeometry = useDisposable(
     () =>
       makeFrameGeometry({
         outerW: COLUMN.w,
@@ -260,7 +272,7 @@ const TVModel = ({
       }),
     []
   );
-  const railGrooveGeometry = useMemo(
+  const railGrooveGeometry = useDisposable(
     () =>
       makeFrameGeometry({
         outerW: BOARD.w - 0.2,
@@ -274,7 +286,7 @@ const TVModel = ({
       }),
     []
   );
-  const domeGeometry = useMemo(() => makeDomeGeometry(SCREEN_W, SCREEN_H, 0.09), []);
+  const domeGeometry = useDisposable(() => makeDomeGeometry(SCREEN_W, SCREEN_H, 0.09), []);
 
   // --- volume knob -------------------------------------------------------
   const volumeRef = useRef(volume);
@@ -287,8 +299,55 @@ const TVModel = ({
     [onVolumeChange]
   );
 
+  // --- brightness knob ---------------------------------------------------
+  const brightnessRef = useRef(brightness);
+  brightnessRef.current = brightness;
+  const handleBrightnessDelta = useCallback(
+    (delta) => onBrightnessChange(brightnessRef.current + (delta / VOLUME_SWEEP) * (BRIGHTNESS_MAX - BRIGHTNESS_MIN)),
+    [onBrightnessChange]
+  );
+
+  // --- power switch ------------------------------------------------------
+  const [switchHovered, setSwitchHovered] = useState(false);
+  const handlePowerClick = useCallback(
+    (e) => {
+      e.stopPropagation();
+      onPowerToggle();
+    },
+    [onPowerToggle]
+  );
+  const handleSwitchOver = useCallback((e) => {
+    e.stopPropagation();
+    setSwitchHovered(true);
+    document.body.style.cursor = 'pointer';
+  }, []);
+  const handleSwitchOut = useCallback(() => {
+    setSwitchHovered(false);
+    document.body.style.cursor = '';
+  }, []);
+
+  // --- play/pause lever --------------------------------------------------
+  const [leverHovered, setLeverHovered] = useState(false);
+  const handleLeverClick = useCallback(
+    (e) => {
+      e.stopPropagation();
+      onPauseToggle();
+    },
+    [onPauseToggle]
+  );
+  const handleLeverOver = useCallback((e) => {
+    e.stopPropagation();
+    setLeverHovered(true);
+    document.body.style.cursor = 'pointer';
+  }, []);
+  const handleLeverOut = useCallback(() => {
+    setLeverHovered(false);
+    document.body.style.cursor = '';
+  }, []);
+
   // --- channel knob ------------------------------------------------------
-  const [detent, setDetent] = useState(0);
+  // The dial position comes from the app (`dialPosition`), so it also turns
+  // for keyboard changes and stays put across 2D/3D switches.
   const accumulatedRef = useRef(0);
   const handleChannelDelta = useCallback(
     (delta) => {
@@ -297,7 +356,6 @@ const TVModel = ({
         const direction = accumulatedRef.current > 0 ? 1 : -1;
         accumulatedRef.current -= direction * CHANNEL_DETENT;
         onChannelChange(direction);
-        setDetent((prev) => prev + direction);
       }
     },
     [onChannelChange]
@@ -348,13 +406,15 @@ const TVModel = ({
         position={[BEZEL.x, BEZEL.y, TUBE_Z]}
         video={video}
         volume={volume}
+        playing={playing}
+        isOn={isOn}
+        brightness={brightness}
         isLoading={isLoading}
         error={error}
         resumeAt={resumeAt}
         onProgress={onProgress}
-        onPlay={onPlay}
-        onPause={onPause}
-        onEnded={() => onChannelChange(1)}
+        onEnded={onEnded}
+        osd={osd}
       />
 
       {/* domed glass: faint tint + environment reflections, then the window glare */}
@@ -391,7 +451,7 @@ const TVModel = ({
           position={[0, 1.12, PANEL_Z]}
           radius={0.32}
           height={0.2}
-          angleDeg={detent * CHANNEL_DETENT}
+          angleDeg={dialPosition * CHANNEL_DETENT}
           onDelta={handleChannelDelta}
           onDragStart={startDrag}
           onDragEnd={endDrag}
@@ -416,18 +476,25 @@ const TVModel = ({
           <meshStandardMaterial map={perforated} roughness={0.55} metalness={0.5} />
         </mesh>
 
-        {/* slide switch */}
-        <mesh position={[0, -1.47, PANEL_Z + 0.005]}>
-          <boxGeometry args={[0.44, 0.12, 0.01]} />
-          <meshStandardMaterial color="#0e0e0d" roughness={0.8} />
-        </mesh>
-        <mesh position={[-0.07, -1.47, PANEL_Z + 0.03]} castShadow>
-          <boxGeometry args={[0.24, 0.09, 0.05]} />
-          <Chrome roughness={0.35} />
-        </mesh>
+        {/* power: slide right for on */}
+        <group
+          position={[0, -1.47, PANEL_Z]}
+          onClick={handlePowerClick}
+          onPointerOver={handleSwitchOver}
+          onPointerOut={handleSwitchOut}
+        >
+          <mesh position={[0, 0, 0.005]}>
+            <boxGeometry args={[0.44, 0.12, 0.01]} />
+            <meshStandardMaterial color="#0e0e0d" roughness={0.8} />
+          </mesh>
+          <mesh position={[isOn ? 0.07 : -0.07, 0, 0.03]} castShadow>
+            <boxGeometry args={[0.24, 0.09, 0.05]} />
+            <Chrome roughness={0.35} emissive="#ffffff" emissiveIntensity={switchHovered ? 0.08 : 0} />
+          </mesh>
+        </group>
       </group>
 
-      {/* lower rail: groove, badge, tuning strip, louvres, pilot lamp, trim knob */}
+      {/* lower rail: groove, badge, tuning strip, louvres, play lever, pilot lamp, brightness knob */}
       <group position={[0, RAIL_Y, BOARD_Z]}>
         <mesh geometry={railGrooveGeometry} position={[0, 0, 0.001]}>
           <meshStandardMaterial color="#1a0e05" roughness={0.9} />
@@ -453,33 +520,58 @@ const TVModel = ({
         </mesh>
 
         {Array.from({ length: 5 }, (_, i) => (
-          <mesh key={i} position={[1.45, 0.12 - i * 0.06, 0.004]}>
-            <boxGeometry args={[0.9, 0.026, 0.01]} />
+          <mesh key={i} position={[1.28, 0.12 - i * 0.06, 0.004]}>
+            <boxGeometry args={[0.72, 0.026, 0.01]} />
             <meshStandardMaterial color="#140b04" roughness={0.9} />
           </mesh>
         ))}
 
+        {/* play/pause: a bat-handle toggle, up to play, down to pause */}
+        <group position={[1.9, 0, 0]} onClick={handleLeverClick} onPointerOver={handleLeverOver} onPointerOut={handleLeverOut}>
+          <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.02]} castShadow>
+            <cylinderGeometry args={[0.07, 0.075, 0.04, 6]} />
+            <Chrome roughness={0.3} />
+          </mesh>
+          <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.05]}>
+            <cylinderGeometry args={[0.035, 0.04, 0.03, 16]} />
+            <Chrome roughness={0.25} />
+          </mesh>
+          {/* pivot: +x rotation swings the handle from pointing up toward the viewer */}
+          <group position={[0, 0, 0.06]} rotation={[paused ? Math.PI - LEVER_TILT : LEVER_TILT, 0, 0]}>
+            <mesh position={[0, LEVER.length / 2, 0]} castShadow>
+              <cylinderGeometry args={[LEVER.tip, LEVER.base, LEVER.length, 16]} />
+              <Chrome roughness={0.2} emissive="#ffffff" emissiveIntensity={leverHovered ? 0.08 : 0} />
+            </mesh>
+            <mesh position={[0, LEVER.length, 0]} castShadow>
+              <sphereGeometry args={[0.032, 20, 16]} />
+              <Chrome roughness={0.15} emissive="#ffffff" emissiveIntensity={leverHovered ? 0.08 : 0} />
+            </mesh>
+          </group>
+        </group>
+
         <mesh position={[2.3, 0, 0.04]}>
           <sphereGeometry args={[0.05, 24, 24]} />
           <meshStandardMaterial
-            color={isPlaying ? '#ffd08a' : '#5a3a12'}
+            color={isOn ? '#ffd08a' : '#5a3a12'}
             emissive={PALETTE.amber}
-            emissiveIntensity={isPlaying ? 2.2 : 0.05}
+            emissiveIntensity={isOn ? 2.2 : 0.05}
             roughness={0.3}
           />
         </mesh>
-        <pointLight position={[2.3, 0, 0.25]} color={PALETTE.amber} intensity={isPlaying ? 0.5 : 0} distance={1} />
+        <pointLight position={[2.3, 0, 0.25]} color={PALETTE.amber} intensity={isOn ? 0.5 : 0} distance={1} />
 
-        <group position={[2.72, 0, 0.05]}>
-          <mesh rotation={[Math.PI / 2, 0, 0]} castShadow>
-            <cylinderGeometry args={[0.11, 0.12, 0.1, 32]} />
-            <meshStandardMaterial color="#1a1a1a" roughness={0.5} />
-          </mesh>
-          <mesh position={[0, 0, 0.055]}>
-            <boxGeometry args={[0.18, 0.032, 0.012]} />
-            <meshStandardMaterial color="#555" roughness={0.4} />
-          </mesh>
-        </group>
+        {/* brightness */}
+        <Knob3D
+          position={[2.72, 0, 0]}
+          radius={0.12}
+          height={0.1}
+          finish="black"
+          ridgeCount={30}
+          angleDeg={((brightness - BRIGHTNESS_MIN) / (BRIGHTNESS_MAX - BRIGHTNESS_MIN)) * VOLUME_SWEEP - VOLUME_SWEEP / 2}
+          onDelta={handleBrightnessDelta}
+          onDragStart={startDrag}
+          onDragEnd={endDrag}
+        />
       </group>
 
       <Antenna position={[1.9, TOP_Y + 0.1, -0.5]} />

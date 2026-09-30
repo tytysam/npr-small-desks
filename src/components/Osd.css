@@ -1,0 +1,96 @@
+/* Sized in container units so it reads the same in the 2D tube and the 400px 3D surface. */
+.osd {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  padding: 7cqh 9cqw;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  pointer-events: none;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: #7dff9a;
+  text-shadow: 0 0 0.6cqw rgba(80, 255, 130, 0.9), 0.15cqw 0.15cqw 0 rgba(0, 0, 0, 0.8);
+}
+
+.osd-top {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.6cqh;
+  min-width: 0;
+}
+
+.osd-channel {
+  font-size: 7.5cqw;
+  letter-spacing: 0.4cqw;
+  line-height: 1;
+}
+
+.osd-artist {
+  max-width: 100%;
+  font-size: 3.4cqw;
+  letter-spacing: 0.3cqw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.osd-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1cqh;
+  font-size: 3.8cqw;
+  letter-spacing: 0.4cqw;
+}
+
+.osd-bottom {
+  display: flex;
+  justify-content: center;
+}
+
+.osd-bar {
+  display: flex;
+  align-items: center;
+  gap: 1.6cqw;
+  font-size: 3.4cqw;
+  letter-spacing: 0.3cqw;
+}
+
+.osd-bar-track {
+  display: flex;
+  gap: 0.5cqw;
+}
+
+/* Room for three digits, so the bar doesn't shift going from 99 to 100. */
+.osd-bar-value {
+  display: inline-block;
+  width: 3ch;
+  letter-spacing: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.osd-bar-segment {
+  width: 1.5cqw;
+  height: 3.6cqw;
+  border: 0.25cqw solid rgba(125, 255, 154, 0.55);
+  box-shadow: 0 0 0.5cqw rgba(80, 255, 130, 0.4);
+}
+
+.osd-bar-segment.is-lit {
+  background: #7dff9a;
+}
+
+.osd-hint {
+  font-size: 3.2cqw;
+  letter-spacing: 0.3cqw;
+  animation: osd-blink 1.6s steps(1) infinite;
+}
+
+@keyframes osd-blink {
+  0%, 70% { opacity: 1; }
+  71%, 100% { opacity: 0.25; }
+}

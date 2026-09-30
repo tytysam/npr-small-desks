@@ -12,19 +12,23 @@ const COMFORT_ASPECT = 1.15;
 
 // Backs the camera off on narrow viewports so the whole cabinet stays in frame.
 const FitCamera = () => {
-  const { camera, size } = useThree();
+  const { camera, size, invalidate } = useThree();
   useEffect(() => {
     const aspect = size.width / size.height;
     const distance = aspect >= COMFORT_ASPECT ? BASE_DISTANCE : BASE_DISTANCE * (COMFORT_ASPECT / aspect);
     camera.position.set(0, CAMERA_Y, Math.min(distance, 20));
     camera.updateProjectionMatrix();
-  }, [camera, size]);
+    invalidate();
+  }, [camera, size, invalidate]);
   return null;
 };
 
 /**
  * The three.js set. Camera orbits within limits that keep the (flat, DOM)
  * screen facing the viewer; knob drags temporarily disable orbiting.
+ *
+ * Frames render on demand: the scene is static unless something changes, and
+ * R3F redraws on prop changes while OrbitControls invalidates as it moves.
  *
  * Pointer events are sourced from the wrapper div because drei's blending
  * occlusion turns pointer events off on the canvas itself. The raycaster is
@@ -53,6 +57,7 @@ const TV3D = (props) => {
         shadows
         gl={{ alpha: true, antialias: true }}
         dpr={[1, 2]}
+        frameloop="demand"
         camera={{ position: [0, CAMERA_Y, BASE_DISTANCE], fov: 38 }}
       >
         <FitCamera />
@@ -71,7 +76,7 @@ const TV3D = (props) => {
             <Lightformer form="rect" intensity={2} position={[-5, 1.5, 6]} scale={[1.2, 6, 1]} color="#ffffff" />
           </Environment>
           <TVModel {...props} onKnobDragging={setKnobBusy} />
-          <ContactShadows position={[0, -3.28, 0]} opacity={0.65} blur={2.6} scale={16} far={4} />
+          <ContactShadows position={[0, -3.28, 0]} opacity={0.65} blur={2.6} scale={16} far={4} frames={1} />
         </Suspense>
 
         <OrbitControls
