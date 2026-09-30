@@ -1,12 +1,13 @@
 import React, { useRef, useMemo, useCallback, useState } from 'react';
 import * as THREE from 'three';
 import { normalizeDelta } from '../../hooks/useKnobDrag';
+import { makeKnurlTexture, PALETTE } from './materials';
 
 const RAD_TO_DEG = 180 / Math.PI;
 const DEG_TO_RAD = Math.PI / 180;
 
 /**
- * A ribbed rotary knob standing proud of the faceplate, facing +Z.
+ * A knurled chrome rotary knob with a dark grip bar, standing proud of the faceplate, facing +Z.
  *
  * Dragging anywhere on it reports clockwise-positive angular deltas (degrees)
  * through `onDelta`, using the pointer ray intersected with the knob's face
@@ -21,7 +22,7 @@ const Knob3D = ({
   onDelta,
   onDragStart,
   onDragEnd,
-  ridgeCount = 24,
+  ridgeCount = 60,
   label,
 }) => {
   const rootRef = useRef(null);
@@ -99,16 +100,8 @@ const Knob3D = ({
     if (!dragging) document.body.style.cursor = '';
   }, [dragging]);
 
-  const ridges = useMemo(
-    () =>
-      Array.from({ length: ridgeCount }, (_, i) => {
-        const a = (i / ridgeCount) * Math.PI * 2;
-        return { position: [Math.cos(a) * radius, Math.sin(a) * radius, height / 2], rotation: [0, 0, a] };
-      }),
-    [ridgeCount, radius, height]
-  );
-
-  const bodyColor = hovered || dragging ? '#3a3a3a' : '#2b2b2b';
+  const knurl = useMemo(() => makeKnurlTexture(ridgeCount), [ridgeCount]);
+  const lit = hovered || dragging;
 
   return (
     <group
@@ -124,32 +117,50 @@ const Knob3D = ({
     >
       {label}
       <group rotation={[0, 0, -angleDeg * DEG_TO_RAD]}>
-        {/* body */}
+        {/* knurled chrome rim */}
         <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, height / 2]} castShadow>
-          <cylinderGeometry args={[radius * 0.98, radius, height, 48]} />
-          <meshStandardMaterial color={bodyColor} roughness={0.75} metalness={0.05} />
+          <cylinderGeometry args={[radius, radius, height, 96, 1, true]} />
+          <meshStandardMaterial
+            color={PALETTE.chrome}
+            metalness={0.75}
+            roughness={0.35}
+            roughnessMap={knurl}
+            bumpMap={knurl}
+            bumpScale={3}
+            emissive="#ffffff"
+            emissiveIntensity={lit ? 0.06 : 0}
+          />
         </mesh>
-        {/* ridged grip */}
-        {ridges.map((r, i) => (
-          <mesh key={i} position={r.position} rotation={r.rotation}>
-            <boxGeometry args={[0.05, radius * 0.11, height * 0.85]} />
-            <meshStandardMaterial color="#1a1a1a" roughness={0.6} />
-          </mesh>
-        ))}
-        {/* dished face */}
-        <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, height + 0.005]}>
-          <cylinderGeometry args={[radius * 0.82, radius * 0.82, 0.01, 48]} />
-          <meshStandardMaterial color="#202020" roughness={0.5} metalness={0.15} />
+        {/* rounded shoulder where the rim meets the face */}
+        <mesh position={[0, 0, height]}>
+          <torusGeometry args={[radius * 0.955, radius * 0.05, 12, 64]} />
+          <meshStandardMaterial color={PALETTE.chrome} metalness={0.8} roughness={0.25} />
         </mesh>
-        {/* chrome cap */}
-        <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, height + 0.03]}>
-          <cylinderGeometry args={[radius * 0.32, radius * 0.3, 0.05, 48]} />
-          <meshStandardMaterial color="#e8e8e8" roughness={0.18} metalness={1} />
+        {/* spun-metal face: part diffuse, since it faces the viewer and a pure mirror would read black */}
+        <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, height]}>
+          <cylinderGeometry args={[radius * 0.93, radius * 0.93, 0.02, 64]} />
+          <meshStandardMaterial
+            color="#d6d6d6"
+            metalness={0.55}
+            roughness={0.3}
+            emissive="#ffffff"
+            emissiveIntensity={lit ? 0.06 : 0}
+          />
         </mesh>
-        {/* brass indicator */}
-        <mesh position={[0, radius * 0.62, height + 0.012]}>
-          <boxGeometry args={[0.045, radius * 0.36, 0.015]} />
-          <meshStandardMaterial color="#e2c46a" roughness={0.35} metalness={0.7} emissive="#4d3a10" emissiveIntensity={0.3} />
+        {/* dark grip bar across the face */}
+        <mesh position={[0, 0, height + 0.035]} castShadow>
+          <boxGeometry args={[radius * 0.36, radius * 1.72, 0.06]} />
+          <meshStandardMaterial color="#1a1a1a" roughness={0.45} metalness={0.2} />
+        </mesh>
+        {/* cream tip marks the pointing end */}
+        <mesh position={[0, radius * 0.76, height + 0.066]}>
+          <boxGeometry args={[radius * 0.3, radius * 0.14, 0.004]} />
+          <meshStandardMaterial color={PALETTE.cream} roughness={0.5} />
+        </mesh>
+        {/* chrome hub */}
+        <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, height + 0.075]}>
+          <cylinderGeometry args={[radius * 0.15, radius * 0.17, 0.03, 32]} />
+          <meshStandardMaterial color={PALETTE.chrome} metalness={0.7} roughness={0.2} />
         </mesh>
       </group>
     </group>

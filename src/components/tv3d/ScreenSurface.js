@@ -31,7 +31,7 @@ const ScreenSurface = ({ position, ...screenProps }) => (
         width: CSS_W,
         height: CSS_H,
         background: '#000',
-        borderRadius: '10% / 12%',
+        borderRadius: '14% / 18%',
         overflow: 'hidden',
       }}
     >

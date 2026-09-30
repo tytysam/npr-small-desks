@@ -1,13 +1,16 @@
 :root {
-  --walnut-light: #8a5a2b;
-  --walnut-mid: #5e3818;
-  --walnut-dark: #33200d;
-  --brass: #c9a24a;
-  --brass-light: #e6cb7a;
-  --brass-dark: #7c5d22;
-  --metal-light: #c9c5b9;
-  --metal-mid: #a09c91;
-  --metal-dark: #6f6b62;
+  --walnut-light: #7a4a22;
+  --walnut-mid: #5a3416;
+  --walnut-dark: #3a200c;
+  --honey-light: #d69a55;
+  --honey-mid: #b8793a;
+  --honey-dark: #8a5424;
+  --panel-light: #3b3a36;
+  --panel-dark: #24231f;
+  --chrome-light: #e6e6e6;
+  --chrome-dark: #7a7a7a;
+  --amber: #ffb347;
+  --cream: #e8dfc8;
 }
 
 .tv-svg-defs {
@@ -18,11 +21,55 @@
 }
 
 .tv-set {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   width: min(92vw, 900px);
   margin: 0 auto;
+  padding-top: 90px;
+}
+
+/* ---- Antenna ------------------------------------------------------------ */
+
+.tv-antenna {
+  position: absolute;
+  top: 0;
+  right: 12%;
+  width: 18px;
+  height: 104px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.tv-antenna-rod {
+  position: relative;
+  flex: 1;
+  width: 3px;
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(90deg, #555, #eee 40%, #999 60%, #333);
+}
+
+/* wider lower telescoping section */
+.tv-antenna-rod::after {
+  content: '';
+  position: absolute;
+  left: -1px;
+  right: -1px;
+  bottom: 0;
+  height: 45%;
+  background: inherit;
+  box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.4);
+}
+
+.tv-antenna-base {
+  width: 18px;
+  height: 14px;
+  border-radius: 9px 9px 2px 2px;
+  background: radial-gradient(circle at 35% 30%, #fff, #bbb 35%, #555 80%);
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.5);
 }
 
 /* ---- Cabinet ------------------------------------------------------------ */
@@ -30,24 +77,24 @@
 .tv-console {
   position: relative;
   width: 100%;
-  padding: 22px 22px 18px;
-  border-radius: 12px;
+  padding: 0 22px 16px;
+  border-radius: 14px 14px 10px 10px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 12%, transparent 88%, rgba(0, 0, 0, 0.35)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 12%, transparent 85%, rgba(0, 0, 0, 0.35)),
     repeating-linear-gradient(
       178deg,
       var(--walnut-mid) 0px,
-      #6a4220 9px,
+      #6b4020 9px,
       var(--walnut-mid) 16px,
-      #4c2d12 27px,
+      #4a2a10 27px,
       var(--walnut-mid) 41px,
-      #70472a 58px,
+      #744824 58px,
       var(--walnut-mid) 74px
     );
   box-shadow:
-    inset 0 2px 0 rgba(255, 220, 170, 0.25),
-    inset 2px 0 0 rgba(255, 220, 170, 0.12),
-    inset -3px -3px 0 rgba(0, 0, 0, 0.45),
+    inset 2px 0 0 rgba(255, 210, 160, 0.14),
+    inset -3px 0 0 rgba(0, 0, 0, 0.4),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.45),
     0 24px 48px rgba(0, 0, 0, 0.7),
     0 4px 8px rgba(0, 0, 0, 0.5);
   overflow: hidden;
@@ -75,275 +122,364 @@
   pointer-events: none;
 }
 
-/* ---- Faceplate ---------------------------------------------------------- */
+/* Lighter end-grain edge of the top board, with a shadow line where it overhangs the front. */
+.tv-top-lip {
+  position: relative;
+  z-index: 1;
+  height: 16px;
+  margin: 0 -22px 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 230, 190, 0.35), transparent 40%, rgba(0, 0, 0, 0.25)),
+    linear-gradient(90deg, #8a5a2e, #9c6a38 30%, #87552a 60%, #9a6634);
+  box-shadow: 0 3px 4px rgba(0, 0, 0, 0.55), 0 1px 0 rgba(0, 0, 0, 0.6);
+}
 
-.tv-faceplate {
+.tv-front {
   position: relative;
   z-index: 1;
   display: flex;
   gap: 18px;
-  padding: 18px;
-  border-radius: 6px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent 30%, rgba(0, 0, 0, 0.12) 100%),
-    repeating-linear-gradient(0deg, var(--metal-mid) 0px, var(--metal-light) 1px, var(--metal-mid) 2px, var(--metal-dark) 3px),
-    var(--metal-mid);
-  box-shadow:
-    inset 0 0 0 1px rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-    0 2px 0 rgba(0, 0, 0, 0.5);
 }
 
-/* ---- Bezel + tube ------------------------------------------------------- */
+/* ---- Honey-wood frame + tube ------------------------------------------- */
 
-.tv-bezel {
+.tv-frame {
+  position: relative;
   flex: 1;
   min-width: 0;
-  padding: 16px;
-  border-radius: 20px;
-  background: linear-gradient(160deg, #2a2a2a, #121212 55%, #1c1c1c);
+  padding: 26px;
+  border-radius: 22px;
+  overflow: hidden; /* clip the grain filter to the rounded corners */
+  background:
+    linear-gradient(180deg, rgba(255, 240, 210, 0.3), transparent 18%, transparent 80%, rgba(0, 0, 0, 0.25)),
+    repeating-linear-gradient(
+      176deg,
+      var(--honey-mid) 0px,
+      #c3843f 7px,
+      var(--honey-mid) 13px,
+      #a86c30 22px,
+      var(--honey-mid) 33px,
+      #cd9150 47px,
+      var(--honey-mid) 60px
+    );
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.9),
-    0 1px 0 rgba(255, 255, 255, 0.15);
+    /* rounded outer edge */
+    inset 0 2px 0 rgba(255, 235, 200, 0.55),
+    inset 2px 0 0 rgba(255, 235, 200, 0.3),
+    inset 0 -3px 0 rgba(60, 30, 5, 0.5),
+    inset -2px 0 0 rgba(60, 30, 5, 0.35),
+    /* the frame curves down toward the glass */
+    inset 0 0 0 10px rgba(255, 220, 170, 0.08),
+    inset 0 0 18px 6px rgba(80, 40, 10, 0.35),
+    /* sits proud of the cabinet */
+    0 3px 6px rgba(0, 0, 0, 0.55),
+    0 0 0 2px rgba(40, 20, 5, 0.6);
+}
+
+.tv-frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  filter: url(#tv-wood-grain-fine);
+  mix-blend-mode: multiply;
+  opacity: 0.8;
+  pointer-events: none;
 }
 
 .tv-tube {
   position: relative;
+  z-index: 1;
   width: 100%;
   aspect-ratio: 4 / 3;
-  border-radius: 10% / 12%;
+  border-radius: 14% / 18%;
   background: #000;
   box-shadow:
-    inset 0 0 0 2px #000,
-    inset 0 6px 22px rgba(0, 0, 0, 0.9),
-    inset 0 -4px 14px rgba(0, 0, 0, 0.8);
+    /* dark lip where the wood meets the glass */
+    0 0 0 5px #1e140a,
+    0 0 0 6px rgba(255, 220, 170, 0.35),
+    0 -2px 6px 6px rgba(40, 20, 5, 0.45),
+    inset 0 0 0 2px #000;
   overflow: hidden;
 }
 
-/* ---- Control panel ------------------------------------------------------ */
+/* ---- Control column ----------------------------------------------------- */
 
-.tv-panel {
+.tv-column {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  width: 160px;
+  gap: 8px;
+  width: 150px;
   flex: none;
-  padding: 8px 0;
-}
-
-.tv-panel-top {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-
-.tv-brandplate {
-  padding: 4px 14px;
-  font-family: 'Georgia', 'Times New Roman', serif;
-  font-size: 15px;
-  font-weight: bold;
-  letter-spacing: 4px;
-  color: #1a1a1a;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
-  background: linear-gradient(180deg, var(--metal-light), var(--metal-mid));
-  border: 1px solid rgba(0, 0, 0, 0.5);
-  border-radius: 3px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 1px 2px rgba(0, 0, 0, 0.5);
-}
-
-.tv-lamp {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 40% 35%, #6b1f1a, #2a0b09);
-  border: 2px solid #1b1b1b;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.8);
-  transition: background 0.3s, box-shadow 0.3s;
-}
-
-.tv-lamp.is-on {
-  background: radial-gradient(circle at 40% 35%, #ffb3a8, #ff3b2f 50%, #b8140d);
+  padding: 10px 6px 14px;
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), transparent 25%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, var(--panel-light), var(--panel-dark));
   box-shadow:
-    0 0 6px 2px rgba(255, 70, 50, 0.9),
-    0 0 14px 4px rgba(255, 70, 50, 0.45),
-    inset 0 1px 2px rgba(255, 255, 255, 0.5);
+    /* recessed into the cabinet */
+    inset 0 4px 8px rgba(0, 0, 0, 0.7),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.8),
+    /* thin chrome trim */
+    0 0 0 2px #9a9a95,
+    0 0 0 3px rgba(0, 0, 0, 0.6),
+    0 1px 0 3px rgba(255, 220, 170, 0.2);
 }
 
 .knob-group {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 0;
 }
 
 .knob-label {
   font-family: 'Courier New', monospace;
-  font-size: 10px;
+  font-size: 9px;
   letter-spacing: 3px;
   text-transform: uppercase;
-  color: #2b2b2b;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+  color: var(--cream);
+  opacity: 0.75;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.8);
 }
 
-.tv-buttons {
-  display: flex;
-  gap: 18px;
-}
-
-.tv-button {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-}
-
-.tv-button-cap {
-  width: 22px;
-  height: 14px;
+.tv-speaker {
+  width: 100%;
+  flex: 1;
+  min-height: 70px;
   border-radius: 3px;
-  background: linear-gradient(180deg, #4a4a4a, #1d1d1d);
-  box-shadow: 0 3px 0 #0a0a0a, 0 4px 4px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  background:
+    radial-gradient(circle, #0b0b0a 1.3px, transparent 1.7px) 0 0 / 6px 6px,
+    linear-gradient(180deg, #4a4843, #34322e);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.7), inset 0 2px 5px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-.tv-button-label {
-  font-family: 'Courier New', monospace;
-  font-size: 8px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: #2b2b2b;
+.tv-switch {
+  position: relative;
+  width: 52px;
+  height: 16px;
+  border-radius: 3px;
+  background: #0e0e0d;
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.9), 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
-/* ---- Speaker cloth + nameplate ------------------------------------------ */
+.tv-switch-slider {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  width: 30px;
+  height: 12px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(90deg, #d8d8d8 0 2px, #8a8a8a 2px 3px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 1px 2px rgba(0, 0, 0, 0.8);
+}
 
-.tv-lower {
+/* ---- Lower rail --------------------------------------------------------- */
+
+.tv-rail {
   position: relative;
   z-index: 1;
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 16px;
   margin-top: 16px;
-}
-
-.tv-grille {
-  flex: 1;
-  height: 54px;
+  padding: 10px 14px;
   border-radius: 4px;
-  background:
-    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.35) 0 2px, transparent 2px 5px),
-    repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.35) 0 2px, transparent 2px 5px),
-    linear-gradient(180deg, #4a3a25, #2c2115);
-  box-shadow:
-    inset 0 0 0 2px rgba(0, 0, 0, 0.6),
-    inset 0 4px 10px rgba(0, 0, 0, 0.7),
-    0 1px 0 rgba(255, 220, 170, 0.15);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.18), transparent 30%, rgba(255, 220, 170, 0.05));
+  box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.45), 0 -1px 0 rgba(255, 220, 170, 0.18), inset 0 0 0 1px rgba(0, 0, 0, 0.25);
 }
 
-.tv-nameplate {
+.tv-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   flex: none;
-  max-width: 45%;
-  padding: 7px 16px;
-  border-radius: 3px;
-  background: linear-gradient(180deg, var(--brass-light), var(--brass) 45%, var(--brass-dark));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(0, 0, 0, 0.4), 0 2px 3px rgba(0, 0, 0, 0.6);
 }
 
-.tv-nameplate-text {
+.tv-badge-knob {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, #333 0 22%, transparent 24%),
+    radial-gradient(circle at 35% 30%, #fff, #c9c9c9 30%, #707070 75%, #444);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(0, 0, 0, 0.35);
+}
+
+.tv-badge-text {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 3px;
+  color: #2a1606;
+  text-shadow: 0 1px 0 rgba(255, 220, 170, 0.3);
+}
+
+.tv-tuning-strip {
+  flex: 1;
+  min-width: 0;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #120c06, #2a1d10 60%, #1a1208);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.9),
+    inset 0 0 12px rgba(255, 170, 70, 0.12),
+    0 1px 0 rgba(255, 220, 170, 0.2);
+}
+
+.tv-tuning-text {
   display: block;
-  font-family: 'Georgia', serif;
-  font-size: 13px;
-  letter-spacing: 1.5px;
+  width: 100%;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  text-align: center;
   text-transform: uppercase;
-  color: #2a1c05;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+  color: #ffd79a;
+  text-shadow: 0 0 6px rgba(255, 170, 60, 0.75), 0 0 1px rgba(255, 200, 120, 0.9);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* ---- Legs --------------------------------------------------------------- */
+.tv-louvres {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 92px;
+  flex: none;
+}
+
+.tv-louvre {
+  height: 3px;
+  border-radius: 1px;
+  background: #140b04;
+  box-shadow: 0 1px 0 rgba(255, 220, 170, 0.22);
+}
+
+.tv-lamp {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #6b4214, #2a1805);
+  border: 2px solid #1b1208;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.8);
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+.tv-lamp.is-on {
+  background: radial-gradient(circle at 40% 35%, #fff1d0, var(--amber) 50%, #c26a0a);
+  box-shadow:
+    0 0 6px 2px rgba(255, 170, 60, 0.9),
+    0 0 14px 4px rgba(255, 150, 40, 0.45),
+    inset 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+.tv-mini-knob {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background:
+    linear-gradient(90deg, transparent 44%, #555 44% 56%, transparent 56%),
+    radial-gradient(circle at 38% 32%, #4a4a4a, #151515 70%);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.7), 0 0 0 2px rgba(0, 0, 0, 0.35);
+}
+
+/* ---- Plinth + legs ------------------------------------------------------ */
+
+.tv-plinth {
+  width: 90%;
+  height: 10px;
+  margin-top: -1px;
+  border-radius: 0 0 4px 4px;
+  background: linear-gradient(180deg, var(--walnut-dark), #4a2a12 50%, #2a1606);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
+}
 
 .tv-legs {
   display: flex;
   justify-content: space-between;
-  width: 78%;
-  margin-top: -2px;
+  width: 80%;
 }
 
 .tv-leg {
   position: relative;
-  width: 16px;
-  height: 64px;
-  background: linear-gradient(90deg, var(--walnut-light), var(--walnut-mid) 55%, var(--walnut-dark));
-  clip-path: polygon(0 0, 100% 0, 72% 100%, 28% 100%);
+  width: 26px;
+  height: 72px;
+  background:
+    linear-gradient(90deg, rgba(255, 220, 170, 0.25), transparent 30%, transparent 60%, rgba(0, 0, 0, 0.45)),
+    linear-gradient(180deg, var(--walnut-light), var(--walnut-mid) 60%, var(--walnut-dark));
+  clip-path: polygon(0 0, 100% 0, 70% 100%, 30% 100%);
   transform-origin: top center;
 }
 
-.tv-leg::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 10px;
-  background: linear-gradient(90deg, var(--brass-light), var(--brass), var(--brass-dark));
-}
-
-.tv-leg-1 { transform: rotate(-9deg); }
-.tv-leg-2 { transform: rotate(-3deg); }
-.tv-leg-3 { transform: rotate(3deg); }
-.tv-leg-4 { transform: rotate(9deg); }
+.tv-leg-left { transform: rotate(12deg); }
+.tv-leg-right { transform: rotate(-12deg); }
 
 /* ---- Small screens ------------------------------------------------------ */
 
 @media (max-width: 680px) {
-  .tv-console {
-    padding: 14px 14px 12px;
+  .tv-set {
+    padding-top: 60px;
   }
 
-  .tv-faceplate {
+  .tv-antenna {
+    height: 72px;
+  }
+
+  .tv-console {
+    padding: 0 14px 12px;
+  }
+
+  .tv-top-lip {
+    margin: 0 -14px 14px;
+    height: 12px;
+  }
+
+  .tv-front {
     flex-direction: column;
     gap: 14px;
-    padding: 12px;
   }
 
-  .tv-panel {
+  .tv-frame {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .tv-column {
     width: 100%;
     flex-direction: row;
-    flex-wrap: wrap;
     justify-content: space-around;
-    padding: 0;
+    padding: 8px 4px;
   }
 
-  .tv-panel-top {
-    flex-direction: row;
-    width: 100%;
-    justify-content: center;
+  .tv-speaker,
+  .tv-switch,
+  .tv-louvres,
+  .tv-mini-knob {
+    display: none;
   }
 
-  .tv-lower {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .tv-grille {
-    flex: none;
-    width: 100%;
-    height: 40px;
-  }
-
-  .tv-nameplate {
-    max-width: 100%;
+  .tv-rail {
+    gap: 10px;
+    padding: 8px 10px;
   }
 
   .tv-legs {
-    width: 86%;
+    width: 84%;
   }
 
   .tv-leg {
-    height: 44px;
+    width: 20px;
+    height: 48px;
   }
 }

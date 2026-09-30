@@ -39,7 +39,7 @@ const ChannelKnob = ({ onChannelChange }) => {
           <span
             key={n}
             className="dial-ring-number"
-            style={{ transform: `rotate(${i * DETENT_DEG}deg) translateY(-62px) rotate(${-i * DETENT_DEG}deg)` }}
+            style={{ transform: `rotate(${i * DETENT_DEG}deg) translateY(-57px) rotate(${-i * DETENT_DEG}deg)` }}
           >
             {n}
           </span>
@@ -60,8 +60,8 @@ const ChannelKnob = ({ onChannelChange }) => {
       >
         <div className="knob-ridges" />
         <div className="knob-face" />
+        <div className="knob-pointer" />
         <div className="knob-cap" />
-        <div className="knob-indicator" />
       </div>
     </div>
   );

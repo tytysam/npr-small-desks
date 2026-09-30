@@ -29,7 +29,7 @@ const VolumeKnob = ({ volume, onVolumeChange }) => {
           <span
             key={i}
             className={`dial-tick ${i % 5 === 0 ? 'dial-tick-major' : ''}`}
-            style={{ transform: `rotate(${-135 + i * 27}deg) translateY(-44px)` }}
+            style={{ transform: `rotate(${-135 + i * 27}deg) translateY(-47px)` }}
           />
         ))}
       </div>
@@ -47,8 +47,8 @@ const VolumeKnob = ({ volume, onVolumeChange }) => {
       >
         <div className="knob-ridges" />
         <div className="knob-face" />
+        <div className="knob-pointer" />
         <div className="knob-cap" />
-        <div className="knob-indicator" />
       </div>
     </div>
   );

@@ -9,13 +9,13 @@
 }
 
 .dial-channel {
-  width: 150px;
-  height: 150px;
+  width: 134px;
+  height: 134px;
 }
 
 .dial-volume {
-  width: 104px;
-  height: 104px;
+  width: 112px;
+  height: 112px;
 }
 
 .dial-ring,
@@ -39,20 +39,20 @@
   font-family: 'Courier New', monospace;
   font-size: 10px;
   font-weight: bold;
-  color: #d8b85e;
-  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.7);
+  color: #e8dfc8;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.8);
 }
 
 .dial-ring-pointer {
   position: absolute;
-  top: 6px;
+  top: 3px;
   left: 50%;
   width: 0;
   height: 0;
   margin-left: -4px;
   border-left: 4px solid transparent;
   border-right: 4px solid transparent;
-  border-top: 6px solid #e2c46a;
+  border-top: 6px solid #ffb347;
   filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.7));
 }
 
@@ -60,17 +60,17 @@
   margin: -4px 0 0 -1px;
   width: 2px;
   height: 6px;
-  background: #b89a4a;
+  background: #b9b19c;
   border-radius: 1px;
   transform-origin: 50% 50%;
 }
 
 .dial-tick-major {
   height: 9px;
-  background: #e2c46a;
+  background: #e8dfc8;
 }
 
-/* ---- The knob ---------------------------------------------------------- */
+/* ---- The knob: chrome, knurled rim, dark pointer bar ------------------- */
 
 .knob {
   position: relative;
@@ -80,21 +80,21 @@
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
   box-shadow:
-    0 6px 10px rgba(0, 0, 0, 0.55),
-    0 1px 2px rgba(0, 0, 0, 0.6),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.6);
+    0 6px 10px rgba(0, 0, 0, 0.7),
+    0 1px 2px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(0, 0, 0, 0.6);
   outline: none;
 }
 
 .knob-channel {
-  width: 96px;
-  height: 96px;
+  width: 82px;
+  height: 82px;
   transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .knob-volume {
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
 }
 
 .knob-active {
@@ -105,60 +105,55 @@
   transition-duration: 0.09s;
 }
 
-.knob:focus-visible .knob-cap {
-  box-shadow: 0 0 0 2px #e2c46a, inset 0 1px 1px rgba(255, 255, 255, 0.5);
+.knob:focus-visible {
+  box-shadow: 0 0 0 3px #ffb347, 0 6px 10px rgba(0, 0, 0, 0.7);
 }
 
-/* Ridged plastic rim */
+/* Knurled chrome rim: fine teeth under a broad top-left highlight. */
 .knob-ridges {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: repeating-conic-gradient(
-    from 0deg,
-    #1c1c1c 0deg 5deg,
-    #454545 5deg 7deg,
-    #2a2a2a 7deg 10deg
-  );
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.8);
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.45), transparent 40%, transparent 60%, rgba(0, 0, 0, 0.5)),
+    repeating-conic-gradient(from 0deg, #f0f0f0 0deg, #9a9a9a 2.5deg, #3e3e3e 4deg, #f0f0f0 5deg);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.6);
 }
 
-/* Smooth dished face inside the rim */
+/* Spun-metal face inside the rim */
 .knob-face {
   position: absolute;
-  inset: 13%;
+  inset: 11%;
   border-radius: 50%;
-  background: radial-gradient(circle at 38% 32%, #4a4a4a 0%, #262626 55%, #141414 100%);
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.6), transparent 45%),
+    conic-gradient(from 20deg, #dcdcdc, #8f8f8f, #efefef, #7a7a7a, #d2d2d2, #909090, #ebebeb, #858585, #dcdcdc);
   box-shadow:
-    inset 0 2px 3px rgba(255, 255, 255, 0.12),
-    inset 0 -3px 6px rgba(0, 0, 0, 0.8),
-    0 0 0 1px rgba(0, 0, 0, 0.6);
+    inset 0 2px 2px rgba(255, 255, 255, 0.6),
+    inset 0 -3px 5px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(0, 0, 0, 0.5);
 }
 
-/* Chrome centre cap */
+/* Dark grip bar across the full face; the cream tip marks the pointing end. */
+.knob-pointer {
+  position: absolute;
+  top: 12%;
+  bottom: 12%;
+  left: 50%;
+  width: 20%;
+  margin-left: -10%;
+  border-radius: 3px;
+  background:
+    linear-gradient(180deg, #e8dfc8 0 9%, transparent 9%),
+    linear-gradient(90deg, #111, #3a3a3a 45%, #1b1b1b);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Small chrome hub over the bar */
 .knob-cap {
   position: absolute;
-  inset: 34%;
+  inset: 42%;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #d5d5d5 20%, #8c8c8c 45%, #4a4a4a 70%, #2b2b2b 100%);
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.8),
-    inset 0 1px 1px rgba(255, 255, 255, 0.5);
-}
-
-.knob-indicator {
-  position: absolute;
-  top: 6%;
-  left: 50%;
-  width: 4px;
-  height: 22%;
-  margin-left: -2px;
-  border-radius: 2px;
-  background: linear-gradient(180deg, #f0d67a, #b8933a);
-  box-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
-}
-
-.knob-volume .knob-indicator {
-  width: 3px;
-  margin-left: -1.5px;
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #c8c8c8 35%, #5a5a5a 100%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
 }
