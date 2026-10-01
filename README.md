@@ -140,7 +140,9 @@ Create React App (React 18), with
 [@react-three/fiber](https://github.com/pmndrs/react-three-fiber) /
 [drei](https://github.com/pmndrs/drei) for the 3D set. There are no image
 or audio files: the wood, labels, knurling, speaker grilles and tuning hiss
-are all generated in code.
+are all generated in code. The one outside asset is the TV guide's channel
+numeral face, DM Serif Display, from Google Fonts (other type uses system
+fonts).
 
 ```
 src/

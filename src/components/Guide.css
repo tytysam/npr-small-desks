@@ -253,16 +253,26 @@
 }
 
 .guide-ch {
+  /* Big editorial numerals, inked straight onto the page, as tall as the
+     row, ranged right against a hairline rule. */
   flex: none;
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 3.1em;
-  font: bold 15px 'Rockwell', 'Courier New', serif;
-  font-variant-numeric: tabular-nums;
-  color: #fff8ec;
-  background: var(--ink);
-  border-radius: 2px;
+  justify-content: flex-end;
+  width: 88px; /* fits four digits; keeps the listings aligned down the page */
+  padding-right: 9px;
+  font: 400 38px/1 'DM Serif Display', 'Bodoni 72', Didot, Georgia, serif;
+  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: -0.5px;
+  color: var(--ink);
+  border-right: 1px solid var(--ink);
+}
+
+/* Trim the line box to the figures so they centre on the row. */
+@supports (text-box: trim-both cap alphabetic) {
+  .guide-ch {
+    text-box: trim-both cap alphabetic;
+  }
 }
 
 .guide-slot {
@@ -356,7 +366,8 @@
 }
 
 .guide-row.is-current .guide-ch {
-  background: var(--red);
+  color: var(--red);
+  border-right-color: var(--red);
 }
 
 /* leave room for the "you are here" stamp */
@@ -468,7 +479,8 @@
 .guide-tab {
   flex: 1;
   min-height: 22px;
-  padding: 0 8px 0 6px;
+  /* numerals sit high in a centred line box; top padding of 2× nudges them down by 1× */
+  padding: 5px 8px 0 6px;
   font: bold 10.5px 'Rockwell', 'Courier New', serif;
   font-variant-numeric: tabular-nums;
   text-align: left;
@@ -843,6 +855,12 @@
     min-height: 0;
   }
 
+  .guide-ch {
+    width: 66px;
+    padding-right: 7px;
+    font-size: 30px;
+  }
+
   .guide-tabs {
     position: static;
     flex-direction: row;
@@ -854,6 +872,7 @@
   .guide-tab {
     flex: none;
     min-height: 26px;
+    padding-top: 2px;
     border-radius: 4px 4px 0 0;
     box-shadow: inset 0 -2px 3px rgba(80, 55, 25, 0.2);
   }
