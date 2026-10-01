@@ -16,15 +16,18 @@ const focusedControlOwns = (target, key) => {
 /**
  * Global keyboard shortcuts. `bindings` maps KeyboardEvent.key (letters
  * lower-cased) to a handler. Skipped when the focused control uses the key
- * itself, or a modifier is held so browser shortcuts still work.
+ * itself, a modifier is held (so browser shortcuts still work), or while
+ * `enabled` is false (e.g. a dialog is open).
  */
-const useShortcuts = (bindings) => {
+const useShortcuts = (bindings, { enabled = true } = {}) => {
   const bindingsRef = useRef(bindings);
   bindingsRef.current = bindings;
+  const enabledRef = useRef(enabled);
+  enabledRef.current = enabled;
 
   useEffect(() => {
     const onKeyDown = (e) => {
-      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (!enabledRef.current || e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
       if (focusedControlOwns(e.target, e.key)) return;
       const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
       const handler = bindingsRef.current[key];

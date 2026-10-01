@@ -23,3 +23,14 @@ body {
   width: min(96vw, 1100px);
   height: min(80vh, 760px);
 }
+
+/* Top-right cluster: the help "?" and the 2D/3D toggle. */
+.app-controls {
+  position: fixed;
+  top: 18px;
+  right: 22px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

@@ -136,6 +136,13 @@ power-cycling the set retries immediately.
 - **Steady level readout.** The OSD number has a fixed three-digit slot, so
   the volume/brightness bar no longer shifts going from 99 to 100.
 
+### 2.8 Owner's manual — **Done**
+A brass "?" beside the 2D/3D toggle (or the **?** key) opens a short
+instruction card styled like the sheet that came with the set, Model NP-R1.
+It glows on a first visit until opened once. It's a proper modal (focus moves
+in and back, Esc / ✕ / click outside close it) and the TV's shortcuts pause
+while it's open. Both sets' badges now read NP-R1. `src/components/Help.js`.
+
 ---
 
 ## 3. New features

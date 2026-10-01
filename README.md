@@ -30,9 +30,12 @@ fetches that static file, so no YouTube API key reaches the browser.
 | L / Backspace | Last channel |
 | O / Esc | Open / close SETUP |
 
+New visitors can press the "?" beside the 2D/3D toggle (or **?**) for a
+short owner's manual.
+
 On the set: the chrome slide switch is power, the lever on the rail is
 play/pause, the small black knob is brightness, and the chrome knob by the
-NPR badge is MENU. Drag the antenna to hunt for a station, tap it to
+NP-R1 badge is MENU. Drag the antenna to hunt for a station, tap it to
 retune, or press and hold it to scan.
 
 Stations are **live** by default: each runs a shared schedule, so links like

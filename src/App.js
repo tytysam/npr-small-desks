@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
 import TV from './components/TV';
 import ModeToggle from './components/ModeToggle';
+import { HelpButton, HelpCard } from './components/Help';
 import CrtTransition, { CRT_OFF_MS, CRT_ON_MS } from './components/CrtTransition';
 import useViewMode from './hooks/useViewMode';
 import useChannels from './hooks/useChannels';
@@ -53,6 +54,10 @@ function App() {
 
   const [antennaAngle, setAntennaAngle] = useState(0);
   const [antennaWobble, setAntennaWobble] = useState(0); // bumped to replay the wobble
+
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [seenHelp, setSeenHelp] = usePersistentState('npr-small-desk:seenHelp', false, (v) => typeof v === 'boolean');
+  const helpButtonRef = useRef(null);
 
   const [viewMode, setViewMode] = useViewMode();
   const [transition, setTransition] = useState('idle'); // 'idle' | 'off' | 'on'
@@ -252,21 +257,35 @@ function App() {
     [transition, viewMode, setViewMode, program, tuner]
   );
 
-  useShortcuts({
-    ArrowUp: () => changeChannel(1),
-    ArrowDown: () => changeChannel(-1),
-    ArrowRight: () => changeVolume(volume + VOLUME_STEP),
-    ArrowLeft: () => changeVolume(volume - VOLUME_STEP),
-    m: toggleMute,
-    ' ': togglePause,
-    p: togglePower,
-    r: retuneByHand,
-    s: retune.toggleScan,
-    l: recallChannel,
-    Backspace: recallChannel,
-    o: toggleMenu,
-    Escape: closeMenu,
-  });
+  const openHelp = useCallback(() => {
+    setHelpOpen(true);
+    setSeenHelp(true);
+  }, [setSeenHelp]);
+
+  const closeHelp = useCallback(() => {
+    setHelpOpen(false);
+    helpButtonRef.current?.focus();
+  }, []);
+
+  useShortcuts(
+    {
+      ArrowUp: () => changeChannel(1),
+      ArrowDown: () => changeChannel(-1),
+      ArrowRight: () => changeVolume(volume + VOLUME_STEP),
+      ArrowLeft: () => changeVolume(volume - VOLUME_STEP),
+      m: toggleMute,
+      ' ': togglePause,
+      p: togglePower,
+      r: retuneByHand,
+      s: retune.toggleScan,
+      l: recallChannel,
+      Backspace: recallChannel,
+      o: toggleMenu,
+      Escape: closeMenu,
+      '?': openHelp,
+    },
+    { enabled: !helpOpen }
+  );
 
   // --- what the tube shows -----------------------------------------------
   const muted = volume === 0;
@@ -321,12 +340,15 @@ function App() {
 
   return (
     <div className="app">
-      <ModeToggle
-        mode={viewMode}
-        onChange={requestModeChange}
-        onIntent={viewMode === '2d' ? load3D : undefined}
-        disabled={transition !== 'idle'}
-      />
+      <div className="app-controls">
+        <HelpButton ref={helpButtonRef} onClick={openHelp} pulse={!seenHelp} />
+        <ModeToggle
+          mode={viewMode}
+          onChange={requestModeChange}
+          onIntent={viewMode === '2d' ? load3D : undefined}
+          disabled={transition !== 'idle'}
+        />
+      </div>
       {viewMode === '3d' ? (
         <Suspense fallback={<div className="tv-loading" />}>
           <TV3D {...setProps} />
@@ -334,6 +356,7 @@ function App() {
       ) : (
         <TV {...setProps} />
       )}
+      {helpOpen && <HelpCard onClose={closeHelp} />}
       <CrtTransition phase={transition} />
     </div>
   );

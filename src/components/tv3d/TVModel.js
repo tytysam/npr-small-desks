@@ -310,8 +310,8 @@ const TVModel = ({
   const volumeTicksTexture = useDisposable(makeVolumeTicksTexture, []);
   const badgeTexture = useDisposable(
     () =>
-      makeLabelTexture('NPR', {
-        width: 256,
+      makeLabelTexture('NP-R1', {
+        width: 320,
         height: 96,
         font: 'bold 60px Georgia, serif',
         color: '#24130a',
@@ -606,7 +606,7 @@ const TVModel = ({
             <meshStandardMaterial color="#333" />
           </mesh>
         </group>
-        <Plate texture={badgeTexture} position={[-2.33, 0, 0.003]} size={[0.46, 0.17]} />
+        <Plate texture={badgeTexture} position={[-2.3, 0, 0.003]} size={[0.567, 0.17]} />
 
         <mesh position={[-0.75, 0, -0.005]}>
           <boxGeometry args={[2.4, 0.28, 0.02]} />

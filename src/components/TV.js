@@ -96,7 +96,7 @@ const TV = ({
         <div className="tv-rail">
           <div className="tv-badge">
             <button type="button" className="tv-badge-knob" aria-label="Menu" title="Menu" onClick={onMenuToggle} />
-            <span className="tv-badge-text" aria-hidden="true">NPR</span>
+            <span className="tv-badge-text" aria-hidden="true">NP-R1</span>
           </div>
 
           <div className="tv-tuning-strip">
