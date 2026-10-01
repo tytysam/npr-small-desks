@@ -2,6 +2,11 @@
   position: relative;
   width: min(96vw, 1100px);
   height: min(80vh, 760px);
+  /* Whole, even pixels: Chrome mis-places drei's CSS-3D tube layer (it drifts
+     off the bezel by tens of px) when the canvas has a fractional size. TV3D.js
+     also snaps its position. */
+  width: round(down, min(96vw, 1100px), 2px);
+  height: round(down, min(80vh, 760px), 2px);
   margin: 0 auto;
   touch-action: none;
   user-select: none;

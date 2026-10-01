@@ -1,4 +1,4 @@
-import React, { Suspense, useRef, useState, useCallback, useEffect } from 'react';
+import React, { Suspense, useRef, useState, useCallback, useEffect, useLayoutEffect } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, ContactShadows, Environment, Lightformer } from '@react-three/drei';
 import TVModel from './TVModel';
@@ -38,6 +38,24 @@ const FitCamera = () => {
 const TV3D = (props) => {
   const wrapperRef = useRef(null);
   const [knobBusy, setKnobBusy] = useState(false);
+
+  // Chrome mis-composites drei's CSS-3D tube layer — it drifts tens of px off
+  // the bezel — unless the canvas sits on whole pixels. TV3D.css rounds the
+  // size; centring can still land it on a half pixel, so nudge it back.
+  useLayoutEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return undefined;
+    const snap = () => {
+      el.style.left = '0px';
+      el.style.top = '0px';
+      const { left, top } = el.getBoundingClientRect();
+      el.style.left = `${Math.round(left) - left}px`;
+      el.style.top = `${Math.round(top) - top}px`;
+    };
+    snap();
+    window.addEventListener('resize', snap);
+    return () => window.removeEventListener('resize', snap);
+  }, []);
 
   const computePointer = useCallback((event, state) => {
     const rect = wrapperRef.current?.getBoundingClientRect();

@@ -120,14 +120,16 @@ power-cycling the set retries immediately.
   summoning its hover overlay, captions are switched off whenever YouTube
   loads them, and static covers the tube until each video actually plays.
   Unplayable videos are skipped. `src/components/Screen.js`.
-  - YouTube also overlays its title bar for the first few seconds of every
-    video, at a fixed pixel size. The player now renders at 1280×720 and is
-    scaled into the tube, so that band is a constant ~8% of the frame, and
-    the top 9% sits above the glass (CRT-style overscan). Side effect: 3D
-    gets a 720p picture instead of 360p.
-  - Known leftover: for ~3 s after each tune-in YouTube still shows a small
-    pause glyph mid-picture and a tiny "More videos" pill bottom-right. Both
-    are inside its iframe, out of reach.
+  - YouTube also overlays its title bar (and a small pause glyph and
+    "More videos" pill) for the first few seconds of every video. Rendering
+    the player at 1280×720 and tucking the top 9% above the glass hid the
+    title bar, but it didn't achieve the look we wanted, so it was reverted.
+    Those first-seconds overlays remain, inside YouTube's iframe.
+- **3D tube alignment.** At some window sizes the tube's picture and OSD
+  drew tens of pixels off the bezel, clipping the SETUP menu and hints.
+  Chrome mis-composites drei's CSS-3D layer when the canvas has a fractional
+  size or position; the 3D area now snaps to whole, even pixels
+  (`tv3d/TV3D.css` + `TV3D.js`).
 - **Play/pause lever.** A chrome bat-handle toggle on the rail of both sets:
   up plays, down pauses. It shares state with Space and the PAUSE indicator,
   and flipping it while the set is off decides whether it resumes on power-up.

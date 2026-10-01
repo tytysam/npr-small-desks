@@ -63,30 +63,6 @@ const DEGAUSS_MS = 900;
 // shows full static.)
 const ANTENNA_SNOW = 0.65;
 
-// YouTube draws its title bar over the top of every video for a few seconds
-// after it starts, at a fixed pixel size. Rendering the player large and
-// scaling it down keeps that band a constant ~8% of the frame, which we then
-// tuck above the top of the glass (CRT-style overscan). See .screen-player.
-const PLAYER_W = 1280;
-const PLAYER_H = 720;
-const TOP_CROP = 0.09;
-
-/** Scale that fits the 1280×720 player to the tube (tracks resizes). */
-const usePlayerScale = (ref) => {
-  const [scale, setScale] = useState(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || typeof ResizeObserver === 'undefined') return undefined;
-    const observer = new ResizeObserver(([entry]) => {
-      const tubeH = entry.contentRect.height;
-      if (tubeH > 0) setScale((tubeH * 1.01) / (PLAYER_H * (1 - TOP_CROP)));
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [ref]);
-  return scale;
-};
-
 // SETUP levels (0–10, 5 = the default look) → the tube's CSS variables.
 const crtStyle = (crt, brightness) => ({
   '--scanline-alpha': (crt.scanlines * 0.045).toFixed(3),
@@ -104,8 +80,7 @@ const crtStyle = (crt, brightness) => ({
  * 2D/3D switch. A new start time on the same video reloads it there.
  *
  * All controls live on the set, so none of YouTube's own UI should show:
- * the player fills the tube (cropping the 16:9 frame's sides, and its top
- * edge where YouTube's title bar appears),
+ * the player is sized to fill the tube (cropping the 16:9 frame's sides),
  * a shield keeps the pointer from summoning its hover overlay, captions are
  * unloaded, and static covers the picture until each video actually plays —
  * hiding the title bar and "More videos" YouTube shows while loading.
@@ -131,8 +106,6 @@ const Screen = ({
   osd,
 }) => {
   const playerRef = useRef(null);
-  const screenRef = useRef(null);
-  const playerScale = usePlayerScale(screenRef);
   const [showStatic, setShowStatic] = useState(false);
   const [degaussing, setDegaussing] = useState(false);
   const [startedUrl, setStartedUrl] = useState(null);
@@ -194,20 +167,15 @@ const Screen = ({
   } else {
     picture = (
       <>
-        <div
-          className="screen-player"
-          style={playerScale ? { '--player-scale': playerScale } : undefined}
-          data-video={videoId}
-          data-start={start}
-        >
+        <div className="screen-player" data-video={videoId} data-start={start}>
           <ReactPlayer
             ref={playerRef}
             url={url}
             playing={playing}
             muted={volume === 0}
             volume={volume}
-            width={PLAYER_W}
-            height={PLAYER_H}
+            width="100%"
+            height="100%"
             progressInterval={500}
             onReady={handleReady}
             onPlay={handlePlay}
@@ -242,7 +210,7 @@ const Screen = ({
     .join(' ');
 
   return (
-    <div ref={screenRef} className={`screen ${variant}`} style={crtStyle(crt, brightness)}>
+    <div className={`screen ${variant}`} style={crtStyle(crt, brightness)}>
       <div className={pictureClass}>{picture}</div>
       {snow > 0 && (
         <StaticNoise
