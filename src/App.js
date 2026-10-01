@@ -334,6 +334,7 @@ function App() {
     paused: isPaused,
     onPauseToggle: togglePause,
     onMenuToggle: toggleMenu,
+    menuOpen,
     artistName: video?.artist ?? '',
     antenna,
   };

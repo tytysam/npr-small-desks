@@ -52,6 +52,7 @@ const TV = ({
   paused,
   onPauseToggle,
   onMenuToggle,
+  menuOpen,
   artistName,
   antenna,
 }) => {
@@ -105,7 +106,14 @@ const TV = ({
 
           <div className="tv-rail">
             <div className="tv-badge">
-              <button type="button" className="tv-badge-knob" aria-label="Menu" title="Menu" onClick={onMenuToggle} />
+              <button
+                type="button"
+                className={`tv-badge-knob ${menuOpen ? 'is-pressed' : ''}`}
+                aria-label="Menu"
+                aria-expanded={Boolean(menuOpen)}
+                title="Menu"
+                onClick={onMenuToggle}
+              />
               <span className="tv-badge-text" aria-hidden="true">NP-R1</span>
             </div>
 

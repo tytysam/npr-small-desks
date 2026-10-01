@@ -15,6 +15,7 @@ import {
   makeLoftGeometry,
   makeTaperedLegGeometry,
   makePerforatedTexture,
+  makeKnurlTexture,
   makeGlareTexture,
   makeLabelTexture,
   makeChannelRingTexture,
@@ -139,6 +140,73 @@ const Plate = ({ texture, position, size, rotation }) => (
 );
 
 const Chrome = (props) => <meshStandardMaterial color={PALETTE.chrome} metalness={1} roughness={0.2} {...props} />;
+
+// Brushed silver for faces that look straight at the viewer: a pure mirror
+// there reflects the empty space behind the camera and reads as dark grey, so
+// mix in diffuse shading (as the knobs do) to match the 2D set's silver.
+const Silver = (props) => <meshStandardMaterial color="#d6d6d2" metalness={0.55} roughness={0.3} {...props} />;
+
+const MENU_TRAVEL = 0.035; // a third of the button's 0.1 height
+
+/**
+ * The MENU push-button. It latches in (sinks into the cabinet) while the
+ * SETUP menu is open and springs back out when it closes; frames only render
+ * while it's moving.
+ */
+const MenuButton = ({ position, pressed, onPress }) => {
+  const groupRef = useRef(null);
+  const motion = useRef({ z: 0, v: 0 });
+  const [hovered, setHovered] = useState(false);
+  const invalidate = useThree((state) => state.invalidate);
+
+  useEffect(() => invalidate(), [pressed, invalidate]);
+
+  useFrame((_, delta) => {
+    const m = motion.current;
+    const target = pressed ? -MENU_TRAVEL : 0;
+    // Slightly underdamped spring: ~150 ms, with a small overshoot.
+    const dt = Math.min(delta, 1 / 30);
+    m.v += (900 * (target - m.z) - 40 * m.v) * dt;
+    m.z += m.v * dt;
+    if (Math.abs(target - m.z) < 1e-4 && Math.abs(m.v) < 1e-3) {
+      m.z = target;
+      m.v = 0;
+    } else {
+      invalidate();
+    }
+    if (groupRef.current) groupRef.current.position.z = m.z;
+  });
+
+  return (
+    <group
+      position={position}
+      onClick={(e) => {
+        e.stopPropagation();
+        onPress();
+      }}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        setHovered(true);
+        document.body.style.cursor = 'pointer';
+      }}
+      onPointerOut={() => {
+        setHovered(false);
+        document.body.style.cursor = '';
+      }}
+    >
+      <group ref={groupRef}>
+        <mesh position={[0, 0, 0.05]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+          <cylinderGeometry args={[0.12, 0.13, 0.1, 32]} />
+          <Silver emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
+        </mesh>
+        <mesh position={[0, 0, 0.101]}>
+          <circleGeometry args={[0.03, 20]} />
+          <meshStandardMaterial color="#2a2a2a" roughness={0.6} />
+        </mesh>
+      </group>
+    </group>
+  );
+};
 
 const DEG = Math.PI / 180;
 const ANTENNA_SECTIONS = [
@@ -289,6 +357,7 @@ const TVModel = ({
   paused,
   onPauseToggle,
   onMenuToggle,
+  menuOpen,
   antenna,
   onKnobDragging,
 }) => {
@@ -300,6 +369,7 @@ const TVModel = ({
   const honey = useDisposable(() => makeWoodMaterial(honeyWood, { clearcoat: 0.7 }), [honeyWood]);
   const parts = useDisposable(makeWoodParts, []);
 
+  const sliderRibs = useDisposable(() => makeKnurlTexture(9), []);
   const perforated = useDisposable(() => makePerforatedTexture({ repeat: [10, 8] }), []);
   const glareTexture = useDisposable(makeGlareTexture, []);
   const channelRingTexture = useDisposable(makeChannelRingTexture, []);
@@ -349,12 +419,13 @@ const TVModel = ({
       makeFrameGeometry({
         outerW: COLUMN.w,
         outerH: COLUMN.h,
-        innerW: COLUMN.w - 0.12,
-        innerH: COLUMN.h - 0.12,
+        // a slim band: ~0.025 visible per side, bevels included
+        innerW: COLUMN.w - 0.03,
+        innerH: COLUMN.h - 0.03,
         depth: 0.05,
-        radius: 0.06,
-        innerRadius: 0.03,
-        bevelSize: 0.012,
+        radius: 0.04,
+        innerRadius: 0.02,
+        bevelSize: 0.005,
         bevelSegments: 2,
       }),
     []
@@ -412,8 +483,6 @@ const TVModel = ({
     setSwitchHovered(false);
     document.body.style.cursor = '';
   }, []);
-
-  const [menuHovered, setMenuHovered] = useState(false);
 
   // --- play/pause lever --------------------------------------------------
   const [leverHovered, setLeverHovered] = useState(false);
@@ -513,13 +582,14 @@ const TVModel = ({
         </mesh>
       </group>
 
-      {/* control column: dark trim around an inset metal panel */}
+      {/* control column: chrome trim around an inset metal panel, as on the 2D set */}
       <group position={[COLUMN.x, COLUMN.y, 0]}>
         <mesh geometry={columnTrimGeometry} position={[0, 0, BOARD_Z - 0.01]} castShadow>
-          <meshStandardMaterial color="#1c1b19" roughness={0.4} metalness={0.5} />
+          <Silver color="#c6c6c1" roughness={0.28} />
         </mesh>
         <mesh position={[0, 0, PANEL_Z - 0.02]} receiveShadow>
-          <boxGeometry args={[COLUMN.w - 0.1, COLUMN.h - 0.1, 0.04]} />
+          {/* runs just under the trim's inner edge, so no gap shows */}
+          <boxGeometry args={[COLUMN.w - 0.03, COLUMN.h - 0.03, 0.04]} />
           <meshStandardMaterial color={PALETTE.panel.light} roughness={0.45} metalness={0.6} />
         </mesh>
 
@@ -563,9 +633,16 @@ const TVModel = ({
             <boxGeometry args={[0.44, 0.12, 0.01]} />
             <meshStandardMaterial color="#0e0e0d" roughness={0.8} />
           </mesh>
+          {/* ribbed silver slider */}
           <mesh position={[isOn ? 0.07 : -0.07, 0, 0.03]} castShadow>
             <boxGeometry args={[0.24, 0.09, 0.05]} />
-            <Chrome roughness={0.35} emissive="#ffffff" emissiveIntensity={switchHovered ? 0.08 : 0} />
+            <Silver
+              map={sliderRibs}
+              bumpMap={sliderRibs}
+              bumpScale={1.5}
+              emissive="#ffffff"
+              emissiveIntensity={switchHovered ? 0.08 : 0}
+            />
           </mesh>
         </group>
       </group>
@@ -576,32 +653,8 @@ const TVModel = ({
           <meshStandardMaterial color="#1a0e05" roughness={0.9} />
         </mesh>
 
-        {/* MENU: push the chrome knob */}
-        <group
-          position={[-2.75, 0, 0]}
-          onClick={(e) => {
-            e.stopPropagation();
-            onMenuToggle();
-          }}
-          onPointerOver={(e) => {
-            e.stopPropagation();
-            setMenuHovered(true);
-            document.body.style.cursor = 'pointer';
-          }}
-          onPointerOut={() => {
-            setMenuHovered(false);
-            document.body.style.cursor = '';
-          }}
-        >
-          <mesh position={[0, 0, 0.05]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-            <cylinderGeometry args={[0.12, 0.13, 0.1, 32]} />
-            <Chrome emissive="#ffffff" emissiveIntensity={menuHovered ? 0.08 : 0} />
-          </mesh>
-          <mesh position={[0, 0, 0.101]}>
-            <circleGeometry args={[0.028, 16]} />
-            <meshStandardMaterial color="#333" />
-          </mesh>
-        </group>
+        {/* MENU: a silver push-button that latches in while SETUP is open */}
+        <MenuButton position={[-2.75, 0, 0]} pressed={Boolean(menuOpen)} onPress={onMenuToggle} />
         <Plate texture={badgeTexture} position={[-2.3, 0, 0.003]} size={[0.567, 0.17]} />
 
         <mesh position={[-0.75, 0, -0.005]}>
