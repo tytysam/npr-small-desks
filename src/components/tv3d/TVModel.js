@@ -50,7 +50,15 @@ const COLUMN = { x: 2.29, y: BEZEL.y, w: 1.32, h: BEZEL.h };
 const PANEL_Z = BOARD_Z + 0.02; // face of the column's inset panel
 const RAIL_Y = -1.77;
 
-const LEG = { width: 0.46, depth: 0.22, length: 0.85, spreadX: 2.7, spreadZ: 1.2, splayX: 0.3, splayZ: 0.12 };
+// The tops sit 0.03 up inside the 0.14-thick base, so no seam shows; the feet
+// lean outward by the splay angles (radians) and land on the floor shadow.
+const LEG = { width: 0.46, depth: 0.22, length: 0.83, spreadX: 2.7, spreadZ: 1.2, splayX: 0.3, splayZ: 0.12, topY: BOTTOM_Y - 0.1 };
+const LEG_CORNERS = [
+  [-1, -1],
+  [1, -1],
+  [-1, 1],
+  [1, 1],
+];
 
 const LEVER = { length: 0.17, base: 0.018, tip: 0.013 };
 const LEVER_TILT = 0.5; // radians forward of vertical
@@ -128,7 +136,17 @@ const makeWoodParts = () => {
     top: wood(new RoundedBoxGeometry(CABINET.w + 0.16, 0.12, CABINET.d + 0.12, 3, 0.04), [0, TOP_Y + 0.04, 0]),
     plinth: wood(new RoundedBoxGeometry(CABINET.w - 0.3, 0.14, CABINET.d - 0.4, 2, 0.03), [0, BOTTOM_Y - 0.06, 0]),
     bezel: wood(makeLoftGeometry(bezelRings(), 12), [BEZEL.x, BEZEL.y, BOARD_Z], 5),
-    leg: boxProjectUVs(makeTaperedLegGeometry(LEG), { span: 2 }),
+    // one per corner: each leans out toward its own corner
+    legs: LEG_CORNERS.map(([sx, sz]) =>
+      wood(
+        makeTaperedLegGeometry({
+          ...LEG,
+          splay: [sx * LEG.length * Math.tan(LEG.splayX), sz * LEG.length * Math.tan(LEG.splayZ)],
+        }),
+        [sx * LEG.spreadX, LEG.topY, sz * LEG.spreadZ],
+        2
+      )
+    ),
   };
 };
 
@@ -527,21 +545,6 @@ const TVModel = ({
     onKnobDragging?.(false);
   }, [onKnobDragging]);
 
-  const legs = useMemo(
-    () =>
-      [
-        [-1, -1],
-        [1, -1],
-        [-1, 1],
-        [1, 1],
-      ].map(([sx, sz]) => ({
-        position: [sx * LEG.spreadX, BOTTOM_Y - 0.12, sz * LEG.spreadZ],
-        // splay the feet outward: +z rotation swings the foot toward +x, +x rotation toward -z
-        rotation: [-sz * LEG.splayZ, 0, sx * LEG.splayX],
-      })),
-    []
-  );
-
   const woodMesh = (part, material, shadows = true) => (
     <mesh geometry={part.geometry} position={part.position} material={material} castShadow={shadows} receiveShadow />
   );
@@ -726,8 +729,8 @@ const TVModel = ({
       <Antenna position={[1.9, TOP_Y + 0.1, -0.5]} onBusy={onKnobDragging} {...antenna} />
 
       {/* splayed slab legs */}
-      {legs.map((leg, i) => (
-        <mesh key={i} geometry={parts.leg} material={walnutShade} position={leg.position} rotation={leg.rotation} castShadow />
+      {parts.legs.map((leg, i) => (
+        <mesh key={i} geometry={leg.geometry} position={leg.position} material={walnutShade} castShadow receiveShadow />
       ))}
     </group>
   );

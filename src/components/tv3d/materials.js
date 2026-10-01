@@ -100,15 +100,17 @@ export const boxProjectUVs = (geometry, { span = 7, offset = [0, 0, 0], shift = 
   return geometry;
 };
 
-/** A slab that narrows toward its foot; its top face sits at y = 0. */
-export const makeTaperedLegGeometry = ({ width, depth, length, footScale = [0.5, 0.7] }) => {
+/** A slab that narrows (and optionally leans) toward its foot; its top face sits flat at y = 0. */
+export const makeTaperedLegGeometry = ({ width, depth, length, footScale = [0.5, 0.7], splay = [0, 0] }) => {
   const geometry = new THREE.BoxGeometry(width, length, depth, 1, 4, 1);
   geometry.translate(0, -length / 2, 0);
   const pos = geometry.attributes.position;
   for (let i = 0; i < pos.count; i += 1) {
     const t = -pos.getY(i) / length; // 0 at the top, 1 at the foot
-    pos.setX(i, pos.getX(i) * lerp(1, footScale[0], t));
-    pos.setZ(i, pos.getZ(i) * lerp(1, footScale[1], t));
+    // Taper, then lean the foot out by `splay` (x, z). Shearing rather than
+    // rotating keeps the top face flat, so it sits flush against what it's under.
+    pos.setX(i, pos.getX(i) * lerp(1, footScale[0], t) + splay[0] * t);
+    pos.setZ(i, pos.getZ(i) * lerp(1, footScale[1], t) + splay[1] * t);
   }
   geometry.computeVertexNormals();
   return geometry;
