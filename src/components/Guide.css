@@ -369,18 +369,35 @@
 }
 
 .guide-here {
+  /* A rubber stamp, inked onto the row: centred on its height, a little
+     askew, with a double rule and patchy ink. */
   position: absolute;
-  top: 4px;
-  right: 4px;
-  padding: 1px 5px;
-  font: bold 9px 'Rockwell', 'Courier New', serif;
-  letter-spacing: 1px;
+  top: 50%;
+  right: 8px;
+  padding: 4px 7px;
+  font: 900 9px 'Rockwell', 'Courier New', serif;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: var(--red);
-  background: var(--paper);
-  border: 1px solid var(--red);
-  border-radius: 2px;
-  transform: rotate(3deg);
+  color: rgba(178, 38, 28, 0.88);
+  border: 1.5px solid currentColor;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1.5px var(--paper), inset 0 0 0 2.25px currentColor;
+  transform: translateY(-50%) rotate(-4deg);
+  mix-blend-mode: multiply;
+  /* uneven ink: speckled gaps where the stamp didn't take */
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='40'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.4 2.1'/%3E%3C/filter%3E%3Crect width='120' height='40' filter='url(%23n)'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='40'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.4 2.1'/%3E%3C/filter%3E%3Crect width='120' height='40' filter='url(%23n)'/%3E%3C/svg%3E");
+  -webkit-mask-size: 120px 40px;
+  mask-size: 120px 40px;
+  pointer-events: none;
+}
+
+/* Centre the capitals in the frame (all caps sit high in a line box). */
+@supports (text-box: trim-both cap alphabetic) {
+  .guide-here {
+    padding: 5px 7px;
+    text-box: trim-both cap alphabetic;
+  }
 }
 
 .guide-empty {
