@@ -81,6 +81,18 @@ const useTuner = ({ channels, broadcast }) => {
     [channels.length, station, tuneTo]
   );
 
+  /** Play one concert from the top as a one-off, like a `?v=` link. */
+  const playVideo = useCallback(
+    (index) => {
+      if (!channels[index]) return;
+      if (station !== null && station !== index) setPrevious(station);
+      setStation(index);
+      setOverride(channels[index].id);
+      setTune({ at: Date.now(), startAt: 0 });
+    },
+    [channels, station]
+  );
+
   const jumpRandom = useCallback(() => {
     if (channels.length === 0) return;
     tuneTo(bag.next(station));
@@ -123,7 +135,7 @@ const useTuner = ({ channels, broadcast }) => {
     window.history.replaceState(null, '', url);
   }, [station, videoId, override, broadcast, setLastStation]);
 
-  return { station, program, previous, tuneTo, step, jumpRandom, recall, rejoin, programEnded };
+  return { station, program, previous, schedule, tuneTo, playVideo, step, jumpRandom, recall, rejoin, programEnded };
 };
 
 export default useTuner;

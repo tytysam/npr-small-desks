@@ -22,6 +22,7 @@ import {
   makeVolumeTicksTexture,
   makeFrameGeometry,
   makeDomeGeometry,
+  makeGuideTextures,
 } from './materials';
 
 // Layout (world units). The cabinet is centred on the origin; +Z faces the viewer.
@@ -228,6 +229,106 @@ const MenuButton = ({ position, pressed, onPress }) => {
   );
 };
 
+// The TV guide lies on two older issues near the front of the top board,
+// spines toward the viewer (the camera sits below the top, so the spines
+// are what reads from the front; the cover shows when you orbit up).
+const GUIDE = { length: 1.45, width: 1.05, x: -1.75, z: 1.08, lift: 0.06 };
+const GUIDE_ISSUES = [
+  { color: '#c4372b', ink: '#fff8ec', text: 'NP-R1 LISTINGS · TINY DESK WEEKLY', thickness: 0.09, yaw: -0.07, dx: 0 },
+  { color: '#2f5d7c', ink: '#e8dfc8', text: 'NP-R1 LISTINGS · NO. 38', thickness: 0.075, yaw: 0.05, dx: 0.06 },
+  { color: '#d9a43a', ink: '#3a2a12', text: 'NP-R1 LISTINGS · NO. 37', thickness: 0.075, yaw: -0.02, dx: -0.04 },
+];
+
+/**
+ * The stack of guides on top of the set. Clicking any of them opens the
+ * guide; the top one lifts a little on hover and while it's open.
+ */
+const GuideStack = ({ position, open, onOpen }) => {
+  const textures = useDisposable(() => makeGuideTextures(GUIDE_ISSUES), []);
+  const pages = useDisposable(() => new THREE.MeshStandardMaterial({ color: '#e8dfc6', roughness: 0.95 }), []);
+  const covers = useDisposable(
+    () =>
+      GUIDE_ISSUES.map(
+        ({ color }, i) =>
+          new THREE.MeshStandardMaterial(i === 0 ? { map: textures.cover, roughness: 0.6 } : { color, roughness: 0.7 })
+      ),
+    [textures]
+  );
+  const spines = useDisposable(
+    () => textures.spines.map((map) => new THREE.MeshStandardMaterial({ map, roughness: 0.6 })),
+    [textures]
+  );
+  const topRef = useRef(null);
+  const motion = useRef({ y: 0, v: 0 });
+  const [hovered, setHovered] = useState(false);
+  const invalidate = useThree((state) => state.invalidate);
+  const lifted = hovered || open;
+
+  useEffect(() => invalidate(), [lifted, invalidate]);
+
+  useFrame((_, delta) => {
+    const m = motion.current;
+    const target = lifted ? GUIDE.lift : 0;
+    const dt = Math.min(delta, 1 / 30);
+    m.v += (600 * (target - m.y) - 38 * m.v) * dt;
+    m.y += m.v * dt;
+    if (Math.abs(target - m.y) < 1e-4 && Math.abs(m.v) < 1e-3) {
+      m.y = target;
+      m.v = 0;
+    } else {
+      invalidate();
+    }
+    if (topRef.current) topRef.current.position.y = topRef.current.userData.restY + m.y;
+  });
+
+  // Stacked bottom-up: the last issue lies on the board, the guide on top.
+  let y = 0;
+  const layers = GUIDE_ISSUES.map((issue, i) => ({ ...issue, i })).reverse().map((issue) => {
+    const centre = y + issue.thickness / 2;
+    y += issue.thickness;
+    return { ...issue, centre };
+  });
+
+  return (
+    <group
+      position={position}
+      onClick={(e) => {
+        e.stopPropagation();
+        onOpen();
+      }}
+      onPointerDown={(e) => {
+        // Keep the camera from starting an orbit on a click here.
+        e.nativeEvent?.stopImmediatePropagation?.();
+      }}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        setHovered(true);
+        document.body.style.cursor = 'pointer';
+      }}
+      onPointerOut={() => {
+        setHovered(false);
+        document.body.style.cursor = '';
+      }}
+    >
+      {layers.map(({ i, thickness, yaw, dx, centre }) => (
+        <mesh
+          key={i}
+          ref={i === 0 ? topRef : undefined}
+          userData={{ restY: centre }}
+          position={[dx, centre, 0]}
+          rotation={[0, yaw, 0]}
+          // box faces: +x, −x, +y (cover), −y, +z (spine), −z
+          material={[pages, pages, covers[i], pages, spines[i], pages]}
+          castShadow
+          receiveShadow
+        >
+          <boxGeometry args={[GUIDE.length, thickness, GUIDE.width]} />
+        </mesh>
+      ))}
+    </group>
+  );
+};
+
 const DEG = Math.PI / 180;
 const ANTENNA_SECTIONS = [
   { r: 0.03, len: 0.62 },
@@ -379,6 +480,8 @@ const TVModel = ({
   onMenuToggle,
   menuOpen,
   antenna,
+  guideOpen,
+  onGuideOpen,
   onKnobDragging,
 }) => {
   // --- materials ---------------------------------------------------------
@@ -727,6 +830,8 @@ const TVModel = ({
       </group>
 
       <Antenna position={[1.9, TOP_Y + 0.1, -0.5]} onBusy={onKnobDragging} {...antenna} />
+
+      <GuideStack position={[GUIDE.x, TOP_Y + 0.1, GUIDE.z]} open={guideOpen} onOpen={onGuideOpen} />
 
       {/* splayed slab legs */}
       {parts.legs.map((leg, i) => (

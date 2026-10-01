@@ -414,3 +414,75 @@ export const makeDomeGeometry = (w, h, bulge) => {
   geometry.computeVertexNormals();
   return geometry;
 };
+
+const SPINE_FONT = '900 34px Rockwell, "Courier New", serif';
+
+/**
+ * The TV guide's printing, for a digest lying on its back with the spine
+ * toward the viewer: the cover (for the box's top face, drawn turned a
+ * quarter so its spine edge is at the front) and a spine for each issue in
+ * the stack, guide first.
+ */
+export const makeGuideTextures = (issues) => {
+  // Cover art is portrait (W × H); the canvas holds it turned so the art's
+  // left (spine) edge lands on the canvas bottom, i.e. the box's front.
+  const W = 512;
+  const H = 704;
+  const coverCanvas = makeCanvas(H, W);
+  const ctx = coverCanvas.getContext('2d');
+  ctx.translate(0, W);
+  ctx.rotate(-Math.PI / 2);
+  const paper = ctx.createLinearGradient(0, 0, W, H);
+  paper.addColorStop(0, '#eadfc4');
+  paper.addColorStop(1, '#c9b994');
+  ctx.fillStyle = paper;
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#c4372b';
+  ctx.fillRect(36, 40, 300, 120);
+  ctx.fillStyle = '#fff8ec';
+  ctx.font = '900 92px Rockwell, "Courier New", serif';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('NP-R1', 54, 104);
+  ctx.fillStyle = '#221a12';
+  ctx.font = '900 64px Rockwell, "Courier New", serif';
+  ctx.fillText('LISTINGS', 40, 220);
+  // a halftone "photo"
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(330, 430, 140, 0, Math.PI * 2);
+  ctx.clip();
+  const photo = ctx.createRadialGradient(290, 390, 10, 330, 430, 150);
+  photo.addColorStop(0, '#8a6a4a');
+  photo.addColorStop(1, '#2e2117');
+  ctx.fillStyle = photo;
+  ctx.fillRect(180, 280, 300, 300);
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+  for (let y = 280; y < 580; y += 9) for (let x = 180; x < 480; x += 9) ctx.fillRect(x, y, 3, 3);
+  ctx.restore();
+  ctx.fillStyle = '#5a4a36';
+  ctx.font = 'italic 36px Georgia, serif';
+  ctx.fillText('Tiny Desk Weekly', 40, 640);
+  const cover = new THREE.CanvasTexture(coverCanvas);
+  cover.colorSpace = THREE.SRGBColorSpace;
+  cover.anisotropy = 8;
+
+  const spines = issues.map(({ color, ink, text }) => {
+    const canvas = makeCanvas(H, 64);
+    const c = canvas.getContext('2d');
+    c.fillStyle = color;
+    c.fillRect(0, 0, H, 64);
+    c.fillStyle = 'rgba(0, 0, 0, 0.18)'; // the fold, top and bottom
+    c.fillRect(0, 0, H, 5);
+    c.fillRect(0, 59, H, 5);
+    c.fillStyle = ink;
+    c.font = SPINE_FONT;
+    c.textBaseline = 'middle';
+    c.fillText(text, 24, 34, H - 48);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = 8;
+    return texture;
+  });
+
+  return { cover, spines };
+};

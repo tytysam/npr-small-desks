@@ -29,6 +29,7 @@ fetches that static file, so no YouTube API key reaches the browser.
 | S | Scan: hop to a random channel every few seconds |
 | L / Backspace | Last channel |
 | O / Esc | Open / close SETUP |
+| G | Open the TV guide (in the guide: ← / → turn pages, / search) |
 
 New visitors can press the "?" beside the 2D/3D toggle (or **?**) for a
 short owner's manual.
@@ -36,7 +37,9 @@ short owner's manual.
 On the set: the chrome slide switch is power, the lever on the rail is
 play/pause, the small black knob is brightness, and the chrome knob by the
 NP-R1 badge is MENU. Drag the antenna to hunt for a station, tap it to
-retune, or press and hold it to scan.
+retune, or press and hold it to scan. The listings digest on top of the set
+is the TV guide: what's on every channel now and next, searchable by artist;
+pick a listing to tune in.
 
 Stations are **live** by default: each runs a shared schedule, so links like
 `?ch=700` put everyone on the same moment. Switch Broadcast to **VCR** in

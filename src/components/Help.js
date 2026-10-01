@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, forwardRef } from 'react';
+import React, { useRef, forwardRef } from 'react';
+import useDialog from '../hooks/useDialog';
 import './Help.css';
 
 const CONTROLS = [
@@ -9,6 +10,7 @@ const CONTROLS = [
   ['Slide switch', 'Power. (Also the classic fix for no signal.)'],
   ['Black knob', 'Brightness.'],
   ['Chrome knob by the badge', 'MENU: scanlines, VHS mode, Live vs. VCR.'],
+  ['TV listings', "The guide on top of the set. Find an artist, tap to tune."],
   ['2D / 3D', 'Same set, in 3D. Drag to look around.'],
 ];
 
@@ -22,6 +24,7 @@ const KEYS = [
   ['S', 'scan'],
   ['L', 'last'],
   ['O', 'menu'],
+  ['G', 'guide'],
 ];
 
 /** The "?" plaque beside the 2D/3D toggle. Glows until it's been opened once. */
@@ -47,30 +50,7 @@ export const HelpCard = ({ onClose }) => {
   const cardRef = useRef(null);
   const closeRef = useRef(null);
 
-  useEffect(() => {
-    closeRef.current?.focus();
-    const onKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onClose();
-        return;
-      }
-      if (e.key !== 'Tab') return;
-      // Keep Tab cycling within the card.
-      const focusable = cardRef.current.querySelectorAll('button, [href], [tabindex]:not([tabindex="-1"])');
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [onClose]);
+  useDialog(cardRef, { onClose, initialFocusRef: closeRef });
 
   return (
     <div className="help-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>

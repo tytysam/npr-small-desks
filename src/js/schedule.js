@@ -41,3 +41,31 @@ export const onAir = (schedule, station, nowMs) => {
   const offset = t - starts[index];
   return { index, offset, remaining: starts[index + 1] - t };
 };
+
+/**
+ * Where video `index` can be caught at `nowMs`. If a station is airing it,
+ * returns that station and how far in (`offset`, seconds), preferring the one
+ * that started it most recently. Otherwise returns the station that starts
+ * it soonest and how long until then (`startsIn`, seconds).
+ */
+export const findAiring = (schedule, index, nowMs) => {
+  const { starts, total, size } = schedule;
+  const elapsed = (nowMs - EPOCH_MS) / 1000;
+  const duration = starts[index + 1] - starts[index];
+  const mod = (v) => ((v % total) + total) % total;
+  // Station s is `mod(starts[s] - lower)` seconds into video `index`.
+  const lower = mod(starts[index] - elapsed);
+  // First station at or after `lower` (wrapping to station 0).
+  let lo = 0;
+  let hi = size;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (starts[mid] < lower) lo = mid + 1;
+    else hi = mid;
+  }
+  const latest = lo % size;
+  const offset = mod(starts[latest] - lower);
+  if (offset < duration) return { station: latest, offset, onNow: true };
+  const soonest = (latest - 1 + size) % size;
+  return { station: soonest, startsIn: total - mod(starts[soonest] - lower), onNow: false };
+};

@@ -36,7 +36,7 @@ const WoodGrainFilters = () => (
  * honey-wood bezel rolling in to a pillow-shaped tube, a recessed metal control
  * column with chrome knurled dials and a perforated speaker, a grooved lower
  * rail carrying the tuning strip (artist name) and pilot lamp, a telescoping
- * antenna, and a base on splayed slab legs. The wood is the same procedural
+ * antenna, and a base on splayed slab legs. The TV guide lies on top. The wood is the same procedural
  * grain the 3D set uses.
  */
 const TV = ({
@@ -55,6 +55,8 @@ const TV = ({
   menuOpen,
   artistName,
   antenna,
+  guideOpen,
+  onGuideOpen,
 }) => {
   const wood = useWoodImages();
   const woodStyle = wood
@@ -66,6 +68,28 @@ const TV = ({
       <WoodGrainFilters />
 
       <Antenna {...antenna} />
+
+      {/* the TV guide, lying on a couple of older issues */}
+      <div className="tv-guide">
+        <button
+          type="button"
+          className="tv-guide-book"
+          aria-label="TV listings"
+          aria-haspopup="dialog"
+          aria-expanded={guideOpen}
+          onClick={onGuideOpen}
+        >
+          <span className="tv-guide-cover">
+            <span className="tv-guide-brand">NP-R1</span>
+            <span className="tv-guide-title">Listings</span>
+            <span className="tv-guide-photo" />
+            <span className="tv-guide-sub">Tiny Desk Weekly</span>
+          </span>
+          <span className="tv-guide-pages" />
+        </button>
+        <span className="tv-guide-issue" aria-hidden="true" />
+        <span className="tv-guide-issue tv-guide-issue-under" aria-hidden="true" />
+      </div>
 
       <div className="tv-top-board" aria-hidden="true" />
 

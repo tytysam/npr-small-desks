@@ -231,6 +231,31 @@ Also in scope (agreed, done):
 - **Signal sweet spot.** While dragging, static eases in and out as the
   antenna passes hidden "good" angles, so it feels like hunting for reception.
 
+### 3.4 TV guide — **Done**
+A listings digest lies on top of the set: a tilted cover on two older issues
+in 2D, a stack of three with spines facing you in 3D (the cover shows when
+you orbit up). Clicking it, or **G**, opens the book as a two-page spread
+drawn over either set (one page on phones).
+
+- **Listings.** Live: each channel's concert on now (start time, progress)
+  and the next one. VCR: each channel's own concert, billing, year and
+  length. Times refresh every 30 s while it's open.
+- **Finding things.** Opens to your channel ("you are here"). Page turns
+  (← / →, corner buttons, swipe), thumb-index tabs per hundred channels, a
+  `CH ___` jump, and search by artist or title (case- and accent-blind).
+- **Search, live.** Each hit says where it's on now ("On now · 14 min in",
+  tunes that station); if no station is showing it, it says when it next
+  airs and plays it from the top instead, as a `?v=` link would.
+- Picking a listing tunes like the dial (OSD, LAST, share link) and closes
+  the book. It's a modal like the owner's manual; both now share
+  `useDialog`.
+- Neighbouring stations often list the same artists a few minutes apart:
+  station k starts the lineup at video k, so adjacent stations are one
+  concert apart. That's the schedule (3.1), not the guide.
+- `src/js/listings.js` and `findAiring` in `src/js/schedule.js`
+  (unit-tested), `src/components/Guide.js`, `GuideStack` in
+  `tv3d/TVModel.js`.
+
 ### Later ideas
 - **Watch-together.** Live viewer counts and shared channel changes over a
   realtime service (PartyKit, Liveblocks, Supabase Realtime). Layer on top of

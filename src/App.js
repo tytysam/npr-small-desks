@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, Suspense, lazy } from 
 import TV from './components/TV';
 import ModeToggle from './components/ModeToggle';
 import { HelpButton, HelpCard } from './components/Help';
+import { GuideBook } from './components/Guide';
 import CrtTransition, { CRT_OFF_MS, CRT_ON_MS } from './components/CrtTransition';
 import useViewMode from './hooks/useViewMode';
 import useChannels from './hooks/useChannels';
@@ -58,6 +59,9 @@ function App() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [seenHelp, setSeenHelp] = usePersistentState('npr-small-desk:seenHelp', false, (v) => typeof v === 'boolean');
   const helpButtonRef = useRef(null);
+
+  const [guideOpen, setGuideOpen] = useState(false);
+  const guideReturnRef = useRef(null); // where focus goes back to when the guide closes
 
   const [viewMode, setViewMode] = useViewMode();
   const [transition, setTransition] = useState('idle'); // 'idle' | 'off' | 'on'
@@ -267,6 +271,35 @@ function App() {
     helpButtonRef.current?.focus();
   }, []);
 
+  const openGuide = useCallback(() => {
+    if (channels.length === 0) return;
+    const active = document.activeElement;
+    guideReturnRef.current = active && active !== document.body ? active : document.querySelector('.tv-guide-book');
+    setMenuIndex(null);
+    setHelpOpen(false);
+    setGuideOpen(true);
+  }, [channels.length]);
+
+  const closeGuide = useCallback(() => {
+    setGuideOpen(false);
+    guideReturnRef.current?.focus?.();
+  }, []);
+
+  // Picking a listing tunes like the dial does (OSD, LAST, share link), then
+  // closes the book.
+  const tuneFromGuide = useCallback(
+    (next, { fromTheTop = false } = {}) => {
+      retune.stopScan();
+      playedSecondsRef.current = 0;
+      setIsPaused(false);
+      if (fromTheTop) tuner.playVideo(next);
+      else tuner.tuneTo(next);
+      if (station !== null && next !== station) setDialPosition((p) => p + Math.sign(next - station));
+      closeGuide();
+    },
+    [retune, tuner, station, closeGuide]
+  );
+
   useShortcuts(
     {
       ArrowUp: () => changeChannel(1),
@@ -283,8 +316,9 @@ function App() {
       o: toggleMenu,
       Escape: closeMenu,
       '?': openHelp,
+      g: openGuide,
     },
-    { enabled: !helpOpen }
+    { enabled: !helpOpen && !guideOpen }
   );
 
   // --- what the tube shows -----------------------------------------------
@@ -337,6 +371,8 @@ function App() {
     menuOpen,
     artistName: video?.artist ?? '',
     antenna,
+    guideOpen,
+    onGuideOpen: openGuide,
   };
 
   return (
@@ -358,6 +394,17 @@ function App() {
         <TV {...setProps} />
       )}
       {helpOpen && <HelpCard onClose={closeHelp} />}
+      {guideOpen && (
+        <GuideBook
+          channels={channels}
+          schedule={tuner.schedule}
+          station={station}
+          broadcast={crt.broadcast}
+          onTune={tuneFromGuide}
+          onPlayVideo={(index) => tuneFromGuide(index, { fromTheTop: true })}
+          onClose={closeGuide}
+        />
+      )}
       <CrtTransition phase={transition} />
     </div>
   );

@@ -1,0 +1,557 @@
+/* ---- The TV guide: a listings digest opened flat ------------------------- */
+
+.guide-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 900; /* with the owner's manual, under the CRT transition (1000) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(5, 4, 3, 0.62);
+  backdrop-filter: blur(2px);
+  animation: guide-fade 0.18s ease-out;
+}
+
+.guide-book {
+  --ink: #221a12;
+  --ink-soft: #6a5a46;
+  --rule: rgba(60, 40, 20, 0.22);
+  --red: #c4372b;
+  --paper: #f3ecda;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 1000px);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  padding: 18px 22px 12px;
+  font-family: Georgia, 'Times New Roman', serif;
+  color: var(--ink);
+  background:
+    /* gutter shadow down the fold */
+    linear-gradient(90deg, transparent calc(50% - 26px), rgba(80, 55, 25, 0.16) calc(50% - 2px), rgba(80, 55, 25, 0.22) 50%, rgba(80, 55, 25, 0.12) calc(50% + 3px), transparent calc(50% + 24px)),
+    radial-gradient(ellipse at 20% 0%, rgba(255, 255, 255, 0.55), transparent 55%),
+    radial-gradient(ellipse at 85% 100%, rgba(150, 110, 60, 0.16), transparent 60%),
+    var(--paper);
+  border-radius: 3px 3px 4px 4px;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.7),
+    0 2px 6px rgba(0, 0, 0, 0.4),
+    /* page edges stacked under the spread */
+    0 3px 0 -1px #e4dbc4,
+    0 6px 0 -2px #d6ccb2,
+    inset 0 0 50px rgba(140, 100, 50, 0.16);
+  animation: guide-rise 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* ---- Masthead, dateline, search ------------------------------------------- */
+
+.guide-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 6px 16px;
+  padding-bottom: 10px;
+  border-bottom: 3px double var(--ink);
+}
+
+.guide-masthead {
+  margin: 0;
+  font-family: 'Rockwell', 'Roboto Slab', 'Courier New', serif;
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.guide-brand {
+  display: inline-block;
+  padding: 1px 7px 0;
+  margin-right: 2px;
+  color: #fff8ec;
+  background: var(--red);
+  border-radius: 2px;
+}
+
+.guide-dateline {
+  margin: 0;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+.guide-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.guide-search,
+.guide-jump input {
+  font: 14px Georgia, serif;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 6px 8px;
+}
+
+.guide-search {
+  width: 190px;
+}
+
+.guide-jump label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font: bold 12px 'Rockwell', 'Courier New', serif;
+  letter-spacing: 1px;
+}
+
+.guide-jump input {
+  width: 4.6em;
+  font-variant-numeric: tabular-nums;
+}
+
+.guide-book:focus {
+  outline: none;
+}
+
+.guide-search:focus-visible,
+.guide-jump input:focus-visible,
+.guide-close:focus-visible,
+.guide-row:focus-visible,
+.guide-tab:focus-visible,
+.guide-turn:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 1px;
+}
+
+.guide-close {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  font-size: 15px;
+  color: var(--ink-soft);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.guide-close:hover {
+  border-color: var(--rule);
+}
+
+/* ---- The spread ------------------------------------------------------------ */
+
+.guide-body {
+  position: relative;
+  display: flex;
+  gap: 10px;
+  padding-top: 6px;
+}
+
+.guide-spread {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  /* minmax(0, …): equal columns whatever the titles, which clip inside them */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-content: start;
+  column-gap: 44px; /* the fold */
+  min-height: 600px; /* a full page of rows, so search results don't shrink the book */
+  perspective: 1600px;
+}
+
+.guide-page {
+  min-width: 0;
+}
+
+.guide-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.guide-rows li + li {
+  border-top: 1px solid var(--rule);
+}
+
+.guide-row {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+  padding: 5px 4px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.guide-row:hover {
+  background: rgba(196, 55, 43, 0.07);
+}
+
+.guide-ch {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.1em;
+  font: bold 15px 'Rockwell', 'Courier New', serif;
+  font-variant-numeric: tabular-nums;
+  color: #fff8ec;
+  background: var(--ink);
+  border-radius: 2px;
+}
+
+.guide-slot {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-bottom: 3px;
+}
+
+.guide-line {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.guide-title .guide-marquee {
+  font-weight: bold;
+}
+
+.guide-line time {
+  flex: none;
+  min-width: 4.6em;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+}
+
+.guide-detail {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+/* Titles too long for the column fade at the edge, then glide across to
+   show the rest while the row is hovered or focused. */
+.guide-marquee {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.guide-marquee-text {
+  display: inline-block;
+}
+
+.guide-marquee.is-overflowing {
+  /* keep in step with MARQUEE_FADE_PX in Guide.js */
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent);
+}
+
+.guide-row:hover .is-overflowing .guide-marquee-text,
+.guide-row:focus-visible .is-overflowing .guide-marquee-text {
+  animation: guide-marquee var(--marquee-time) ease-in-out 0.35s infinite alternate;
+}
+
+@keyframes guide-marquee {
+  0%,
+  15% {
+    transform: translateX(0);
+  }
+  85%,
+  100% {
+    transform: translateX(var(--marquee-shift));
+  }
+}
+
+.guide-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--rule);
+}
+
+.guide-progress span {
+  display: block;
+  height: 100%;
+  background: var(--red);
+}
+
+/* The channel you're watching, and a channel jumped to. */
+.guide-row.is-current {
+  background: rgba(255, 200, 80, 0.32);
+}
+
+.guide-row.is-current .guide-ch {
+  background: var(--red);
+}
+
+/* leave room for the "you are here" stamp */
+.guide-row.is-current .guide-title {
+  padding-right: 92px;
+}
+
+.guide-row.is-marked {
+  box-shadow: inset 0 0 0 2px var(--red);
+}
+
+.guide-here {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  padding: 1px 5px;
+  font: bold 9px 'Rockwell', 'Courier New', serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--red);
+  background: var(--paper);
+  border: 1px solid var(--red);
+  border-radius: 2px;
+  transform: rotate(3deg);
+}
+
+.guide-empty {
+  grid-column: 1 / -1;
+  padding: 60px 0;
+  font-style: italic;
+  text-align: center;
+  color: var(--ink-soft);
+}
+
+/* ---- The cover, swinging open on the spine -------------------------------- */
+
+.guide-cover {
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  left: calc(50% + 22px);
+  right: -10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 28px 24px;
+  color: #fff8ec;
+  background:
+    radial-gradient(circle at 70% 62%, rgba(0, 0, 0, 0.35) 0 22%, transparent 23%),
+    radial-gradient(rgba(0, 0, 0, 0.2) 1px, transparent 1.5px) 0 0 / 5px 5px,
+    linear-gradient(160deg, #e8dcc0, #cbbb98);
+  border-radius: 2px 4px 4px 2px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  transform-origin: calc(-22px) 50%;
+  backface-visibility: hidden;
+  pointer-events: none;
+  animation: guide-cover-open 0.6s 0.1s cubic-bezier(0.45, 0, 0.3, 1) forwards;
+}
+
+.guide-cover-brand {
+  padding: 4px 12px 2px;
+  font: 900 44px 'Rockwell', 'Courier New', serif;
+  background: var(--red);
+  border-radius: 2px;
+}
+
+.guide-cover-title {
+  font: 900 30px 'Rockwell', 'Courier New', serif;
+  color: var(--ink);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.guide-cover-sub {
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+/* ---- Thumb-index tabs and folio -------------------------------------------- */
+
+.guide-tabs {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-right: -22px; /* stand proud of the page edge */
+}
+
+.guide-tab {
+  flex: 1;
+  min-height: 22px;
+  padding: 0 8px 0 6px;
+  font: bold 10.5px 'Rockwell', 'Courier New', serif;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+  color: var(--ink-soft);
+  background: #e6dcc3;
+  border: none;
+  border-radius: 0 4px 4px 0;
+  box-shadow: inset 2px 0 3px rgba(80, 55, 25, 0.2);
+  cursor: pointer;
+}
+
+.guide-tab:hover {
+  color: var(--ink);
+}
+
+.guide-tab.is-active {
+  color: #fff8ec;
+  background: var(--red);
+}
+
+.guide-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--rule);
+}
+
+.guide-folio {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+.guide-turn {
+  width: 40px;
+  height: 30px;
+  font: bold 20px Georgia, serif;
+  color: var(--ink);
+  background: linear-gradient(135deg, transparent 50%, rgba(80, 55, 25, 0.12) 50%);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.guide-turn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+@keyframes guide-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes guide-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+}
+
+@keyframes guide-cover-open {
+  to {
+    transform: rotateY(-180deg);
+    visibility: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guide-book,
+  .guide-backdrop {
+    animation: none;
+  }
+
+  .guide-cover {
+    display: none;
+  }
+
+  /* No gliding; the full title is in the tooltip. */
+  .guide-row:hover .is-overflowing .guide-marquee-text,
+  .guide-row:focus-visible .is-overflowing .guide-marquee-text {
+    animation: none;
+  }
+}
+
+/* ---- Small screens: a single page ---------------------------------------- */
+
+@media (max-width: 680px) {
+  .guide-backdrop {
+    padding: 8px;
+  }
+
+  .guide-book {
+    max-height: calc(100vh - 16px);
+    padding: 12px 12px 8px;
+    background:
+      radial-gradient(ellipse at 20% 0%, rgba(255, 255, 255, 0.55), transparent 55%),
+      var(--paper);
+  }
+
+  .guide-head {
+    grid-template-columns: 1fr auto;
+  }
+
+  .guide-dateline {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .guide-tools {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+
+  .guide-search {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+  }
+
+  .guide-masthead {
+    font-size: 21px;
+  }
+
+  .guide-body {
+    flex-direction: column-reverse;
+  }
+
+  .guide-spread {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .guide-cover {
+    left: -6px;
+    right: -6px;
+    transform-origin: 0 50%;
+  }
+
+  .guide-tabs {
+    flex-direction: row;
+    margin-right: 0;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .guide-tab {
+    flex: none;
+    min-height: 26px;
+    border-radius: 4px 4px 0 0;
+  }
+}
