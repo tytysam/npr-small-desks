@@ -8,9 +8,19 @@
  * the existing file is kept, so builds work anywhere once it's committed.
  *
  * Quota: playlistItems.list and videos.list cost 1 unit per 50 videos each,
- * versus 100 units for every search.list the app used to make per visit.
+ * versus 100 units for every search.list the app used to make per visit. To
+ * keep routine runs to a unit or two:
+ *
+ * - Skipped if the list was checked in the last day (`--force` to run anyway).
+ * - Incremental: uploads come newest first, so paging stops at the first
+ *   video already in channels.json, and only new videos get looked up.
+ * - A full sweep (every upload, every video re-checked, which drops ones that
+ *   were deleted or made unembeddable) runs weekly, or with `--full`.
+ *
+ * When it last checked / swept is kept in node_modules/.cache, not in
+ * channels.json, so a run that finds nothing new leaves the file untouched.
  */
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -20,6 +30,11 @@ const NPR_MUSIC_CHANNEL = 'UC4eYXhJI4-7wSWc8UNRwD4A';
 const UPLOADS_PLAYLIST = `UU${NPR_MUSIC_CHANNEL.slice(2)}`;
 const MAX_PAGES = 200; // 10,000 uploads; NPR Music has a few thousand
 const MIN_SECONDS = 120; // drop Shorts and trailers
+const CACHE = join(ROOT, 'node_modules', '.cache', 'fetch-channels.json');
+const FRESH_MS = 24 * 60 * 60 * 1000;
+const FULL_SWEEP_MS = 7 * 24 * 60 * 60 * 1000;
+
+const args = new Set(process.argv.slice(2));
 
 const API = 'https://www.googleapis.com/youtube/v3';
 
@@ -63,7 +78,17 @@ const parseDuration = (iso) => {
   return d * 86400 + h * 3600 + min * 60 + s;
 };
 
+const readJson = (file) => {
+  try {
+    return JSON.parse(readFileSync(file, 'utf8'));
+  } catch {
+    return null;
+  }
+};
+
+let unitsUsed = 0;
 const get = async (path, params) => {
+  unitsUsed += 1; // playlistItems.list and videos.list are 1 unit per call
   const url = new URL(`${API}/${path}`);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
   const res = await fetch(url);
@@ -84,10 +109,27 @@ const main = async () => {
     return;
   }
 
-  // 1. Every upload's id + title (newest first).
+  const existing = readJson(OUT)?.channels ?? [];
+  const cache = readJson(CACHE) ?? {};
+  const now = Date.now();
+  // Without a cache (fresh clone, CI), the file's own date stands in for the last check.
+  const lastChecked = Date.parse(cache.checkedAt ?? readJson(OUT)?.generatedAt ?? 0) || 0;
+  const lastSwept = Date.parse(cache.sweptAt ?? 0) || 0;
+  const full = args.has('--full') || existing.length === 0 || (cache.sweptAt && now - lastSwept > FULL_SWEEP_MS);
+
+  if (!full && !args.has('--force') && now - lastChecked < FRESH_MS) {
+    console.log('[channels] Checked within the last day; skipping (npm run channels -- --force to refresh).');
+    return;
+  }
+
+  const known = new Map(existing.map((c) => [c.id, c]));
+
+  // 1. Uploads' ids + titles, newest first: all of them on a full sweep,
+  // otherwise only those newer than the newest video we already have.
   const candidates = [];
   let pageToken = '';
-  for (let page = 0; page < MAX_PAGES; page += 1) {
+  let reachedKnown = false;
+  for (let page = 0; page < MAX_PAGES && !reachedKnown; page += 1) {
     const data = await get('playlistItems', {
       part: 'snippet',
       playlistId: UPLOADS_PLAYLIST,
@@ -96,6 +138,11 @@ const main = async () => {
       ...(pageToken && { pageToken }),
     });
     data.items.forEach(({ snippet }) => {
+      if (reachedKnown) return;
+      if (!full && known.has(snippet.resourceId.videoId)) {
+        reachedKnown = true;
+        return;
+      }
       const title = decodeEntities(snippet.title);
       if (isTinyDesk(title)) {
         candidates.push({ id: snippet.resourceId.videoId, title, publishedAt: snippet.publishedAt });
@@ -118,7 +165,7 @@ const main = async () => {
     );
   }
 
-  const channels = candidates
+  const found = candidates
     .map((c) => ({ ...c, ...details.get(c.id) }))
     .filter((c) => c.playable && c.duration >= MIN_SECONDS)
     .map(({ id, title, publishedAt, duration }) => ({
@@ -128,11 +175,25 @@ const main = async () => {
       publishedAt: publishedAt.slice(0, 10),
       duration,
     }));
+  // Incremental: the new videos go on top of the ones we already had.
+  const channels = full ? found : [...found, ...existing];
 
   if (channels.length === 0) throw new Error('No playable Tiny Desk videos found; not overwriting channels.json.');
 
-  writeFileSync(OUT, JSON.stringify({ generatedAt: new Date().toISOString(), channels }, null, 0) + '\n');
-  console.log(`[channels] Wrote ${channels.length} videos to public/channels.json.`);
+  const stamp = new Date(now).toISOString();
+  mkdirSync(dirname(CACHE), { recursive: true });
+  // Never swept on this machine yet? Start the weekly clock now.
+  writeFileSync(CACHE, JSON.stringify({ checkedAt: stamp, sweptAt: full ? stamp : cache.sweptAt ?? stamp }) + '\n');
+
+  const unchanged = channels.length === existing.length && channels.every((c, i) => JSON.stringify(c) === JSON.stringify(existing[i]));
+  const how = `${full ? 'full sweep' : 'incremental'}, ${unitsUsed} quota ${unitsUsed === 1 ? 'unit' : 'units'}`;
+  if (unchanged) {
+    console.log(`[channels] No changes (${how}); public/channels.json left as is.`);
+    return;
+  }
+  writeFileSync(OUT, JSON.stringify({ generatedAt: stamp, channels }, null, 0) + '\n');
+  const added = full ? channels.length - existing.length : found.length;
+  console.log(`[channels] Wrote ${channels.length} videos (${added >= 0 ? '+' : ''}${added}) to public/channels.json (${how}).`);
 };
 
 main().catch((err) => {

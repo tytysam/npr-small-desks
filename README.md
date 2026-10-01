@@ -9,9 +9,16 @@ The lineup lives in `public/channels.json`, built by
 `scripts/fetch-channels.mjs` from NPR Music's uploads playlist. The app only
 fetches that static file, so no YouTube API key reaches the browser.
 
-- `npm run channels` refreshes it (roughly 100–200 quota units for ~1,900 videos).
-- It also runs automatically before `npm run build`. Without a key, the
-  existing file is kept, so commit it.
+- `npm run channels` refreshes it, and it also runs before `npm run build`.
+  Routine runs are cheap: it skips if it checked in the last day, and
+  otherwise only pages back to the newest video it already has (1–2 quota
+  units). Once a week it does a full sweep (roughly 100–250 units) to drop
+  videos that were removed or can no longer be embedded.
+- `npm run channels -- --force` checks now; `-- --full` forces a full sweep.
+  When it last checked is kept in `node_modules/.cache`, so a run that finds
+  nothing new doesn't touch `channels.json`.
+- Without a key, the existing file is kept, so commit it. Leave the key off
+  your hosting provider unless you want deploys to refresh the list.
 - Put the key in `.env` as `YOUTUBE_API_KEY=...` (the older
   `REACT_APP_YOUTUBE_API_KEY` name still works for the script, but the
   `REACT_APP_` prefix is meant for values that are safe to ship to browsers).
