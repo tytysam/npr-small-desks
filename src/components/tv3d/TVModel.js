@@ -293,12 +293,8 @@ const TVModel = ({
   onKnobDragging,
 }) => {
   // --- materials ---------------------------------------------------------
-  const walnutWood = useDisposable(() => makeWoodTexture({ palette: PALETTE.walnut }), []);
-  // The bezel is cut farther from the pith, so its grain runs straighter and finer.
-  const honeyWood = useDisposable(
-    () => makeWoodTexture({ palette: PALETTE.honey, seed: 42, size: 512, ringPx: 11, pithDepth: 0.3, taper: 0.2, warp: 1.2 }),
-    []
-  );
+  const walnutWood = useDisposable(() => makeWoodTexture('walnut'), []);
+  const honeyWood = useDisposable(() => makeWoodTexture('honey'), []);
   const walnut = useDisposable(() => makeWoodMaterial(walnutWood), [walnutWood]);
   const walnutShade = useDisposable(() => makeWoodMaterial(walnutWood, { tint: '#bfae9c', clearcoat: 0.35 }), [walnutWood]);
   const honey = useDisposable(() => makeWoodMaterial(honeyWood, { clearcoat: 0.7 }), [honeyWood]);

@@ -38,7 +38,7 @@
   right: 12%;
   z-index: 2;
   width: 40px;
-  height: 104px;
+  height: 92px; /* the ball mount sits on the top board */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -113,66 +113,106 @@
   box-shadow: 0 2px 2px rgba(0, 0, 0, 0.5);
 }
 
-/* ---- Cabinet ------------------------------------------------------------ */
+/* ---- Wood ---------------------------------------------------------------
+   Every wooden part shows the shared procedural grain (--wood-walnut /
+   --wood-honey, painted by useWoodImages — the same wood as the 3D set) under
+   CSS lighting. Until it's painted, the gradients and SVG grain beneath stand
+   in, and fade out once --wood-ready is set. */
+
+.tv-top-board,
+.tv-console,
+.tv-board,
+.tv-plinth,
+.tv-leg {
+  --wood: var(--wood-walnut, linear-gradient(transparent, transparent));
+  /* soft-light warmth, standing in for the 3D set's warm key light on varnish */
+  --wood-warmth: linear-gradient(rgba(255, 150, 60, 0.42), rgba(255, 150, 60, 0.42));
+  --wood-fallback: repeating-linear-gradient(
+    178deg,
+    var(--walnut-mid) 0px,
+    #6b4020 9px,
+    var(--walnut-mid) 16px,
+    #4a2a10 27px,
+    var(--walnut-mid) 41px,
+    #744824 58px,
+    var(--walnut-mid) 74px
+  );
+  transition: background-image 0.6s;
+}
+
+/* ---- Top board: overhangs the cabinet a little, lighter along its edge ------ */
+
+.tv-top-board {
+  position: relative;
+  z-index: 2;
+  width: calc(100% + 16px);
+  height: 14px;
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, rgba(255, 228, 190, 0.4), rgba(255, 228, 190, 0.08) 45%, rgba(0, 0, 0, 0.3)),
+    var(--wood-warmth),
+    var(--wood) 0 38% / 1100px auto,
+    var(--wood-fallback);
+  background-blend-mode: normal, soft-light, normal, normal;
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(0, 0, 0, 0.7);
+}
+
+/* ---- Cabinet: a raised walnut rim around a recessed front board -------------- */
 
 .tv-console {
   position: relative;
   width: 100%;
-  padding: 0 22px 16px;
-  border-radius: 14px 14px 10px 10px;
+  margin-top: -2px;
+  padding: 18px;
+  border-radius: 6px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 12%, transparent 85%, rgba(0, 0, 0, 0.35)),
-    repeating-linear-gradient(
-      178deg,
-      var(--walnut-mid) 0px,
-      #6b4020 9px,
-      var(--walnut-mid) 16px,
-      #4a2a10 27px,
-      var(--walnut-mid) 41px,
-      #744824 58px,
-      var(--walnut-mid) 74px
-    );
+    linear-gradient(118deg, rgba(255, 240, 215, 0.14), transparent 32%, transparent 68%, rgba(0, 0, 0, 0.22)),
+    var(--wood-warmth),
+    var(--wood) center / cover,
+    var(--wood-fallback);
+  background-blend-mode: normal, soft-light, normal, normal;
   box-shadow:
-    inset 2px 0 0 rgba(255, 210, 160, 0.14),
-    inset -3px 0 0 rgba(0, 0, 0, 0.4),
+    /* the rim's rounded outer edge, lit from the top left */
+    inset 0 2px 0 rgba(255, 225, 185, 0.32),
+    inset 2px 0 0 rgba(255, 225, 185, 0.2),
+    inset -2px 0 0 rgba(0, 0, 0, 0.4),
     inset 0 -3px 0 rgba(0, 0, 0, 0.45),
     0 24px 48px rgba(0, 0, 0, 0.7),
     0 4px 8px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
 }
 
-/* organic grain layer */
-.tv-console::before {
+/* SVG grain over the CSS wood, until the real grain arrives */
+.tv-console::before,
+.tv-board::before {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
   filter: url(#tv-wood-grain);
-  opacity: 0.7;
   mix-blend-mode: multiply;
+  opacity: calc(0.7 * (1 - var(--wood-ready, 0)));
+  transition: opacity 0.6s;
   pointer-events: none;
 }
 
-/* varnish sheen */
-.tv-console::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(115deg, rgba(255, 255, 255, 0.1), transparent 35%, transparent 70%, rgba(255, 255, 255, 0.04));
-  pointer-events: none;
-}
-
-/* Lighter end-grain edge of the top board, with a shadow line where it overhangs the front. */
-.tv-top-lip {
+/* The front board sits a step below the rim, which shades its top and left edges. */
+.tv-board {
   position: relative;
   z-index: 1;
-  height: 16px;
-  margin: 0 -22px 18px;
+  padding: 16px;
+  border-radius: 3px;
   background:
-    linear-gradient(180deg, rgba(255, 230, 190, 0.35), transparent 40%, rgba(0, 0, 0, 0.25)),
-    linear-gradient(90deg, #8a5a2e, #9c6a38 30%, #87552a 60%, #9a6634);
-  box-shadow: 0 3px 4px rgba(0, 0, 0, 0.55), 0 1px 0 rgba(0, 0, 0, 0.6);
+    linear-gradient(118deg, rgba(255, 240, 215, 0.1), transparent 35%, transparent 70%, rgba(0, 0, 0, 0.18)),
+    var(--wood-warmth),
+    var(--wood) 35% 65% / cover,
+    var(--wood-fallback);
+  background-blend-mode: normal, soft-light, normal, normal;
+  box-shadow:
+    inset 0 7px 9px -3px rgba(0, 0, 0, 0.6),
+    inset 6px 0 8px -4px rgba(0, 0, 0, 0.45),
+    inset -3px 0 4px -2px rgba(0, 0, 0, 0.3),
+    inset 0 -2px 0 rgba(255, 220, 170, 0.14),
+    0 0 0 1px rgba(20, 10, 3, 0.55);
 }
 
 .tv-front {
@@ -182,17 +222,21 @@
   gap: 18px;
 }
 
-/* ---- Honey-wood frame + tube ------------------------------------------- */
+/* ---- Honey-wood bezel + tube -------------------------------------------------
+   A narrow flat face with squared corners that rolls inward to the pillow-shaped
+   opening, as on the 3D set. The roll is drawn by the tube's shadow rings. */
 
 .tv-frame {
   position: relative;
   flex: 1;
   min-width: 0;
-  padding: 26px;
-  border-radius: 22px;
-  overflow: hidden; /* clip the grain filter to the rounded corners */
+  padding: 22px;
+  border-radius: 6px;
+  overflow: hidden;
   background:
-    linear-gradient(180deg, rgba(255, 240, 210, 0.3), transparent 18%, transparent 80%, rgba(0, 0, 0, 0.25)),
+    linear-gradient(180deg, rgba(255, 245, 220, 0.14), transparent 18%, transparent 80%, rgba(60, 30, 5, 0.22)),
+    linear-gradient(rgba(255, 175, 60, 0.55), rgba(255, 175, 60, 0.55)),
+    var(--wood-honey, linear-gradient(transparent, transparent)) 50% 50% / cover,
     repeating-linear-gradient(
       176deg,
       var(--honey-mid) 0px,
@@ -203,18 +247,17 @@
       #cd9150 47px,
       var(--honey-mid) 60px
     );
+  background-blend-mode: normal, soft-light, normal, normal;
+  transition: background-image 0.6s;
   box-shadow:
-    /* rounded outer edge */
-    inset 0 2px 0 rgba(255, 235, 200, 0.55),
-    inset 2px 0 0 rgba(255, 235, 200, 0.3),
-    inset 0 -3px 0 rgba(60, 30, 5, 0.5),
-    inset -2px 0 0 rgba(60, 30, 5, 0.35),
-    /* the frame curves down toward the glass */
-    inset 0 0 0 10px rgba(255, 220, 170, 0.08),
-    inset 0 0 18px 6px rgba(80, 40, 10, 0.35),
-    /* sits proud of the cabinet */
+    /* eased outer edge of the flat face */
+    inset 0 2px 0 rgba(255, 240, 210, 0.65),
+    inset 2px 0 0 rgba(255, 240, 210, 0.35),
+    inset 0 -2px 0 rgba(70, 35, 8, 0.5),
+    inset -2px 0 0 rgba(70, 35, 8, 0.35),
+    /* sits proud of the front board */
     0 3px 6px rgba(0, 0, 0, 0.55),
-    0 0 0 2px rgba(40, 20, 5, 0.6);
+    0 0 0 1px rgba(40, 20, 5, 0.65);
 }
 
 .tv-frame::before {
@@ -224,7 +267,8 @@
   border-radius: inherit;
   filter: url(#tv-wood-grain-fine);
   mix-blend-mode: multiply;
-  opacity: 0.8;
+  opacity: calc(0.8 * (1 - var(--wood-ready, 0)));
+  transition: opacity 0.6s;
   pointer-events: none;
 }
 
@@ -237,9 +281,15 @@
   background: #000;
   box-shadow:
     /* dark lip where the wood meets the glass */
-    0 0 0 5px #1e140a,
-    0 0 0 6px rgba(255, 220, 170, 0.35),
-    0 -2px 6px 6px rgba(40, 20, 5, 0.45),
+    0 0 0 2px #140c05,
+    /* the cove: deepest by the glass, easing out to the flat face */
+    0 0 0 4px rgba(30, 17, 6, 0.85),
+    0 0 0 7px rgba(70, 38, 12, 0.5),
+    0 0 0 11px rgba(120, 70, 25, 0.28),
+    0 0 0 16px rgba(150, 95, 40, 0.12),
+    /* top-lit: the upper roll falls into shadow, the lower catches light */
+    0 -7px 10px 5px rgba(25, 12, 2, 0.35),
+    0 9px 8px 1px rgba(255, 228, 175, 0.22),
     inset 0 0 0 2px #000;
   overflow: hidden;
 }
@@ -338,10 +388,11 @@
   align-items: center;
   gap: 16px;
   margin-top: 16px;
-  padding: 10px 14px;
-  border-radius: 4px;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.18), transparent 30%, rgba(255, 220, 170, 0.05));
-  box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.45), 0 -1px 0 rgba(255, 220, 170, 0.18), inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+  padding: 9px 13px;
+  /* a groove routed into the front board, as on the 3D set */
+  border: 2px solid rgba(24, 12, 4, 0.85);
+  border-radius: 5px;
+  box-shadow: 0 1px 0 rgba(255, 225, 180, 0.2), inset 0 1px 0 rgba(255, 225, 180, 0.12);
 }
 
 .tv-badge {
@@ -543,55 +594,69 @@
   box-shadow: 0 0 0 2px var(--amber), 0 2px 3px rgba(0, 0, 0, 0.7);
 }
 
-/* ---- Plinth + legs ------------------------------------------------------ */
+/* ---- Base + slab legs: darker walnut, as on the 3D set -------------------- */
 
 .tv-plinth {
-  width: 90%;
-  height: 10px;
+  width: 92%;
+  height: 12px;
   margin-top: -1px;
   border-radius: 0 0 4px 4px;
-  background: linear-gradient(180deg, var(--walnut-dark), #4a2a12 50%, #2a1606);
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.5)),
+    var(--wood-warmth),
+    var(--wood) 0 55% / 1100px auto,
+    var(--wood-fallback);
+  background-blend-mode: normal, soft-light, normal, normal;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 220, 170, 0.12);
 }
 
 .tv-legs {
   display: flex;
   justify-content: space-between;
-  width: 80%;
+  width: 82%;
 }
 
+/* Tapered slabs, broad face forward, splayed outward from the base. */
 .tv-leg {
   position: relative;
-  width: 26px;
-  height: 72px;
+  width: 44px;
+  height: 74px;
   background:
-    linear-gradient(90deg, rgba(255, 220, 170, 0.25), transparent 30%, transparent 60%, rgba(0, 0, 0, 0.45)),
-    linear-gradient(180deg, var(--walnut-light), var(--walnut-mid) 60%, var(--walnut-dark));
-  clip-path: polygon(0 0, 100% 0, 70% 100%, 30% 100%);
+    linear-gradient(90deg, rgba(255, 225, 185, 0.22), transparent 28%, transparent 62%, rgba(0, 0, 0, 0.45)),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.4)),
+    var(--wood-warmth),
+    var(--wood) 30% 40% / 600px auto,
+    var(--wood-fallback);
+  background-blend-mode: normal, normal, soft-light, normal, normal;
+  clip-path: polygon(0 0, 100% 0, 76% 100%, 24% 100%);
   transform-origin: top center;
 }
 
-.tv-leg-left { transform: rotate(12deg); }
-.tv-leg-right { transform: rotate(-12deg); }
+.tv-leg-left { transform: rotate(17deg); }
+.tv-leg-right { transform: rotate(-17deg); }
 
 /* ---- Small screens ------------------------------------------------------ */
 
 @media (max-width: 680px) {
   .tv-set {
-    padding-top: 60px;
+    padding-top: 52px;
   }
 
   .tv-antenna {
-    height: 72px;
+    height: 54px;
+  }
+
+  .tv-top-board {
+    width: calc(100% + 10px);
+    height: 10px;
   }
 
   .tv-console {
-    padding: 0 14px 12px;
+    padding: 10px;
   }
 
-  .tv-top-lip {
-    margin: 0 -14px 14px;
-    height: 12px;
+  .tv-board {
+    padding: 10px;
   }
 
   .tv-front {
@@ -600,8 +665,19 @@
   }
 
   .tv-frame {
-    padding: 16px;
-    border-radius: 16px;
+    padding: 14px;
+  }
+
+  .tv-tube {
+    box-shadow:
+      0 0 0 2px #140c05,
+      0 0 0 3px rgba(30, 17, 6, 0.85),
+      0 0 0 5px rgba(70, 38, 12, 0.5),
+      0 0 0 8px rgba(120, 70, 25, 0.28),
+      0 0 0 11px rgba(150, 95, 40, 0.12),
+      0 -5px 7px 3px rgba(25, 12, 2, 0.35),
+      0 6px 6px 1px rgba(255, 228, 175, 0.22),
+      inset 0 0 0 2px #000;
   }
 
   .tv-column {
@@ -630,7 +706,7 @@
   }
 
   .tv-leg {
-    width: 20px;
-    height: 48px;
+    width: 30px;
+    height: 50px;
   }
 }

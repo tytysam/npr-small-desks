@@ -4,8 +4,10 @@ import VolumeKnob from './VolumeKnob';
 import ChannelKnob from './ChannelKnob';
 import BrightnessKnob from './BrightnessKnob';
 import Antenna from './Antenna';
+import useWoodImages from '../hooks/useWoodImages';
 import './TV.css';
 
+// The CSS wood shown until the shared grain (useWoodImages) is painted:
 // feTurbulence has no source image, so these filters paint organic grain onto
 // whatever element references them. Stretched horizontally for a veneer look;
 // the fine variant is for the lighter honey-wood screen frame.
@@ -29,11 +31,13 @@ const WoodGrainFilters = () => (
 );
 
 /**
- * Mid-century wooden set: walnut cabinet with an overhanging top lip, a
- * honey-wood picture frame around a pillow-shaped tube, a recessed metal
- * control column with chrome knurled dials and a perforated speaker, a lower
+ * Mid-century wooden set, built like the 3D model: an overhanging top board,
+ * a walnut cabinet whose raised rim frames a recessed front board, a slim
+ * honey-wood bezel rolling in to a pillow-shaped tube, a recessed metal control
+ * column with chrome knurled dials and a perforated speaker, a grooved lower
  * rail carrying the tuning strip (artist name) and pilot lamp, a telescoping
- * antenna and splayed legs.
+ * antenna, and a base on splayed slab legs. The wood is the same procedural
+ * grain the 3D set uses.
  */
 const TV = ({
   screen,
@@ -51,79 +55,86 @@ const TV = ({
   artistName,
   antenna,
 }) => {
+  const wood = useWoodImages();
+  const woodStyle = wood
+    ? { '--wood-walnut': `url(${wood.walnut})`, '--wood-honey': `url(${wood.honey})`, '--wood-ready': 1 }
+    : undefined;
+
   return (
-    <div className="tv-set">
+    <div className="tv-set" style={woodStyle}>
       <WoodGrainFilters />
 
       <Antenna {...antenna} />
 
-      <div className="tv-console">
-        <div className="tv-top-lip" aria-hidden="true" />
+      <div className="tv-top-board" aria-hidden="true" />
 
-        <div className="tv-front">
-          <div className="tv-frame">
-            <div className="tv-tube">
-              <Screen {...screen} />
+      <div className="tv-console">
+        <div className="tv-board">
+          <div className="tv-front">
+            <div className="tv-frame">
+              <div className="tv-tube">
+                <Screen {...screen} />
+              </div>
+            </div>
+
+            <div className="tv-column">
+              <div className="knob-group">
+                <ChannelKnob dialPosition={dialPosition} onChannelChange={onChannelChange} />
+                <span className="knob-label">Channel</span>
+              </div>
+
+              <div className="knob-group">
+                <VolumeKnob volume={volume} onVolumeChange={onVolumeChange} />
+                <span className="knob-label">Volume</span>
+              </div>
+
+              <div className="tv-speaker" aria-hidden="true" />
+
+              <button
+                type="button"
+                className={`tv-switch ${isOn ? 'is-on' : ''}`}
+                role="switch"
+                aria-checked={isOn}
+                aria-label="Power"
+                onClick={onPowerToggle}
+              >
+                <span className="tv-switch-slider" />
+              </button>
             </div>
           </div>
 
-          <div className="tv-column">
-            <div className="knob-group">
-              <ChannelKnob dialPosition={dialPosition} onChannelChange={onChannelChange} />
-              <span className="knob-label">Channel</span>
+          <div className="tv-rail">
+            <div className="tv-badge">
+              <button type="button" className="tv-badge-knob" aria-label="Menu" title="Menu" onClick={onMenuToggle} />
+              <span className="tv-badge-text" aria-hidden="true">NP-R1</span>
             </div>
 
-            <div className="knob-group">
-              <VolumeKnob volume={volume} onVolumeChange={onVolumeChange} />
-              <span className="knob-label">Volume</span>
+            <div className="tv-tuning-strip">
+              <span className="tv-tuning-text">{artistName || 'Tiny Desk'}</span>
             </div>
 
-            <div className="tv-speaker" aria-hidden="true" />
+            <div className="tv-louvres" aria-hidden="true">
+              {Array.from({ length: 5 }, (_, i) => (
+                <span key={i} className="tv-louvre" />
+              ))}
+            </div>
 
             <button
               type="button"
-              className={`tv-switch ${isOn ? 'is-on' : ''}`}
+              className={`tv-lever ${paused ? '' : 'is-up'}`}
               role="switch"
-              aria-checked={isOn}
-              aria-label="Power"
-              onClick={onPowerToggle}
+              aria-checked={!paused}
+              aria-label="Play"
+              title={paused ? 'Paused' : 'Playing'}
+              onClick={onPauseToggle}
             >
-              <span className="tv-switch-slider" />
+              <span className="tv-lever-handle" />
+              <span className="tv-lever-nut" />
             </button>
+
+            <div className={`tv-lamp ${isOn ? 'is-on' : ''}`} title={isOn ? 'On' : 'Off'} />
+            <BrightnessKnob brightness={brightness} onBrightnessChange={onBrightnessChange} />
           </div>
-        </div>
-
-        <div className="tv-rail">
-          <div className="tv-badge">
-            <button type="button" className="tv-badge-knob" aria-label="Menu" title="Menu" onClick={onMenuToggle} />
-            <span className="tv-badge-text" aria-hidden="true">NP-R1</span>
-          </div>
-
-          <div className="tv-tuning-strip">
-            <span className="tv-tuning-text">{artistName || 'Tiny Desk'}</span>
-          </div>
-
-          <div className="tv-louvres" aria-hidden="true">
-            {Array.from({ length: 5 }, (_, i) => (
-              <span key={i} className="tv-louvre" />
-            ))}
-          </div>
-
-          <button
-            type="button"
-            className={`tv-lever ${paused ? '' : 'is-up'}`}
-            role="switch"
-            aria-checked={!paused}
-            aria-label="Play"
-            title={paused ? 'Paused' : 'Playing'}
-            onClick={onPauseToggle}
-          >
-            <span className="tv-lever-handle" />
-            <span className="tv-lever-nut" />
-          </button>
-
-          <div className={`tv-lamp ${isOn ? 'is-on' : ''}`} title={isOn ? 'On' : 'Off'} />
-          <BrightnessKnob brightness={brightness} onBrightnessChange={onBrightnessChange} />
         </div>
       </div>
 

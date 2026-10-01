@@ -143,6 +143,16 @@ It glows on a first visit until opened once. It's a proper modal (focus moves
 in and back, Esc / ✕ / click outside close it) and the TV's shortcuts pause
 while it's open. Both sets' badges now read NP-R1. `src/components/Help.js`.
 
+### 2.9 2D set, rebuilt to match 3D — **Done**
+The 2D cabinet now follows the 3D model's construction (overhanging top
+board, raised walnut rim around a recessed front board, slim honey bezel
+rolling in to the tube, grooved rail, base on splayed slab legs), keeping its
+larger picture. Both sets share one wood generator (`src/js/woodGrain.js`):
+3D wraps the canvases as textures, 2D uses them as CSS backgrounds
+(`useWoodImages`), painted once per visit in idle time (~150 ms, after first
+paint); CSS wood stands in until then. Knobs, buttons and the control column
+are unchanged.
+
 ---
 
 ## 3. New features
