@@ -10,6 +10,7 @@ export const CRT_ITEMS = [
   { key: 'degauss', label: 'Degauss', type: 'toggle' },
   { key: 'vhs', label: 'VHS', type: 'toggle' },
   { key: 'hiss', label: 'Hiss', type: 'toggle' },
+  { key: 'captions', label: 'Captions', type: 'toggle' },
 ];
 
 export const CRT_DEFAULTS = {
@@ -20,6 +21,7 @@ export const CRT_DEFAULTS = {
   degauss: true,
   vhs: false,
   hiss: true,
+  captions: false,
 };
 
 const LEVEL_MAX = 10;

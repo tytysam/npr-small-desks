@@ -9,7 +9,7 @@ const CONTROLS = [
   ['Lever', 'Down to pause, up to play.'],
   ['Slide switch', 'Power. (Also the classic fix for no signal.)'],
   ['Black knob', 'Brightness.'],
-  ['Chrome knob by the badge', 'MENU: scanlines, VHS mode, Live vs. VCR.'],
+  ['Chrome knob by the badge', 'MENU: scanlines, VHS mode, captions, Live vs. VCR.'],
   ['TV listings', "The guide on top of the set. Find an artist, tap to tune."],
   ['2D / 3D', 'Same set, in 3D. Drag to look around.'],
 ];

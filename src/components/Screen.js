@@ -81,8 +81,9 @@ const crtStyle = (crt, brightness) => ({
  *
  * All controls live on the set, so none of YouTube's own UI should show:
  * the player is sized to fill the tube (cropping the 16:9 frame's sides),
- * a shield keeps the pointer from summoning its hover overlay, captions are
- * unloaded, and static covers the picture until each video actually plays —
+ * a shield keeps the pointer from summoning its hover overlay, captions stay
+ * off (unless turned on in SETUP), and static covers the picture until each
+ * video actually plays —
  * hiding the title bar and "More videos" YouTube shows while loading.
  *
  * `interference` (0–1, from the antenna) layers snow over the picture and
@@ -99,6 +100,8 @@ const Screen = ({
   error,
   onEnded,
   onProgress,
+  onPlayerPlay,
+  onPlayerPause,
   startAt = 0,
   interference = 0,
   crt = CRT_DEFAULTS,
@@ -131,26 +134,45 @@ const Screen = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tuning, url]);
 
-  const hideCaptions = useCallback(() => {
+  // Captions follow the SETUP setting: off by default to keep the picture
+  // clean, or the video's English track (else its first) when turned on.
+  const captionsRef = useRef(crt.captions);
+  captionsRef.current = crt.captions;
+  const applyCaptions = useCallback(() => {
     const player = playerRef.current?.getInternalPlayer();
     if (!player) return;
-    player.setOption?.('captions', 'track', {});
-    player.unloadModule?.('captions');
-    player.unloadModule?.('cc');
+    if (!captionsRef.current) {
+      player.setOption?.('captions', 'track', {});
+      player.unloadModule?.('captions');
+      player.unloadModule?.('cc');
+      return;
+    }
+    player.loadModule?.('captions');
+    // Always (re)select a track: after captions were hidden, YouTube can
+    // still report one as current without showing it. The tracklist leaves
+    // out auto-generated tracks (most Tiny Desk captions), so fall back to
+    // English, which picks those up.
+    const tracks = player.getOption?.('captions', 'tracklist') ?? [];
+    const current = player.getOption?.('captions', 'track')?.languageCode;
+    const listed = tracks.find((t) => t.languageCode?.startsWith('en')) ?? tracks[0];
+    player.setOption?.('captions', 'track', { languageCode: current || listed?.languageCode || 'en' });
   }, []);
 
+  useEffect(() => applyCaptions(), [crt.captions, applyCaptions]);
+
   // YouTube (re)loads its captions module lazily for each video and fires
-  // onApiChange when it does — the moment to switch them off again.
+  // onApiChange when it does — the moment to apply the setting again.
   const handleReady = useCallback(() => {
     const player = playerRef.current?.getInternalPlayer();
-    player?.addEventListener?.('onApiChange', hideCaptions);
-    hideCaptions();
-  }, [hideCaptions]);
+    player?.addEventListener?.('onApiChange', applyCaptions);
+    applyCaptions();
+  }, [applyCaptions]);
 
   const handlePlay = useCallback(() => {
-    hideCaptions();
+    applyCaptions();
     setStartedUrl(url);
-  }, [hideCaptions, url]);
+    onPlayerPlay?.();
+  }, [applyCaptions, url, onPlayerPlay]);
 
   let picture;
   let variant = '';
@@ -179,6 +201,7 @@ const Screen = ({
             progressInterval={500}
             onReady={handleReady}
             onPlay={handlePlay}
+            onPause={onPlayerPause}
             onProgress={onProgress}
             onEnded={onEnded}
             onError={onEnded /* skip videos that won't play (removed, region-locked) */}

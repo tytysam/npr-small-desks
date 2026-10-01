@@ -198,6 +198,7 @@ or ←/→) changes it.
 | Degauss | Colour shiver as each new picture locks in |
 | VHS | Tape jitter, colour bleed, a rolling tracking band, and PLAY ▶ |
 | Hiss | Tuning hiss (3.3) |
+| Captions | The video's captions (4.3) |
 
 Settings persist. `src/js/crtSettings.js` (unit-tested),
 `src/components/Osd.js` (`SetupMenu`), `src/components/Screen.css`.
@@ -265,14 +266,56 @@ drawn over either set (one page on phones).
   (unit-tested), `src/components/Guide.js`, `GuideStack` in
   `tv3d/TVModel.js`.
 
-### Later ideas
-- **Watch-together.** Live viewer counts and shared channel changes over a
-  realtime service (PartyKit, Liveblocks, Supabase Realtime). Layer on top of
-  broadcast mode; the hard parts are iframe sync and autoplay policy.
-- **Themed channels.** Map the 12 dial positions to curated lists (jazz,
-  hip-hop, indie, home concerts, by year).
-- **More set styles.** 1950s Bakelite, 1980s silver portable, Trinitron.
-  The 2D tokens (`TV.css`) and 3D palette (`tv3d/materials.js`) keep this
-  mostly declarative.
-- **A "small desk" room.** The 3D set on a desk with a lamp, tinted by the
-  current video's thumbnail colour (the iframe itself can't be sampled).
+---
+
+## 4. Next
+
+Ideas agreed for after the TV guide. 4.1 and 4.3 are done, 4.2 was tried
+and dropped; the rest are
+unscheduled, roughly in order of size.
+
+### Quick wins
+- **4.1 Lock-screen and media-key controls — Done.** The Media Session API:
+  the artist, channel and thumbnail on the lock screen / OS media hub, and
+  play/pause plus next/previous (channel up/down) from media keys
+  (`src/App.js`). In practice media keys usually reach YouTube's player
+  directly (it's the frame playing audio), so the set also follows the
+  player's own play/pause events: the lever, PAUSE and the next toggle stay
+  true however the video was paused.
+- **4.2 Thumbnails in the guide — Dropped.** Halftone thumbnails beside each
+  listing and on the cover were tried; they cluttered the page. Thumbnails
+  remain only as the lock-screen artwork (`src/js/thumbnails.js`).
+- **4.3 Captions option — Done.** A Captions row in SETUP for people who
+  need them (off by default to keep the picture clean). On selects the
+  video's English track, including YouTube's auto-generated ones (else its
+  first track). About a quarter of the lineup, mostly older concerts, has no
+  captions at all, so nothing can show on those. `src/components/Screen.js`.
+- **4.4 Control sounds.** Synthesized like the hiss: dial detent clicks, the
+  power switch's clunk, the lever's snap. Follows volume and mute.
+
+### Medium
+- **4.5 Station IDs.** A 3–4 s NP-R1 ident (test card, channel number,
+  chime) in the tube whenever the picture changes. On theme, and it hides
+  YouTube's title bar and pause glyph during each video's first seconds.
+- **4.6 Favourite channels.** Hold the dial (or a key) to store the current
+  channel in one of the 12 dial positions; the dial then steps through
+  favourites, and the guide marks them and gets a favourites page.
+- **4.7 Sleep timer.** A SETUP row (15 / 30 / 60 min) that powers the set
+  down with the CRT collapse.
+- **4.8 Themed channel bands.** Map dial positions to slices of the lineup:
+  by year (publish dates, already in the data), home concerts (titles), or
+  genre (YouTube tags, fetched with the existing details call).
+
+### Bigger
+- **4.9 Watch-together.** Live viewer counts per channel and an optional
+  "follow my channel" link over a realtime service (PartyKit, Liveblocks,
+  Supabase Realtime). Broadcast mode already keeps everyone in sync, so it
+  only carries presence and channel changes; autoplay policy is the catch.
+- **4.10 Phone as remote.** Open a link on a phone to control the set on a
+  laptop. Needs the same realtime layer as 4.9.
+- **4.11 More cabinets.** 1950s Bakelite, 1980s silver portable, Trinitron.
+  The 2D tokens (`TV.css`), the 3D palette (`tv3d/materials.js`) and the
+  shared wood generator keep much of this declarative.
+- **4.12 A "small desk" room.** The 3D set on a desk with a lamp, tinted by
+  the current concert's thumbnail colour (the iframe itself can't be
+  sampled).

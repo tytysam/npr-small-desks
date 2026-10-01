@@ -66,6 +66,9 @@ without a YouTube API key. A key is only needed to refresh the lineup; see
 | G | Open the TV guide |
 | ? | Owner's manual |
 
+Media keys and the lock screen work too: play/pause, and next/previous for
+channel up/down, with the artist and the concert's thumbnail shown.
+
 ### Live and VCR
 
 Channels are **live** by default. Every channel plays the whole lineup on a
@@ -92,6 +95,7 @@ control changes it, so it works the same with the knobs, keys, 2D or 3D.
 | Degauss | A colour shiver as each new picture locks in |
 | VHS | Tape jitter, colour bleed, a tracking band, and PLAY ▶ |
 | Hiss | Tuning hiss while the antenna moves |
+| Captions | The video's captions (English, including auto-generated, where the concert has any), off by default |
 
 ### The TV guide
 

@@ -15,6 +15,7 @@ import useShortcuts from './hooks/useShortcuts';
 import { BRIGHTNESS_MIN, BRIGHTNESS_MAX } from './js/picture';
 import { CRT_ITEMS } from './js/crtSettings';
 import { setHiss } from './js/hiss';
+import { mediaArtwork } from './js/thumbnails';
 import './App.css';
 
 // three.js and friends only load when the 3D set is first shown (or the
@@ -239,6 +240,79 @@ function App() {
     onHoldEnd: retune.stopScan,
   };
 
+  // --- lock screen and media keys -----------------------------------------
+  // The Media Session shows what's on in the OS media controls (lock screen,
+  // media hub) and routes media keys to the set: play/pause, and next /
+  // previous as channel up / down.
+  const nowShowing = program?.video ?? null;
+  useEffect(() => {
+    const session = navigator.mediaSession;
+    if (!session || !nowShowing || station === null || typeof window.MediaMetadata !== 'function') return;
+    session.metadata = new window.MediaMetadata({
+      title: nowShowing.artist,
+      artist: `Tiny Desk Concert · CH ${station + 1}${program.live ? ' · Live' : ''}`,
+      album: 'NP-R1',
+      artwork: mediaArtwork(nowShowing.id),
+    });
+  }, [nowShowing, station, program?.live]);
+
+  useEffect(() => {
+    if (navigator.mediaSession) navigator.mediaSession.playbackState = isOn && !isPaused ? 'playing' : 'paused';
+  }, [isOn, isPaused]);
+
+  const mediaActionsRef = useRef({});
+  mediaActionsRef.current = {
+    play: () => (isPaused ? togglePause() : !isOn && togglePower()),
+    pause: () => !isPaused && togglePause(),
+    nexttrack: () => changeChannel(1),
+    previoustrack: () => changeChannel(-1),
+  };
+  useEffect(() => {
+    const session = navigator.mediaSession;
+    if (!session) return undefined;
+    const actions = Object.keys(mediaActionsRef.current);
+    actions.forEach((action) => {
+      try {
+        session.setActionHandler(action, () => mediaActionsRef.current[action]());
+      } catch {
+        // Not every browser supports every action.
+      }
+    });
+    return () =>
+      actions.forEach((action) => {
+        try {
+          session.setActionHandler(action, null);
+        } catch {
+          // ignore
+        }
+      });
+  }, []);
+
+  // Media keys and the lock screen usually reach YouTube's player directly,
+  // pausing or playing the video without going through the set. Follow the
+  // player, so the power switch, lever, PAUSE and the next toggle stay true to
+  // the picture. Pauses the set causes itself (power off, the CRT mode switch)
+  // are ignored.
+  const playerSyncRef = useRef({});
+  playerSyncRef.current = { isOn, isPaused, transition, live: Boolean(program?.live), rejoin: tuner.rejoin, togglePower };
+  const handlePlayerPause = useCallback(() => {
+    const { isOn: on, isPaused: paused, transition: phase } = playerSyncRef.current;
+    if (on && !paused && phase === 'idle') setIsPaused(true);
+  }, []);
+  const handlePlayerPlay = useCallback(() => {
+    const { isOn: on, isPaused: paused, live, rejoin: rejoinNow, togglePower: powerOn } = playerSyncRef.current;
+    if (!on) {
+      // Played while the set was off: switch it on (which also rejoins a live
+      // station), with the lever up.
+      powerOn();
+      setIsPaused(false);
+      return;
+    }
+    if (!paused) return;
+    if (live) rejoinNow(); // live TV doesn't wait, as with the lever
+    setIsPaused(false);
+  }, []);
+
   // --- playback ----------------------------------------------------------
   const handleProgress = useCallback(({ playedSeconds }) => {
     playedSecondsRef.current = playedSeconds;
@@ -342,6 +416,8 @@ function App() {
     error,
     onProgress: handleProgress,
     onEnded: tuner.programEnded,
+    onPlayerPlay: handlePlayerPlay,
+    onPlayerPause: handlePlayerPause,
     interference: isOn ? retune.interference : 0,
     crt,
     menu: menuOpen ? { items: CRT_ITEMS, selected: menuIndex, settings: crt } : null,
