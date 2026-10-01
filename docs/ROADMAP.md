@@ -159,9 +159,16 @@ are unchanged.
 
 ### 3.1 Broadcast mode — **Done**
 Each station runs the whole lineup back to back on a loop, starting from a
-different point (station k began with video k at 2026-01-01 UTC). What's on
-air is a pure function of the wall clock, so everyone tuned to the same
-station sees the same moment — shared TV without a server.
+different point. What's on air is a pure function of the wall clock (counted
+from 2026-01-01 UTC), so everyone tuned to the same station sees the same
+moment — shared TV without a server.
+
+- **Spread out.** At first station k began with video k, so neighbouring
+  stations showed the same concerts seconds apart. Now the loop plays in a
+  fixed shuffle (each concert placed by a hash of its video id, so new
+  uploads slot in without reordering the rest), and station k joins it at
+  {k·φ} of the way round. Golden-ratio spacing keeps every pair of
+  neighbours at least ~38% of the loop apart.
 
 - The OSD tags live stations **LIVE**; links share the station (`?ch=700`),
   and anyone opening one joins it mid-programme.
@@ -254,9 +261,6 @@ drawn over either set (one page on phones).
 - Picking a listing tunes like the dial (OSD, LAST, share link) and folds
   the book shut. It's a modal like the owner's manual; both now share
   `useDialog`.
-- Neighbouring stations often list the same artists a few minutes apart:
-  station k starts the lineup at video k, so adjacent stations are one
-  concert apart. That's the schedule (3.1), not the guide.
 - `src/js/listings.js` and `findAiring` in `src/js/schedule.js`
   (unit-tested), `src/components/Guide.js`, `GuideStack` in
   `tv3d/TVModel.js`.

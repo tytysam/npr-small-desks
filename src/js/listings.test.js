@@ -1,4 +1,4 @@
-import { makeSchedule, EPOCH_MS } from './schedule';
+import { makeSchedule, onAir, EPOCH_MS } from './schedule';
 import { PER_PAGE, pageOf, pageCount, indexTabs, listingFor, searchChannels } from './listings';
 
 const lineup = [
@@ -25,9 +25,16 @@ test('index tabs fall on each hundred', () => {
 });
 
 test('live listings give now and next with times', () => {
-  const entry = listingFor(schedule, 0, at(30), true);
-  expect(entry.now).toEqual({ index: 0, startMs: at(0), endMs: at(100), progress: 0.3 });
-  expect(entry.next).toEqual({ index: 1, startMs: at(100) });
+  for (let station = 0; station < lineup.length; station++) {
+    const now = at(30);
+    const on = onAir(schedule, station, now);
+    const entry = listingFor(schedule, station, now, true);
+    expect(entry.now.index).toBe(on.index);
+    expect(entry.now.startMs).toBeCloseTo(now - on.offset * 1000);
+    expect(entry.now.endMs).toBeCloseTo(now + on.remaining * 1000);
+    expect(entry.now.progress).toBeCloseTo(on.offset / (on.offset + on.remaining));
+    expect(entry.next).toEqual({ index: onAir(schedule, station, entry.now.endMs + 1).index, startMs: entry.now.endMs });
+  }
 });
 
 test('VCR listings are the station’s own concert', () => {

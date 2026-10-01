@@ -68,9 +68,11 @@ without a YouTube API key. A key is only needed to refresh the lineup; see
 
 ### Live and VCR
 
-Channels are **live** by default. Channel *k* plays the whole lineup on a
-loop, starting from concert *k* at 2026-01-01 UTC, so what's on is a pure
-function of the clock. Links share the channel (`?ch=700`), and whoever opens
+Channels are **live** by default. Every channel plays the whole lineup on a
+loop, in a fixed shuffled order, and each joins that loop at a different
+point spaced by the golden ratio, so neighbouring channels are never showing
+the same thing. What's on is a pure function of the clock (counted from
+2026-01-01 UTC). Links share the channel (`?ch=700`), and whoever opens
 one joins mid-concert, at the same moment as everyone else.
 
 Switch Broadcast to **VCR** in SETUP and each channel instead plays its own
