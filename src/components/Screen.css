@@ -13,17 +13,21 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
+  filter: var(--picture-filter, none);
 }
 
-/* Fill the 4:3 tube with the 16:9 frame (cropping its sides) with a touch of
-   overscan, the way a CRT hides the picture's edges. */
+/* A 1280×720 player scaled (--player-scale, set from the tube's height) to
+   fill the 4:3 tube: the 16:9 frame's sides fall outside it, and its top 9%
+   sits above the glass — where YouTube's title bar appears — like a CRT's
+   overscan. top = -0.09 / 0.91 of the tube's height. */
 .screen-player {
   position: absolute;
-  top: 0;
-  bottom: 0;
+  top: -9.9%;
   left: 50%;
-  width: calc(100% * (16 / 9) / (4 / 3));
-  transform: translateX(-50%) scale(1.02);
+  width: 1280px;
+  height: 720px;
+  transform-origin: 50% 0;
+  transform: translateX(-50%) scale(var(--player-scale, 0.5));
 }
 
 /* Keeps the pointer off the iframe so YouTube never draws its hover UI. */
@@ -88,13 +92,8 @@
 
 .screen-scanlines {
   z-index: 3;
-  background: repeating-linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.22) 0px,
-    rgba(0, 0, 0, 0.22) 1px,
-    transparent 1px,
-    transparent 3px
-  );
+  background: repeating-linear-gradient(to bottom, #000 0px, #000 1px, transparent 1px, transparent 3px);
+  opacity: var(--scanline-alpha, 0.22); /* SETUP › Scanlines */
   mix-blend-mode: multiply;
 }
 
@@ -104,7 +103,8 @@
   background:
     radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.4) 82%, rgba(0, 0, 0, 0.8) 100%),
     radial-gradient(ellipse 120% 130% at center, transparent 60%, rgba(0, 0, 0, 0.35) 100%);
-  box-shadow: inset 0 0 18px 4px rgba(0, 0, 0, 0.6);
+  box-shadow: inset 0 0 var(--edge-shadow, 20px) 4px rgba(0, 0, 0, 0.6);
+  opacity: var(--vignette-opacity, 1); /* SETUP › Curvature */
 }
 
 .screen-glare {
@@ -176,9 +176,91 @@
 }
 
 .screen-power-warming {
-  animation: crt-bg-out 0.9s ease-in forwards;
+  animation: crt-bg-out var(--warmup, 0.9s) ease-in forwards; /* SETUP › Warm-up */
 }
 
 .screen-power-warming .screen-power-beam {
-  animation: crt-bloom 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  animation: crt-bloom var(--warmup, 0.9s) cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+/* VHS tape jitter; rolling and degauss (below) take over while they run. */
+.screen-picture.is-vhs {
+  animation: screen-vhs-jitter 3.2s steps(1) infinite;
+}
+
+/* ---- Reception: the antenna's interference -------------------------------
+   Bad signal rolls the picture (vertical hold slipping) with a dark blanking
+   bar sweeping through it; the snow itself is the static layer above. */
+
+.screen-picture.is-rolling {
+  animation: screen-roll 0.45s steps(6) infinite;
+}
+
+@keyframes screen-roll {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(-1.5%, -3%) skewX(1deg); }
+  50% { transform: translate(1%, -6%); }
+  75% { transform: translate(-0.5%, -9%) skewX(-1deg); }
+  100% { transform: translate(0, -12%); }
+}
+
+.screen-rollbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  height: 14%;
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.85) 30%, rgba(0, 0, 0, 0.85) 70%, transparent);
+  animation: screen-rollbar 0.7s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes screen-rollbar {
+  from { top: -15%; }
+  to { top: 100%; }
+}
+
+/* ---- Degauss: a colour shiver when a new picture locks in ------------------ */
+
+.screen-picture.is-degaussing {
+  animation: screen-degauss 0.9s ease-out;
+}
+
+@keyframes screen-degauss {
+  0% { transform: scale(1.02) skewX(2deg); filter: var(--picture-filter, none) hue-rotate(80deg) saturate(2); }
+  20% { transform: scale(0.99) skewX(-1.5deg); filter: var(--picture-filter, none) hue-rotate(-60deg) saturate(1.8); }
+  40% { transform: scale(1.01) skewX(1deg); filter: var(--picture-filter, none) hue-rotate(35deg) saturate(1.5); }
+  65% { transform: skewX(-0.4deg); filter: var(--picture-filter, none) hue-rotate(-12deg); }
+  100% { transform: none; filter: var(--picture-filter, none); }
+}
+
+/* ---- VHS: tape jitter, colour bleed (in --picture-filter) and a tracking band */
+
+@keyframes screen-vhs-jitter {
+  0%, 38%, 41%, 72%, 74%, 100% { transform: none; }
+  39% { transform: translateX(0.6%); }
+  40% { transform: translateX(-0.4%); }
+  73% { transform: translateX(0.8%) skewX(-0.6deg); }
+}
+
+.screen-vhs-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  height: 9%;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.5) 0 2px, transparent 2px 5px, rgba(255, 255, 255, 0.25) 5px 6px, transparent 6px 11px),
+    linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.18) 50%, transparent);
+  mix-blend-mode: screen;
+  filter: blur(0.6px);
+  animation: screen-vhs-band 7s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes screen-vhs-band {
+  0% { top: 105%; opacity: 0; }
+  5% { opacity: 1; }
+  60% { top: -12%; opacity: 1; }
+  61%, 100% { top: -12%; opacity: 0; }
 }

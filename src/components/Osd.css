@@ -90,6 +90,99 @@
   animation: osd-blink 1.6s steps(1) infinite;
 }
 
+.osd-blink {
+  animation: osd-blink 1s steps(1) infinite;
+}
+
+.osd-live {
+  margin-right: 2cqw;
+  padding: 0 1cqw;
+  font-size: 3.4cqw;
+  vertical-align: middle;
+  color: #0b1a0e;
+  background: #7dff9a;
+  box-shadow: 0 0 0.8cqw rgba(80, 255, 130, 0.8);
+  text-shadow: none;
+}
+
+/* ---- SETUP menu ------------------------------------------------------- */
+
+.osd-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2.4cqh;
+  padding: 8cqh 10cqw;
+  background: rgba(0, 8, 2, 0.55);
+}
+
+.osd-menu-title {
+  font-size: 5cqw;
+  letter-spacing: 1cqw;
+  border-bottom: 0.3cqw solid rgba(125, 255, 154, 0.6);
+  padding-bottom: 1cqh;
+}
+
+.osd-menu-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2cqh;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 3.4cqw;
+  letter-spacing: 0.3cqw;
+}
+
+.osd-menu-rows li {
+  display: flex;
+  align-items: center;
+  gap: 1.6cqw;
+  padding: 0.4cqh 1.2cqw;
+}
+
+.osd-menu-rows li.is-selected {
+  color: #0b1a0e;
+  background: #7dff9a;
+  text-shadow: none;
+  box-shadow: 0 0 1cqw rgba(80, 255, 130, 0.7);
+}
+
+.osd-menu-rows li.is-selected .osd-bar-segment {
+  border-color: rgba(11, 26, 14, 0.6);
+  box-shadow: none;
+}
+
+.osd-menu-rows li.is-selected .osd-bar-segment.is-lit {
+  background: #0b1a0e;
+}
+
+.osd-menu-label {
+  flex: 1;
+}
+
+.osd-menu-level {
+  display: flex;
+  gap: 0.4cqw;
+}
+
+.osd-menu-level .osd-bar-segment {
+  width: 1.2cqw;
+  height: 3cqw;
+}
+
+.osd-menu-value {
+  min-width: 8ch;
+  text-align: right;
+}
+
+.osd-menu-hint {
+  margin-top: auto;
+  font-size: 2.6cqw;
+  letter-spacing: 0.2cqw;
+  opacity: 0.8;
+  text-align: center;
+}
+
 @keyframes osd-blink {
   0%, 70% { opacity: 1; }
   71%, 100% { opacity: 0.25; }

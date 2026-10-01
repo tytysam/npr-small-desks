@@ -1,7 +1,10 @@
-import React, { useMemo, useRef, useCallback, useState } from 'react';
+import React, { useMemo, useRef, useCallback, useState, useEffect } from 'react';
+import * as THREE from 'three';
+import { useFrame, useThree } from '@react-three/fiber';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import Knob3D from './Knob3D';
 import useDisposable from './useDisposable';
+import useAntennaGesture from '../../hooks/useAntennaGesture';
 import { BRIGHTNESS_MIN, BRIGHTNESS_MAX } from '../../js/picture';
 import ScreenSurface, { SCREEN_W, SCREEN_H } from './ScreenSurface';
 import {
@@ -137,40 +140,133 @@ const Plate = ({ texture, position, size, rotation }) => (
 
 const Chrome = (props) => <meshStandardMaterial color={PALETTE.chrome} metalness={1} roughness={0.2} {...props} />;
 
-/** Three-section telescoping rod on a ball mount, leaning back slightly. */
-const Antenna = ({ position }) => {
-  const sections = [
-    { r: 0.03, len: 0.62 },
-    { r: 0.023, len: 0.58 },
-    { r: 0.016, len: 0.52 },
-  ];
+const DEG = Math.PI / 180;
+const ANTENNA_SECTIONS = [
+  { r: 0.03, len: 0.62 },
+  { r: 0.023, len: 0.58 },
+  { r: 0.016, len: 0.52 },
+];
+const ANTENNA_LENGTH = ANTENNA_SECTIONS.reduce((sum, { len }) => sum + len - 0.04, 0.05);
+
+/**
+ * Three-section telescoping rod on a ball mount, leaning back slightly.
+ * Swing it to hunt for a new station, tap to retune, press and hold to SCAN
+ * (see useAntennaGesture). `wobble` is bumped by the app to replay a
+ * springy flick; frames only render while it's moving.
+ */
+const Antenna = ({ position, angle, wobble, onBusy, onDragStart, onAim, onRelease, onTap, onHoldStart, onHoldEnd }) => {
+  const mountRef = useRef(null);
+  const swingRef = useRef(null);
+  const wobbleStartRef = useRef(null);
+  const [hovered, setHovered] = useState(false);
+  const invalidate = useThree((state) => state.invalidate);
+  const scratch = useMemo(
+    () => ({ plane: new THREE.Plane(), point: new THREE.Vector3(), origin: new THREE.Vector3(), normal: new THREE.Vector3(0, 0, 1) }),
+    []
+  );
+
+  // Pointer ray against the plane facing the viewer through the mount:
+  // 0° = straight up, clockwise positive, like the 2D set.
+  const angleFromEvent = useCallback(
+    (e) => {
+      if (!mountRef.current || !e.ray) return null;
+      mountRef.current.getWorldPosition(scratch.origin);
+      scratch.plane.setFromNormalAndCoplanarPoint(scratch.normal, scratch.origin);
+      if (!e.ray.intersectPlane(scratch.plane, scratch.point)) return null;
+      return Math.atan2(scratch.point.x - scratch.origin.x, scratch.point.y - scratch.origin.y) / DEG;
+    },
+    [scratch]
+  );
+
+  const gesture = useAntennaGesture({ angleFromEvent, onDragStart, onAim, onRelease, onTap, onHoldStart, onHoldEnd });
+  // Hold the camera still from the moment the antenna is grabbed, as the knobs do.
+  const handlers = {
+    ...gesture,
+    onPointerDown: (e) => {
+      // R3F's listener runs before OrbitControls' on the same element, so this
+      // keeps the camera from ever starting a rotate on an antenna grab.
+      e.nativeEvent?.stopImmediatePropagation?.();
+      onBusy(true);
+      gesture.onPointerDown(e);
+    },
+    onPointerUp: (e) => {
+      gesture.onPointerUp(e);
+      onBusy(false);
+    },
+    onPointerCancel: (e) => {
+      gesture.onPointerCancel(e);
+      onBusy(false);
+    },
+  };
+
+  useEffect(() => {
+    if (!wobble) return;
+    wobbleStartRef.current = performance.now();
+    invalidate();
+  }, [wobble, invalidate]);
+
+  useFrame(() => {
+    let flick = 0;
+    if (wobbleStartRef.current !== null) {
+      const t = (performance.now() - wobbleStartRef.current) / 1000;
+      if (t < 1.2) {
+        flick = 14 * Math.exp(-4 * t) * Math.sin(14 * t);
+        invalidate();
+      } else {
+        wobbleStartRef.current = null;
+      }
+    }
+    if (swingRef.current) swingRef.current.rotation.z = -(angle + flick) * DEG;
+  });
+
   let y = 0.05;
   return (
-    <group position={position} rotation={[-0.18, 0, -0.04]}>
+    <group
+      ref={mountRef}
+      position={position}
+      rotation={[-0.18, 0, -0.04]}
+      {...handlers}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        setHovered(true);
+        document.body.style.cursor = 'grab';
+      }}
+      onPointerOut={() => {
+        setHovered(false);
+        document.body.style.cursor = '';
+      }}
+    >
       <mesh castShadow>
         <sphereGeometry args={[0.11, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <Chrome />
+        <Chrome emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
       </mesh>
-      {sections.map(({ r, len }, i) => {
-        const cy = y + len / 2;
-        y += len - 0.04;
-        return (
-          <group key={i}>
-            <mesh position={[0, cy, 0]} castShadow>
-              <cylinderGeometry args={[r, r, len, 16]} />
-              <Chrome roughness={0.15} />
-            </mesh>
-            <mesh position={[0, cy + len / 2 - 0.02, 0]}>
-              <cylinderGeometry args={[r * 1.35, r * 1.35, 0.04, 16]} />
-              <Chrome roughness={0.3} />
-            </mesh>
-          </group>
-        );
-      })}
-      <mesh position={[0, y + 0.04, 0]}>
-        <sphereGeometry args={[0.028, 16, 12]} />
-        <Chrome />
-      </mesh>
+      <group ref={swingRef} rotation={[0, 0, -angle * DEG]}>
+        {ANTENNA_SECTIONS.map(({ r, len }, i) => {
+          const cy = y + len / 2;
+          y += len - 0.04;
+          return (
+            <group key={i}>
+              <mesh position={[0, cy, 0]} castShadow>
+                <cylinderGeometry args={[r, r, len, 16]} />
+                <Chrome roughness={0.15} emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
+              </mesh>
+              <mesh position={[0, cy + len / 2 - 0.02, 0]}>
+                <cylinderGeometry args={[r * 1.35, r * 1.35, 0.04, 16]} />
+                <Chrome roughness={0.3} />
+              </mesh>
+            </group>
+          );
+        })}
+        <mesh position={[0, ANTENNA_LENGTH + 0.04, 0]}>
+          <sphereGeometry args={[0.028, 16, 12]} />
+          <Chrome />
+        </mesh>
+        {/* the rod is only a few pixels wide on screen, so grab a wider sleeve around it */}
+        <mesh position={[0, ANTENNA_LENGTH / 2, 0]}>
+          <cylinderGeometry args={[0.14, 0.14, ANTENNA_LENGTH, 8]} />
+          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+        </mesh>
+      </group>
     </group>
   );
 };
@@ -180,12 +276,10 @@ const Antenna = ({ position }) => {
  * `onKnobDragging`, which the scene uses to pause orbiting mid-drag.
  */
 const TVModel = ({
-  video,
+  screen,
   volume,
   onVolumeChange,
   onChannelChange,
-  isLoading,
-  error,
   artistName,
   dialPosition,
   brightness,
@@ -194,11 +288,8 @@ const TVModel = ({
   onPowerToggle,
   paused,
   onPauseToggle,
-  playing,
-  resumeAt,
-  onProgress,
-  onEnded,
-  osd,
+  onMenuToggle,
+  antenna,
   onKnobDragging,
 }) => {
   // --- materials ---------------------------------------------------------
@@ -326,6 +417,8 @@ const TVModel = ({
     document.body.style.cursor = '';
   }, []);
 
+  const [menuHovered, setMenuHovered] = useState(false);
+
   // --- play/pause lever --------------------------------------------------
   const [leverHovered, setLeverHovered] = useState(false);
   const handleLeverClick = useCallback(
@@ -402,20 +495,7 @@ const TVModel = ({
       </mesh>
 
       {/* the tube (DOM layer punched through the canvas) */}
-      <ScreenSurface
-        position={[BEZEL.x, BEZEL.y, TUBE_Z]}
-        video={video}
-        volume={volume}
-        playing={playing}
-        isOn={isOn}
-        brightness={brightness}
-        isLoading={isLoading}
-        error={error}
-        resumeAt={resumeAt}
-        onProgress={onProgress}
-        onEnded={onEnded}
-        osd={osd}
-      />
+      <ScreenSurface position={[BEZEL.x, BEZEL.y, TUBE_Z]} {...screen} />
 
       {/* domed glass: faint tint + environment reflections, then the window glare */}
       <group position={[BEZEL.x, BEZEL.y, TUBE_Z + 0.005]}>
@@ -500,14 +580,32 @@ const TVModel = ({
           <meshStandardMaterial color="#1a0e05" roughness={0.9} />
         </mesh>
 
-        <mesh position={[-2.75, 0, 0.05]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-          <cylinderGeometry args={[0.12, 0.13, 0.1, 32]} />
-          <Chrome />
-        </mesh>
-        <mesh position={[-2.75, 0, 0.101]}>
-          <circleGeometry args={[0.028, 16]} />
-          <meshStandardMaterial color="#333" />
-        </mesh>
+        {/* MENU: push the chrome knob */}
+        <group
+          position={[-2.75, 0, 0]}
+          onClick={(e) => {
+            e.stopPropagation();
+            onMenuToggle();
+          }}
+          onPointerOver={(e) => {
+            e.stopPropagation();
+            setMenuHovered(true);
+            document.body.style.cursor = 'pointer';
+          }}
+          onPointerOut={() => {
+            setMenuHovered(false);
+            document.body.style.cursor = '';
+          }}
+        >
+          <mesh position={[0, 0, 0.05]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+            <cylinderGeometry args={[0.12, 0.13, 0.1, 32]} />
+            <Chrome emissive="#ffffff" emissiveIntensity={menuHovered ? 0.08 : 0} />
+          </mesh>
+          <mesh position={[0, 0, 0.101]}>
+            <circleGeometry args={[0.028, 16]} />
+            <meshStandardMaterial color="#333" />
+          </mesh>
+        </group>
         <Plate texture={badgeTexture} position={[-2.33, 0, 0.003]} size={[0.46, 0.17]} />
 
         <mesh position={[-0.75, 0, -0.005]}>
@@ -574,7 +672,7 @@ const TVModel = ({
         />
       </group>
 
-      <Antenna position={[1.9, TOP_Y + 0.1, -0.5]} />
+      <Antenna position={[1.9, TOP_Y + 0.1, -0.5]} onBusy={onKnobDragging} {...antenna} />
 
       {/* splayed slab legs */}
       {legs.map((leg, i) => (

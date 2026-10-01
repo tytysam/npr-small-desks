@@ -3,6 +3,7 @@ import Screen from './Screen';
 import VolumeKnob from './VolumeKnob';
 import ChannelKnob from './ChannelKnob';
 import BrightnessKnob from './BrightnessKnob';
+import Antenna from './Antenna';
 import './TV.css';
 
 // feTurbulence has no source image, so these filters paint organic grain onto
@@ -35,7 +36,7 @@ const WoodGrainFilters = () => (
  * antenna and splayed legs.
  */
 const TV = ({
-  video,
+  screen,
   volume,
   onVolumeChange,
   onChannelChange,
@@ -46,23 +47,15 @@ const TV = ({
   onPowerToggle,
   paused,
   onPauseToggle,
-  playing,
-  isLoading,
-  error,
+  onMenuToggle,
   artistName,
-  resumeAt,
-  onProgress,
-  onEnded,
-  osd,
+  antenna,
 }) => {
   return (
     <div className="tv-set">
       <WoodGrainFilters />
 
-      <div className="tv-antenna" aria-hidden="true">
-        <span className="tv-antenna-rod" />
-        <span className="tv-antenna-base" />
-      </div>
+      <Antenna {...antenna} />
 
       <div className="tv-console">
         <div className="tv-top-lip" aria-hidden="true" />
@@ -70,19 +63,7 @@ const TV = ({
         <div className="tv-front">
           <div className="tv-frame">
             <div className="tv-tube">
-              <Screen
-                video={video}
-                volume={volume}
-                playing={playing}
-                isOn={isOn}
-                brightness={brightness}
-                isLoading={isLoading}
-                error={error}
-                resumeAt={resumeAt}
-                onProgress={onProgress}
-                onEnded={onEnded}
-                osd={osd}
-              />
+              <Screen {...screen} />
             </div>
           </div>
 
@@ -113,9 +94,9 @@ const TV = ({
         </div>
 
         <div className="tv-rail">
-          <div className="tv-badge" aria-hidden="true">
-            <span className="tv-badge-knob" />
-            <span className="tv-badge-text">NPR</span>
+          <div className="tv-badge">
+            <button type="button" className="tv-badge-knob" aria-label="Menu" title="Menu" onClick={onMenuToggle} />
+            <span className="tv-badge-text" aria-hidden="true">NPR</span>
           </div>
 
           <div className="tv-tuning-strip">

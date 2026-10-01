@@ -36,20 +36,59 @@
   position: absolute;
   top: 0;
   right: 12%;
-  width: 18px;
+  z-index: 2;
+  width: 40px;
   height: 104px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  pointer-events: none;
+  justify-content: flex-end;
+  cursor: grab;
+  touch-action: none;
+  outline: none;
+}
+
+.tv-antenna:active {
+  cursor: grabbing;
+}
+
+.tv-antenna:focus-visible .tv-antenna-base {
+  box-shadow: 0 0 0 2px var(--amber), 0 2px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Pivots on the ball mount; the app sets the swing angle. */
+.tv-antenna-swing {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 7px;
+  width: 3px;
+  margin-left: -1.5px;
+  transform-origin: 50% 100%;
+  transition: transform 0.06s linear;
 }
 
 .tv-antenna-rod {
-  position: relative;
-  flex: 1;
-  width: 3px;
+  position: absolute;
+  inset: 0;
   border-radius: 2px 2px 0 0;
   background: linear-gradient(90deg, #555, #eee 40%, #999 60%, #333);
+  transform-origin: 50% 100%;
+}
+
+/* A flick of the rod, springing back to where it was set. */
+.tv-antenna-rod.is-wobbling {
+  animation: tv-antenna-wobble 0.9s cubic-bezier(0.3, 0.6, 0.4, 1);
+}
+
+@keyframes tv-antenna-wobble {
+  0% { transform: rotate(0); }
+  12% { transform: rotate(14deg); }
+  30% { transform: rotate(-10deg); }
+  48% { transform: rotate(6deg); }
+  66% { transform: rotate(-3deg); }
+  84% { transform: rotate(1deg); }
+  100% { transform: rotate(0); }
 }
 
 /* wider lower telescoping section */
@@ -65,6 +104,8 @@
 }
 
 .tv-antenna-base {
+  position: relative;
+  z-index: 1;
   width: 18px;
   height: 14px;
   border-radius: 9px 9px 2px 2px;
@@ -311,6 +352,10 @@
 }
 
 .tv-badge-knob {
+  flex: none;
+  padding: 0;
+  border: none;
+  cursor: pointer;
   width: 24px;
   height: 24px;
   border-radius: 50%;
@@ -318,6 +363,16 @@
     radial-gradient(circle at 50% 50%, #333 0 22%, transparent 24%),
     radial-gradient(circle at 35% 30%, #fff, #c9c9c9 30%, #707070 75%, #444);
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(0, 0, 0, 0.35);
+}
+
+.tv-badge-knob:active {
+  transform: scale(0.94);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(0, 0, 0, 0.35);
+}
+
+.tv-badge-knob:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
 }
 
 .tv-badge-text {

@@ -116,11 +116,18 @@ power-cycling the set retries immediately.
 
 ### 2.7 Review follow-ups — **Done**
 - **Clean picture.** YouTube's own UI is gone: the player fills the 4:3 tube
-  (the 16:9 frame's sides crop off, with slight overscan), a shield keeps the
-  pointer from summoning its hover overlay, captions are unloaded, and static
-  covers the tube until each video actually plays — hiding the title bar and
-  "More videos" shown while loading. Unplayable videos are skipped.
-  `src/components/Screen.js`.
+  (the 16:9 frame's sides crop off), a shield keeps the pointer from
+  summoning its hover overlay, captions are switched off whenever YouTube
+  loads them, and static covers the tube until each video actually plays.
+  Unplayable videos are skipped. `src/components/Screen.js`.
+  - YouTube also overlays its title bar for the first few seconds of every
+    video, at a fixed pixel size. The player now renders at 1280×720 and is
+    scaled into the tube, so that band is a constant ~8% of the frame, and
+    the top 9% sits above the glass (CRT-style overscan). Side effect: 3D
+    gets a 720p picture instead of 360p.
+  - Known leftover: for ~3 s after each tune-in YouTube still shows a small
+    pause glyph mid-picture and a tiny "More videos" pill bottom-right. Both
+    are inside its iframe, out of reach.
 - **Play/pause lever.** A chrome bat-handle toggle on the rail of both sets:
   up plays, down pauses. It shares state with Space and the PAUSE indicator,
   and flipping it while the set is off decides whether it resumes on power-up.
@@ -131,16 +138,45 @@ power-cycling the set retries immediately.
 
 ## 3. New features
 
-### 3.1 Broadcast mode — **Planned (after review)**
-Each channel runs a fixed schedule; the current video and offset are derived
-from the wall clock, so everyone tuned to the same channel sees the same
-moment — shared TV without a server. Uses the durations in `channels.json`.
+### 3.1 Broadcast mode — **Done**
+Each station runs the whole lineup back to back on a loop, starting from a
+different point (station k began with video k at 2026-01-01 UTC). What's on
+air is a pure function of the wall clock, so everyone tuned to the same
+station sees the same moment — shared TV without a server.
 
-### 3.2 CRT settings menu — **Planned (after review)**
-Scanline strength, curvature, warm-up bloom, degauss wobble on channel
-change, and a VHS tracking mode.
+- The OSD tags live stations **LIVE**; links share the station (`?ch=700`),
+  and anyone opening one joins it mid-programme.
+- Live TV doesn't wait: resuming from pause, powering on, or switching
+  2D/3D rejoins the schedule *now*. A programme that ends hands straight to
+  the next one on the schedule.
+- **VCR** (in SETUP) is the old behaviour: station k plays video k from the
+  start, and links share the video (`?v=`). A `?v=` link opened in Live mode
+  plays that concert once, then channel changes return to live stations.
+- The start offset rides in the YouTube URL (`&t=`), so the player opens at
+  the right moment instead of seeking after it starts.
+- `src/js/schedule.js` (unit-tested), `src/hooks/useTuner.js`.
 
-### 3.3 Antenna retune (random channel) — **Planned (next round)**
+### 3.2 CRT settings menu — **Done**
+A SETUP menu drawn inside the tube in the OSD's phosphor style, opened with
+the chrome knob on the rail (now **MENU**) or **O**, closed with MENU, O or
+Esc. It's driven by the set's own controls, so it works identically in 2D and
+3D: the channel control (dial or ↑/↓) picks a row, the volume control (knob
+or ←/→) changes it.
+
+| Setting | Effect |
+|---|---|
+| Broadcast | Live / VCR (see 3.1) |
+| Scanlines | 0–10 scanline strength |
+| Curvature | 0–10 edge fall-off and corner darkening |
+| Warm-up | On: a slow ~2 s power-on bloom; off: near-instant |
+| Degauss | Colour shiver as each new picture locks in |
+| VHS | Tape jitter, colour bleed, a rolling tracking band, and PLAY ▶ |
+| Hiss | Tuning hiss (3.3) |
+
+Settings persist. `src/js/crtSettings.js` (unit-tested),
+`src/components/Osd.js` (`SetupMenu`), `src/components/Screen.css`.
+
+### 3.3 Antenna retune (random channel) — **Done**
 With ~1,900 channels, stepping the dial only ever shows a sliver of the
 lineup. Moving the antenna retunes to a random channel, like chasing
 reception on an analog set.
@@ -162,11 +198,19 @@ reception on an analog set.
 - **With broadcast mode (3.1)** a retune lands mid-programme on that
   channel's schedule, which is what flipping around on a real set felt like.
 
-Possible extras: **SCAN** (hold the antenna or press S to hop to a new
-random channel every few seconds until released) and a **signal sweet
-spot** (static eases in and out as you pass "good" angles while dragging).
+- **Built as:** `useRetune` (reception state machine), `useAntennaGesture`
+  (drag / tap / hold, shared by the DOM and three.js antennas), the shuffle
+  bag in `src/js/shuffleBag.js` (unit-tested) and the Web Audio hiss in
+  `src/js/hiss.js`. Keys: **R** retune, **S** scan, **L** / Backspace last.
+- Picture: static, a rolling picture with a blanking bar, and jitter.
+  Ghosting (a doubled image) isn't possible on a cross-origin iframe.
 
-Open questions: synthesized hiss on or off by default; which extras, if any.
+Also in scope (agreed, done):
+- **Hiss on by default**, following the set's volume and mute.
+- **SCAN.** Hold the antenna or press S to hop to a new random channel every
+  few seconds until released.
+- **Signal sweet spot.** While dragging, static eases in and out as the
+  antenna passes hidden "good" angles, so it feels like hunting for reception.
 
 ### Later ideas
 - **Watch-together.** Live viewer counts and shared channel changes over a

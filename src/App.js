@@ -4,11 +4,15 @@ import ModeToggle from './components/ModeToggle';
 import CrtTransition, { CRT_OFF_MS, CRT_ON_MS } from './components/CrtTransition';
 import useViewMode from './hooks/useViewMode';
 import useChannels from './hooks/useChannels';
+import useTuner from './hooks/useTuner';
+import useRetune, { clampAntenna } from './hooks/useRetune';
+import useCrtSettings from './hooks/useCrtSettings';
 import usePersistentState from './hooks/usePersistentState';
 import useOsd from './hooks/useOsd';
 import useShortcuts from './hooks/useShortcuts';
-import { pickRandomIndex } from './js/channels';
 import { BRIGHTNESS_MIN, BRIGHTNESS_MAX } from './js/picture';
+import { CRT_ITEMS } from './js/crtSettings';
+import { setHiss } from './js/hiss';
 import './App.css';
 
 // three.js and friends only load when the 3D set is first shown (or the
@@ -18,20 +22,21 @@ const TV3D = lazy(load3D);
 
 const VOLUME_STEP = 0.05;
 const DEFAULT_VOLUME = 0.5;
+const HISS_GAIN = 0.15; // a bed under the picture's sound, not a blast
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const isUnit = (v) => typeof v === 'number' && v >= 0 && v <= 1;
 const isBrightness = (v) => typeof v === 'number' && v >= BRIGHTNESS_MIN && v <= BRIGHTNESS_MAX;
-const isVideoId = (v) => typeof v === 'string' && v.length > 0;
 
 function App() {
   const { channels, isLoading, error, retry } = useChannels();
-  const [currentIndex, setCurrentIndex] = useState(null);
+  const [crt, adjustCrtSetting] = useCrtSettings();
+  const tuner = useTuner({ channels, broadcast: crt.broadcast });
+  const { station, program } = tuner;
   // Cumulative detent count, so the dial turns the way the channel moved
   // (2D, 3D and keyboard all drive the same dial).
   const [dialPosition, setDialPosition] = useState(0);
 
-  const [lastVideoId, setLastVideoId] = usePersistentState('npr-small-desk:lastVideo', null, isVideoId);
   const [savedVolume, setSavedVolume] = usePersistentState('npr-small-desk:volume', DEFAULT_VOLUME, isUnit);
   const [brightness, setBrightness] = usePersistentState('npr-small-desk:brightness', 1, isBrightness);
 
@@ -43,37 +48,39 @@ function App() {
   const [isOn, setIsOn] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [osdFlash, flashOsd] = useOsd();
+  const [menuIndex, setMenuIndex] = useState(null); // SETUP menu row, or null when closed
+  const menuAdjustRef = useRef(0);
+
+  const [antennaAngle, setAntennaAngle] = useState(0);
+  const [antennaWobble, setAntennaWobble] = useState(0); // bumped to replay the wobble
 
   const [viewMode, setViewMode] = useViewMode();
   const [transition, setTransition] = useState('idle'); // 'idle' | 'off' | 'on'
-  const [resumeAt, setResumeAt] = useState(0);
   const playedSecondsRef = useRef(0);
   const transitionTimersRef = useRef([]);
-  const initialVideoIdRef = useRef(lastVideoId);
 
-  // Tune in once the lineup arrives: ?v= link, then last channel, then random.
+  const retune = useRetune({
+    onLock: () => {
+      tuner.jumpRandom();
+      setIsPaused(false);
+    },
+  });
+
+  // Show the channel whenever the picture changes: tuning, jumps, and the
+  // next programme coming on air.
+  const videoId = program?.video.id;
   useEffect(() => {
-    if (channels.length === 0) return;
-    const indexOf = (id) => (id ? channels.findIndex((c) => c.id === id) : -1);
-    const linked = new URLSearchParams(window.location.search).get('v');
-    let index = indexOf(linked);
-    if (index < 0) index = indexOf(initialVideoIdRef.current);
-    if (index < 0) index = pickRandomIndex(channels.length);
-    setCurrentIndex(index);
-    flashOsd('channel');
-  }, [channels, flashOsd]);
+    if (station !== null) flashOsd('channel');
+  }, [station, videoId, flashOsd]);
 
-  const currentVideo = currentIndex === null ? null : channels[currentIndex] ?? null;
-  const currentVideoId = currentVideo?.id;
-
-  // Keep the address bar shareable and remember where we were.
+  // Switching Live/VCR picks the programme up from now.
+  const broadcastRef = useRef(crt.broadcast);
+  const { rejoin } = tuner;
   useEffect(() => {
-    if (!currentVideoId) return;
-    setLastVideoId(currentVideoId);
-    const url = new URL(window.location.href);
-    url.searchParams.set('v', currentVideoId);
-    window.history.replaceState(null, '', url);
-  }, [currentVideoId, setLastVideoId]);
+    if (broadcastRef.current === crt.broadcast) return;
+    broadcastRef.current = crt.broadcast;
+    rejoin(0);
+  }, [crt.broadcast, rejoin]);
 
   useEffect(() => {
     const timers = transitionTimersRef.current;
@@ -100,28 +107,66 @@ function App() {
     };
   }, [soundUnlocked, savedVolume]);
 
+  // Hiss rides on the interference, at the set's volume.
+  useEffect(() => {
+    setHiss(crt.hiss && isOn ? retune.interference * volume * HISS_GAIN : 0);
+  }, [crt.hiss, isOn, retune.interference, volume]);
+
+  // --- SETUP menu --------------------------------------------------------
+  const menuOpen = menuIndex !== null;
+
+  const toggleMenu = useCallback(() => {
+    if (!isOn) return;
+    menuAdjustRef.current = 0;
+    setMenuIndex((i) => (i === null ? 0 : null));
+  }, [isOn]);
+
+  const closeMenu = useCallback(() => setMenuIndex(null), []);
+
+  // --- channel -----------------------------------------------------------
+  // While the menu is open the channel control selects rows (up = previous row).
   const changeChannel = useCallback(
     (direction) => {
-      if (channels.length === 0) return;
+      if (menuOpen) {
+        setMenuIndex((i) => (i - direction + CRT_ITEMS.length) % CRT_ITEMS.length);
+        return;
+      }
+      retune.stopScan();
       playedSecondsRef.current = 0;
-      setResumeAt(0);
       setIsPaused(false);
-      setCurrentIndex((prev) => ((prev ?? 0) + direction + channels.length) % channels.length);
+      tuner.step(direction);
       setDialPosition((p) => p + direction);
-      flashOsd('channel');
     },
-    [channels.length, flashOsd]
+    [menuOpen, retune, tuner]
   );
 
+  const recallChannel = useCallback(() => {
+    retune.stopScan();
+    setIsPaused(false);
+    tuner.recall();
+  }, [retune, tuner]);
+
+  // --- volume ------------------------------------------------------------
+  // While the menu is open the volume control adjusts the selected row, one
+  // step per VOLUME_STEP of travel.
   const changeVolume = useCallback(
     (next) => {
+      if (menuOpen) {
+        menuAdjustRef.current += next - volume;
+        while (Math.abs(menuAdjustRef.current) >= VOLUME_STEP - 1e-6) {
+          const direction = Math.sign(menuAdjustRef.current);
+          menuAdjustRef.current -= direction * VOLUME_STEP;
+          adjustCrtSetting(CRT_ITEMS[menuIndex].key, direction);
+        }
+        return;
+      }
       const v = clamp(next, 0, 1);
       setVolume(v);
       setSavedVolume(v);
       setSoundUnlocked(true);
       flashOsd('volume');
     },
-    [setSavedVolume, flashOsd]
+    [menuOpen, menuIndex, volume, adjustCrtSetting, setSavedVolume, flashOsd]
   );
 
   const toggleMute = useCallback(() => {
@@ -139,35 +184,72 @@ function App() {
     [setBrightness, flashOsd]
   );
 
+  // --- power and pause ---------------------------------------------------
   const togglePower = useCallback(() => {
-    // Power-cycling a set that lost signal is the classic fix.
-    if (!isOn && error) retry();
+    if (isOn) {
+      retune.stopScan();
+      setMenuIndex(null);
+    } else {
+      // Power-cycling a set that lost signal is the classic fix.
+      if (error) retry();
+      if (program?.live) tuner.rejoin();
+    }
     setIsOn(!isOn);
-  }, [isOn, error, retry]);
+  }, [isOn, error, retry, program, retune, tuner]);
 
   // Works while the set is off too: it decides whether it resumes on power-up.
-  const togglePause = useCallback(() => setIsPaused((p) => !p), []);
+  // Live TV doesn't wait for you, so resuming a live station rejoins it now.
+  const togglePause = useCallback(() => {
+    if (isPaused && program?.live) tuner.rejoin();
+    setIsPaused(!isPaused);
+  }, [isPaused, program, tuner]);
 
+  // --- antenna -----------------------------------------------------------
+  const retuneByHand = useCallback(() => {
+    retune.stopScan();
+    setAntennaWobble((w) => w + 1);
+    retune.retune();
+  }, [retune]);
+
+  const antenna = {
+    angle: antennaAngle,
+    wobble: antennaWobble,
+    onDragStart: () => {
+      retune.stopScan();
+      retune.beginDrag();
+    },
+    onAim: (angle) => {
+      const a = clampAntenna(angle);
+      setAntennaAngle(a);
+      retune.aim(a);
+    },
+    onRelease: retune.retune,
+    onTap: retuneByHand,
+    onHoldStart: retune.startScan,
+    onHoldEnd: retune.stopScan,
+  };
+
+  // --- playback ----------------------------------------------------------
   const handleProgress = useCallback(({ playedSeconds }) => {
     playedSecondsRef.current = playedSeconds;
   }, []);
 
-  const handleEnded = useCallback(() => changeChannel(1), [changeChannel]);
-
-  // Power the whole view down, swap sets behind the black, then power back up.
+  // Power the whole view down, swap sets behind the black, then power back
+  // up. Live stations rejoin the schedule; VCR resumes where it was.
   const requestModeChange = useCallback(
     (nextMode) => {
       if (transition !== 'idle' || nextMode === viewMode) return;
       setTransition('off');
       const swap = setTimeout(() => {
-        setResumeAt(playedSecondsRef.current);
+        if (program?.live) tuner.rejoin();
+        else tuner.rejoin(playedSecondsRef.current);
         setViewMode(nextMode);
         setTransition('on');
       }, CRT_OFF_MS);
       const settle = setTimeout(() => setTransition('idle'), CRT_OFF_MS + CRT_ON_MS);
       transitionTimersRef.current = [swap, settle];
     },
-    [transition, viewMode, setViewMode]
+    [transition, viewMode, setViewMode, program, tuner]
   );
 
   useShortcuts({
@@ -178,22 +260,50 @@ function App() {
     m: toggleMute,
     ' ': togglePause,
     p: togglePower,
+    r: retuneByHand,
+    s: retune.toggleScan,
+    l: recallChannel,
+    Backspace: recallChannel,
+    o: toggleMenu,
+    Escape: closeMenu,
   });
 
+  // --- what the tube shows -----------------------------------------------
   const muted = volume === 0;
-  const osd = {
-    flash: osdFlash,
-    channelNumber: currentIndex === null ? null : currentIndex + 1,
-    artist: currentVideo?.artist ?? '',
-    volume,
-    brightness: (brightness - BRIGHTNESS_MIN) / (BRIGHTNESS_MAX - BRIGHTNESS_MIN),
-    paused: isPaused,
-    muted: muted && (soundUnlocked || savedVolume === 0),
-    hint: currentVideo && !error && muted && !soundUnlocked && savedVolume > 0 ? 'Click anywhere for sound' : null,
+  const video = program?.video ?? null;
+  const screen = {
+    video,
+    startAt: program?.startAt ?? 0,
+    // The picture's sound drops away under the interference.
+    volume: volume * (1 - retune.interference * 0.9),
+    playing: isOn && !isPaused,
+    isOn,
+    brightness,
+    isLoading,
+    error,
+    onProgress: handleProgress,
+    onEnded: tuner.programEnded,
+    interference: isOn ? retune.interference : 0,
+    crt,
+    menu: menuOpen ? { items: CRT_ITEMS, selected: menuIndex, settings: crt } : null,
+    osd: {
+      flash: osdFlash,
+      channelNumber: station === null ? null : station + 1,
+      live: Boolean(program?.live),
+      artist: video?.artist ?? '',
+      volume,
+      brightness: (brightness - BRIGHTNESS_MIN) / (BRIGHTNESS_MAX - BRIGHTNESS_MIN),
+      paused: isPaused,
+      muted: muted && (soundUnlocked || savedVolume === 0),
+      scanning: retune.scanning,
+      tuning: retune.phase === 'seeking',
+      vhs: crt.vhs,
+      hint: video && !error && muted && !soundUnlocked && savedVolume > 0 ? 'Click anywhere for sound' : null,
+    },
   };
 
   const setProps = {
-    video: currentVideo,
+    screen,
     volume,
     onVolumeChange: changeVolume,
     onChannelChange: changeChannel,
@@ -204,14 +314,9 @@ function App() {
     onPowerToggle: togglePower,
     paused: isPaused,
     onPauseToggle: togglePause,
-    playing: isOn && !isPaused,
-    isLoading,
-    error,
-    artistName: currentVideo?.artist ?? '',
-    resumeAt,
-    onProgress: handleProgress,
-    onEnded: handleEnded,
-    osd,
+    onMenuToggle: toggleMenu,
+    artistName: video?.artist ?? '',
+    antenna,
   };
 
   return (

@@ -20,14 +20,24 @@ fetches that static file, so no YouTube API key reaches the browser.
 
 | Key | Action |
 |---|---|
-| ↑ / ↓ | Channel up / down |
-| ← / → | Volume down / up |
+| ↑ / ↓ | Channel up / down (in SETUP: select a row) |
+| ← / → | Volume down / up (in SETUP: change the row) |
 | M | Mute / unmute |
 | Space | Pause / play |
 | P | Power |
+| R | Retune the antenna (random channel) |
+| S | Scan: hop to a random channel every few seconds |
+| L / Backspace | Last channel |
+| O / Esc | Open / close SETUP |
 
-The chrome slide switch is power, the lever on the rail is play/pause, and
-the small black knob on the rail is brightness. Links carry the current video as `?v=<id>`.
+On the set: the chrome slide switch is power, the lever on the rail is
+play/pause, the small black knob is brightness, and the chrome knob by the
+NPR badge is MENU. Drag the antenna to hunt for a station, tap it to
+retune, or press and hold it to scan.
+
+Stations are **live** by default: each runs a shared schedule, so links like
+`?ch=700` put everyone on the same moment. Switch Broadcast to **VCR** in
+SETUP to play concerts from the start (links then use `?v=<id>`).
 
 ---
 
