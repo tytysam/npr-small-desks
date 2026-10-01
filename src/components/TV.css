@@ -690,7 +690,8 @@
   display: block;
   width: 100%;
   height: 12px;
-  padding: 0 8px;
+  /* nudged down: all caps sit high in the line box (no descenders) */
+  padding: 1.5px 8px 0;
   overflow: hidden;
   font: 900 7.5px/12px 'Rockwell', 'Courier New', serif;
   letter-spacing: 0.6px;

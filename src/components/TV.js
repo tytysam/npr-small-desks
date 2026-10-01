@@ -77,7 +77,10 @@ const TV = ({
           aria-label="TV listings"
           aria-haspopup="dialog"
           aria-expanded={guideOpen}
-          onClick={onGuideOpen}
+          onClick={(e) => {
+            const r = e.currentTarget.getBoundingClientRect();
+            onGuideOpen({ x: r.left + r.width / 2, y: r.top + r.height / 2, width: r.width });
+          }}
         >
           NP-R1 Listings · Tiny Desk Weekly
         </button>

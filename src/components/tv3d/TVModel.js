@@ -294,7 +294,8 @@ const GuideStack = ({ position, open, onOpen }) => {
       position={position}
       onClick={(e) => {
         e.stopPropagation();
-        onOpen();
+        // The book grows out of the stack: about its on-screen width at the default framing.
+        onOpen({ x: e.nativeEvent.clientX, y: e.nativeEvent.clientY, width: 160 });
       }}
       onPointerDown={(e) => {
         // Keep the camera from starting an orbit on a click here.

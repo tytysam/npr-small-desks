@@ -1,16 +1,29 @@
-/* ---- The TV guide: a listings digest opened flat ------------------------- */
+/* ---- The TV guide: a listings digest that opens like a book ---------------
+   Phases (Guide.js): .is-closed (over the stack on the set, shut) →
+   .is-open (grown to the middle, cover swung open) → .is-closing (folded
+   shut, shrunk back). Transitions are declared on the phase being entered,
+   so the first, closed frame doesn't animate. */
 
 .guide-backdrop {
   position: fixed;
   inset: 0;
   z-index: 900; /* with the owner's manual, under the CRT transition (1000) */
   display: flex;
-  align-items: center;
+  align-items: safe center;
   justify-content: center;
   padding: 16px;
-  background: rgba(5, 4, 3, 0.62);
+  overflow-y: auto;
+  background-color: rgba(5, 4, 3, 0);
+  transition: background-color 0.22s, backdrop-filter 0.22s;
+}
+
+.guide-backdrop.is-open {
+  background-color: rgba(5, 4, 3, 0.62);
   backdrop-filter: blur(2px);
-  animation: guide-fade 0.18s ease-out;
+}
+
+.guide-backdrop.is-closing {
+  transition-delay: 0.16s;
 }
 
 .guide-book {
@@ -19,41 +32,97 @@
   --rule: rgba(60, 40, 20, 0.22);
   --red: #c4372b;
   --paper: #f3ecda;
+  --turn-ms: 420ms; /* keep in step with TURN_MS in Guide.js */
+  position: relative;
+  flex: none;
+  width: min(100%, 1000px);
+  margin: auto 0;
+  padding-right: 34px; /* the thumb tabs stand out past the right page */
+  font-family: Georgia, 'Times New Roman', serif;
+  color: var(--ink);
+}
+
+.guide-book:focus {
+  outline: none;
+}
+
+.guide-spread {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  perspective: 2400px;
+}
+
+.guide-page-slot {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.guide-spread > .guide-page-right {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+/* ---- Pages: each its own sheet of newsprint ------------------------------- */
+
+.guide-page {
   position: relative;
   display: flex;
   flex-direction: column;
-  width: min(100%, 1000px);
-  max-height: calc(100vh - 32px);
-  overflow-y: auto;
-  padding: 18px 22px 12px;
-  font-family: Georgia, 'Times New Roman', serif;
-  color: var(--ink);
+  min-width: 0;
+  padding: 16px 20px 10px;
   background:
-    /* gutter shadow down the fold */
-    linear-gradient(90deg, transparent calc(50% - 26px), rgba(80, 55, 25, 0.16) calc(50% - 2px), rgba(80, 55, 25, 0.22) 50%, rgba(80, 55, 25, 0.12) calc(50% + 3px), transparent calc(50% + 24px)),
-    radial-gradient(ellipse at 20% 0%, rgba(255, 255, 255, 0.55), transparent 55%),
-    radial-gradient(ellipse at 85% 100%, rgba(150, 110, 60, 0.16), transparent 60%),
+    radial-gradient(ellipse at 20% 0%, rgba(255, 255, 255, 0.5), transparent 55%),
+    radial-gradient(ellipse at 85% 100%, rgba(150, 110, 60, 0.14), transparent 60%),
     var(--paper);
-  border-radius: 3px 3px 4px 4px;
-  box-shadow:
-    0 24px 60px rgba(0, 0, 0, 0.7),
-    0 2px 6px rgba(0, 0, 0, 0.4),
-    /* page edges stacked under the spread */
-    0 3px 0 -1px #e4dbc4,
-    0 6px 0 -2px #d6ccb2,
-    inset 0 0 50px rgba(140, 100, 50, 0.16);
-  animation: guide-rise 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.3), inset 0 0 40px rgba(140, 100, 50, 0.14);
 }
 
-/* ---- Masthead, dateline, search ------------------------------------------- */
+/* the gutter: each page darkens into the fold; the page block shows below */
+.guide-page-left {
+  border-radius: 4px 0 0 4px;
+  background:
+    linear-gradient(90deg, transparent calc(100% - 36px), rgba(80, 55, 25, 0.1) calc(100% - 10px), rgba(80, 55, 25, 0.24)),
+    radial-gradient(ellipse at 20% 0%, rgba(255, 255, 255, 0.5), transparent 55%),
+    var(--paper);
+  box-shadow: 0 3px 0 #e4dbc4, 0 6px 0 #d6ccb2, 0 24px 50px rgba(0, 0, 0, 0.5), inset 0 0 40px rgba(140, 100, 50, 0.14);
+}
+
+.guide-page-right {
+  border-radius: 0 4px 4px 0;
+  background:
+    linear-gradient(270deg, transparent calc(100% - 36px), rgba(80, 55, 25, 0.1) calc(100% - 10px), rgba(80, 55, 25, 0.24)),
+    radial-gradient(ellipse at 80% 100%, rgba(150, 110, 60, 0.14), transparent 60%),
+    var(--paper);
+  box-shadow: 0 3px 0 #e4dbc4, 0 6px 0 #d6ccb2, 0 24px 50px rgba(0, 0, 0, 0.5), inset 0 0 40px rgba(140, 100, 50, 0.14);
+}
+
+.guide-page-single {
+  border-radius: 4px;
+}
+
+/* ---- Running heads: masthead on the left page, search on the right ---------- */
 
 .guide-head {
-  display: grid;
-  grid-template-columns: auto 1fr auto auto;
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px 16px;
-  padding-bottom: 10px;
+  gap: 4px 12px;
+  min-height: 66px;
+  padding-bottom: 8px;
   border-bottom: 3px double var(--ink);
+}
+
+.guide-page-left .guide-head {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.guide-page-right .guide-head {
+  justify-content: flex-end;
+  padding-right: 38px; /* room for ✕ */
 }
 
 .guide-masthead {
@@ -130,6 +199,10 @@
 }
 
 .guide-close {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  margin-top: -19px;
   width: 30px;
   height: 30px;
   padding: 0;
@@ -145,36 +218,14 @@
   border-color: var(--rule);
 }
 
-/* ---- The spread ------------------------------------------------------------ */
-
-.guide-body {
-  position: relative;
-  display: flex;
-  gap: 10px;
-  padding-top: 6px;
-}
-
-.guide-spread {
-  position: relative;
-  flex: 1;
-  min-width: 0;
-  display: grid;
-  /* minmax(0, …): equal columns whatever the titles, which clip inside them */
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  align-content: start;
-  column-gap: 44px; /* the fold */
-  min-height: 600px; /* a full page of rows, so search results don't shrink the book */
-  perspective: 1600px;
-}
-
-.guide-page {
-  min-width: 0;
-}
+/* ---- Listings ---------------------------------------------------------------- */
 
 .guide-rows {
+  flex: 1;
+  min-height: 594px; /* twelve rows, so short pages keep the book's size */
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 6px 0 0;
 }
 
 .guide-rows li + li {
@@ -333,91 +384,16 @@
 }
 
 .guide-empty {
-  grid-column: 1 / -1;
+  flex: 1;
+  min-height: 594px;
+  margin: 0;
   padding: 60px 0;
   font-style: italic;
   text-align: center;
   color: var(--ink-soft);
 }
 
-/* ---- The cover, swinging open on the spine -------------------------------- */
-
-.guide-cover {
-  position: absolute;
-  top: -6px;
-  bottom: -6px;
-  left: calc(50% + 22px);
-  right: -10px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  padding: 28px 24px;
-  color: #fff8ec;
-  background:
-    radial-gradient(circle at 70% 62%, rgba(0, 0, 0, 0.35) 0 22%, transparent 23%),
-    radial-gradient(rgba(0, 0, 0, 0.2) 1px, transparent 1.5px) 0 0 / 5px 5px,
-    linear-gradient(160deg, #e8dcc0, #cbbb98);
-  border-radius: 2px 4px 4px 2px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
-  transform-origin: calc(-22px) 50%;
-  backface-visibility: hidden;
-  pointer-events: none;
-  animation: guide-cover-open 0.6s 0.1s cubic-bezier(0.45, 0, 0.3, 1) forwards;
-}
-
-.guide-cover-brand {
-  padding: 4px 12px 2px;
-  font: 900 44px 'Rockwell', 'Courier New', serif;
-  background: var(--red);
-  border-radius: 2px;
-}
-
-.guide-cover-title {
-  font: 900 30px 'Rockwell', 'Courier New', serif;
-  color: var(--ink);
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
-
-.guide-cover-sub {
-  font-style: italic;
-  color: var(--ink-soft);
-}
-
-/* ---- Thumb-index tabs and folio -------------------------------------------- */
-
-.guide-tabs {
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-right: -22px; /* stand proud of the page edge */
-}
-
-.guide-tab {
-  flex: 1;
-  min-height: 22px;
-  padding: 0 8px 0 6px;
-  font: bold 10.5px 'Rockwell', 'Courier New', serif;
-  font-variant-numeric: tabular-nums;
-  text-align: left;
-  color: var(--ink-soft);
-  background: #e6dcc3;
-  border: none;
-  border-radius: 0 4px 4px 0;
-  box-shadow: inset 2px 0 3px rgba(80, 55, 25, 0.2);
-  cursor: pointer;
-}
-
-.guide-tab:hover {
-  color: var(--ink);
-}
-
-.guide-tab.is-active {
-  color: #fff8ec;
-  background: var(--red);
-}
+/* ---- Folios and page-turn corners ----------------------------------------- */
 
 .guide-foot {
   display: flex;
@@ -433,6 +409,10 @@
   font-size: 12px;
   font-style: italic;
   color: var(--ink-soft);
+}
+
+.guide-page-right .guide-folio {
+  margin-left: auto;
 }
 
 .guide-turn {
@@ -451,44 +431,344 @@
   cursor: default;
 }
 
-@keyframes guide-fade {
-  from {
-    opacity: 0;
+.guide-turn-spacer {
+  width: 40px;
+  height: 30px;
+}
+
+/* ---- Thumb-index tabs, standing out past the right page ----------------------- */
+
+.guide-tabs {
+  position: absolute;
+  top: 84px;
+  bottom: 52px;
+  left: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.guide-tab {
+  flex: 1;
+  min-height: 22px;
+  padding: 0 8px 0 6px;
+  font: bold 10.5px 'Rockwell', 'Courier New', serif;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+  color: var(--ink-soft);
+  background: #e6dcc3;
+  border: none;
+  border-radius: 0 4px 4px 0;
+  box-shadow: inset 2px 0 3px rgba(80, 55, 25, 0.2), 2px 2px 4px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+
+.guide-tab:hover {
+  color: var(--ink);
+}
+
+.guide-tab.is-active {
+  color: #fff8ec;
+  background: var(--red);
+}
+
+/* ---- The cover, and the leaves that swing on the spine ------------------------ */
+
+.guide-cover-leaf,
+.guide-turn-leaf {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transform-style: preserve-3d;
+}
+
+/* On a spread the cover leaf is the left page; closed, it lies folded over
+   the right page with its outside (the cover) up. */
+.is-wide .guide-cover-leaf {
+  z-index: 1;
+  left: 0;
+  width: 50%;
+  transform-origin: 100% 50%;
+}
+
+/* On one page it's just the cover, swinging off to the left. */
+.is-narrow .guide-cover-leaf {
+  z-index: 1;
+  left: 0;
+  width: 100%;
+  transform-origin: 0 50%;
+  pointer-events: none;
+}
+
+.guide-face {
+  position: absolute;
+  inset: 0;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.guide-face > .guide-page {
+  height: 100%;
+}
+
+.guide-face-back {
+  transform: rotateY(180deg);
+}
+
+/* Darkens a leaf as it passes edge-on to the light. */
+.guide-face::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #2a1a0c;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.guide-cover {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 36px 32px;
+  overflow: hidden;
+  color: #fff8ec;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.22), transparent 14px),
+    linear-gradient(160deg, #eadfc4, #c9b994);
+  border-radius: 2px 6px 6px 2px;
+  box-shadow: 4px 4px 0 -1px #e4dbc4, 7px 7px 0 -2px #d6ccb2, 0 24px 50px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+
+.guide-cover-brand {
+  padding: 6px 16px 2px;
+  font: 900 64px 'Rockwell', 'Courier New', serif;
+  background: var(--red);
+  border-radius: 3px;
+}
+
+/* The red badges behind "NP-R1": trim the line box to the capitals so the
+   padding is the same above, below and either side of the lettering. */
+@supports (text-box: trim-both cap alphabetic) {
+  .guide-brand,
+  .guide-cover-brand {
+    text-box: trim-both cap alphabetic;
+  }
+
+  .guide-brand {
+    padding: 0.24em 0.28em;
+  }
+
+  .guide-cover-brand {
+    padding: 0.24em 0.26em;
   }
 }
 
-@keyframes guide-rise {
-  from {
-    opacity: 0;
-    transform: translateY(14px) scale(0.98);
-  }
+.guide-cover-title {
+  font: 900 40px 'Rockwell', 'Courier New', serif;
+  color: var(--ink);
+  letter-spacing: 3px;
+  text-transform: uppercase;
 }
 
-@keyframes guide-cover-open {
+.guide-cover-photo {
+  align-self: center;
+  width: 62%;
+  aspect-ratio: 1;
+  margin: auto 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(rgba(0, 0, 0, 0.3) 1.5px, transparent 2px) 0 0 / 7px 7px,
+    radial-gradient(circle at 40% 35%, #8a6a4a, #2e2117);
+}
+
+.guide-cover-sub {
+  font: italic 20px Georgia, serif;
+  color: var(--ink-soft);
+}
+
+/* ---- Phases: closed, open, closing ------------------------------------------------ */
+
+/* Closed: shut, over the stack on the set (Guide.js measures --from-*). */
+.guide-book.is-closed {
+  opacity: 0;
+  transform: translate(var(--from-x, 0), var(--from-y, 0)) scale(var(--from-s, 1));
+}
+
+/* A closed spread is just the cover over the right page; shift it to centre. */
+.is-wide.is-closed .guide-spread {
+  transform: translateX(-25%);
+}
+
+.is-wide.is-closed .guide-cover-leaf {
+  transform: rotateY(180deg);
+}
+
+.is-narrow.is-open .guide-cover-leaf {
+  transform: rotateY(-180deg);
+}
+
+/* Opening: grow out of the stack, then swing the cover open. */
+.guide-book.is-open {
+  transition: transform 340ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 160ms ease-out;
+}
+
+.guide-book.is-open .guide-spread,
+.guide-book.is-open .guide-cover-leaf {
+  transition: transform 520ms cubic-bezier(0.45, 0, 0.25, 1) 200ms;
+}
+
+.guide-book.is-open .guide-cover-leaf .guide-face::after {
+  animation: guide-edge-shade 520ms cubic-bezier(0.45, 0, 0.25, 1) 200ms;
+}
+
+/* the cover's shadow sweeping across the right page as it lifts away */
+.is-wide.is-open .guide-spread > .guide-page-right::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(40, 25, 10, 0.5), rgba(40, 25, 10, 0.12) 70%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  animation: guide-sweep 520ms ease-out 200ms;
+}
+
+/* Closing: fold shut, then shrink back to the set. */
+.guide-book.is-closing {
+  transition: transform 200ms cubic-bezier(0.5, 0, 0.75, 0) 200ms, opacity 140ms ease-in 270ms;
+}
+
+.guide-book.is-closing .guide-spread,
+.guide-book.is-closing .guide-cover-leaf {
+  transition: transform 240ms cubic-bezier(0.5, 0, 0.5, 1);
+}
+
+.guide-book.is-closing .guide-cover-leaf .guide-face::after {
+  animation: guide-edge-shade 240ms ease-in-out;
+}
+
+/* ---- Page turns: a leaf whose two sides are the pages it carries ------------------ */
+
+.guide-turn-leaf {
+  z-index: 2;
+  pointer-events: none;
+  animation: var(--turn-ms) cubic-bezier(0.45, 0, 0.3, 1) both;
+}
+
+.guide-turn-leaf .guide-face::after {
+  animation: guide-edge-shade var(--turn-ms) cubic-bezier(0.45, 0, 0.3, 1);
+}
+
+/* Forward, the right page turns over to the left; back, the reverse. */
+.is-wide .guide-turn-leaf {
+  width: 50%;
+}
+
+.is-wide .guide-turn-leaf.is-forward {
+  left: 50%;
+  transform-origin: 0 50%;
+  animation-name: guide-turn-forward;
+}
+
+.is-wide .guide-turn-leaf.is-back {
+  left: 0;
+  transform-origin: 100% 50%;
+  animation-name: guide-turn-back;
+}
+
+/* One page: forward, the old page swings away; back, the new one swings in. */
+.is-narrow .guide-turn-leaf {
+  left: 0;
+  width: 100%;
+  transform-origin: 0 50%;
+}
+
+.is-narrow .guide-turn-leaf.is-forward {
+  animation-name: guide-turn-forward;
+}
+
+.is-narrow .guide-turn-leaf.is-back {
+  animation-name: guide-turn-in;
+}
+
+@keyframes guide-turn-forward {
+  from {
+    transform: rotateY(0);
+  }
   to {
     transform: rotateY(-180deg);
-    visibility: hidden;
+  }
+}
+
+@keyframes guide-turn-back {
+  from {
+    transform: rotateY(0);
+  }
+  to {
+    transform: rotateY(180deg);
+  }
+}
+
+@keyframes guide-turn-in {
+  from {
+    transform: rotateY(-180deg);
+  }
+  to {
+    transform: rotateY(0);
+  }
+}
+
+@keyframes guide-edge-shade {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.32;
+  }
+}
+
+@keyframes guide-sweep {
+  0% {
+    opacity: 0;
+  }
+  45% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* No growing, swinging or turning: the guide is simply there, open. */
   .guide-book,
+  .guide-book *,
+  .guide-book *::before,
+  .guide-book *::after,
   .guide-backdrop {
-    animation: none;
+    transition: none !important;
+    animation: none !important;
   }
 
-  .guide-cover {
+  .guide-turn-leaf {
     display: none;
   }
 
-  /* No gliding; the full title is in the tooltip. */
+  /* No gliding titles either; the full title is in the tooltip. */
   .guide-row:hover .is-overflowing .guide-marquee-text,
   .guide-row:focus-visible .is-overflowing .guide-marquee-text {
     animation: none;
   }
 }
 
-/* ---- Small screens: a single page ---------------------------------------- */
+/* ---- Small screens: a single page ------------------------------------------------- */
 
 @media (max-width: 680px) {
   .guide-backdrop {
@@ -496,25 +776,43 @@
   }
 
   .guide-book {
-    max-height: calc(100vh - 16px);
+    padding-right: 0;
+  }
+
+  .guide-spread {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .guide-page {
     padding: 12px 12px 8px;
-    background:
-      radial-gradient(ellipse at 20% 0%, rgba(255, 255, 255, 0.55), transparent 55%),
-      var(--paper);
   }
 
-  .guide-head {
-    grid-template-columns: 1fr auto;
+  .guide-page-single .guide-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding-right: 0;
   }
 
-  .guide-dateline {
+  .guide-page-single .guide-dateline,
+  .guide-page-single .guide-tools,
+  .guide-page-single .guide-tabs {
     grid-column: 1 / -1;
-    grid-row: 2;
   }
 
-  .guide-tools {
-    grid-column: 1 / -1;
-    grid-row: 3;
+  .guide-page-single .guide-masthead {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .guide-page-single .guide-close {
+    position: static;
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0;
+  }
+
+  .guide-masthead {
+    font-size: 21px;
   }
 
   .guide-search {
@@ -523,28 +821,15 @@
     min-width: 0;
   }
 
-  .guide-masthead {
-    font-size: 21px;
-  }
-
-  .guide-body {
-    flex-direction: column-reverse;
-  }
-
-  .guide-spread {
-    grid-template-columns: 1fr;
+  .guide-rows,
+  .guide-empty {
     min-height: 0;
   }
 
-  .guide-cover {
-    left: -6px;
-    right: -6px;
-    transform-origin: 0 50%;
-  }
-
   .guide-tabs {
+    position: static;
     flex-direction: row;
-    margin-right: 0;
+    gap: 2px;
     overflow-x: auto;
     padding-bottom: 4px;
   }
@@ -553,5 +838,18 @@
     flex: none;
     min-height: 26px;
     border-radius: 4px 4px 0 0;
+    box-shadow: inset 0 -2px 3px rgba(80, 55, 25, 0.2);
+  }
+
+  .guide-cover {
+    padding: 24px 20px;
+  }
+
+  .guide-cover-brand {
+    font-size: 48px;
+  }
+
+  .guide-cover-title {
+    font-size: 30px;
   }
 }

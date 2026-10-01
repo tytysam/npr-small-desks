@@ -61,6 +61,7 @@ function App() {
   const helpButtonRef = useRef(null);
 
   const [guideOpen, setGuideOpen] = useState(false);
+  const [guideOrigin, setGuideOrigin] = useState(null); // where on screen the book grows from
   const guideReturnRef = useRef(null); // where focus goes back to when the guide closes
 
   const [viewMode, setViewMode] = useViewMode();
@@ -271,10 +272,16 @@ function App() {
     helpButtonRef.current?.focus();
   }, []);
 
-  const openGuide = useCallback(() => {
+  // `origin`: the stack's centre and width on screen, when it was clicked.
+  // From the keyboard, the 2D stack is found on the page; in 3D the book
+  // just rises in.
+  const openGuide = useCallback((origin) => {
     if (channels.length === 0) return;
+    const book2D = document.querySelector('.tv-guide-book');
+    const rect = book2D?.getBoundingClientRect();
+    setGuideOrigin(origin ?? (rect ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, width: rect.width } : null));
     const active = document.activeElement;
-    guideReturnRef.current = active && active !== document.body ? active : document.querySelector('.tv-guide-book');
+    guideReturnRef.current = active && active !== document.body ? active : book2D;
     setMenuIndex(null);
     setHelpOpen(false);
     setGuideOpen(true);
@@ -285,8 +292,8 @@ function App() {
     guideReturnRef.current?.focus?.();
   }, []);
 
-  // Picking a listing tunes like the dial does (OSD, LAST, share link), then
-  // closes the book.
+  // Picking a listing tunes like the dial does (OSD, LAST, share link); the
+  // book then folds itself shut.
   const tuneFromGuide = useCallback(
     (next, { fromTheTop = false } = {}) => {
       retune.stopScan();
@@ -295,9 +302,8 @@ function App() {
       if (fromTheTop) tuner.playVideo(next);
       else tuner.tuneTo(next);
       if (station !== null && next !== station) setDialPosition((p) => p + Math.sign(next - station));
-      closeGuide();
     },
-    [retune, tuner, station, closeGuide]
+    [retune, tuner, station]
   );
 
   useShortcuts(
@@ -316,7 +322,7 @@ function App() {
       o: toggleMenu,
       Escape: closeMenu,
       '?': openHelp,
-      g: openGuide,
+      g: () => openGuide(),
     },
     { enabled: !helpOpen && !guideOpen }
   );
@@ -400,6 +406,7 @@ function App() {
           schedule={tuner.schedule}
           station={station}
           broadcast={crt.broadcast}
+          origin={guideOrigin}
           onTune={tuneFromGuide}
           onPlayVideo={(index) => tuneFromGuide(index, { fromTheTop: true })}
           onClose={closeGuide}

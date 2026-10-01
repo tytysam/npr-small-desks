@@ -246,8 +246,13 @@ drawn over either set (one page on phones).
 - **Search, live.** Each hit says where it's on now ("On now · 14 min in",
   tunes that station); if no station is showing it, it says when it next
   airs and plays it from the top instead, as a `?v=` link would.
-- Picking a listing tunes like the dial (OSD, LAST, share link) and closes
-  the book. It's a modal like the owner's manual; both now share
+- **It opens like a book.** The closed digest grows out of the stack on
+  the set (in 3D, from where you clicked), then its cover swings open on the
+  spine: the left page is the inside of the cover. Page turns flip a leaf
+  carrying the old and new pages; closing folds it shut and shrinks it back
+  to the set. Reduced motion: it just appears, open.
+- Picking a listing tunes like the dial (OSD, LAST, share link) and folds
+  the book shut. It's a modal like the owner's manual; both now share
   `useDialog`.
 - Neighbouring stations often list the same artists a few minutes apart:
   station k starts the lineup at video k, so adjacent stations are one
