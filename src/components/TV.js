@@ -69,26 +69,24 @@ const TV = ({
 
       <Antenna {...antenna} />
 
-      {/* the TV guide, lying on a couple of older issues */}
+      {/* the TV guide, spine out on two older issues, as the 3D stack is */}
       <div className="tv-guide">
         <button
           type="button"
-          className="tv-guide-book"
+          className="tv-guide-spine tv-guide-book"
           aria-label="TV listings"
           aria-haspopup="dialog"
           aria-expanded={guideOpen}
           onClick={onGuideOpen}
         >
-          <span className="tv-guide-cover">
-            <span className="tv-guide-brand">NP-R1</span>
-            <span className="tv-guide-title">Listings</span>
-            <span className="tv-guide-photo" />
-            <span className="tv-guide-sub">Tiny Desk Weekly</span>
-          </span>
-          <span className="tv-guide-pages" />
+          NP-R1 Listings · Tiny Desk Weekly
         </button>
-        <span className="tv-guide-issue" aria-hidden="true" />
-        <span className="tv-guide-issue tv-guide-issue-under" aria-hidden="true" />
+        <span className="tv-guide-spine tv-guide-issue-38" aria-hidden="true">
+          NP-R1 Listings · No. 38
+        </span>
+        <span className="tv-guide-spine tv-guide-issue-37" aria-hidden="true">
+          NP-R1 Listings · No. 37
+        </span>
       </div>
 
       <div className="tv-top-board" aria-hidden="true" />

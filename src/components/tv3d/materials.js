@@ -437,12 +437,20 @@ export const makeGuideTextures = (issues) => {
   paper.addColorStop(1, '#c9b994');
   ctx.fillStyle = paper;
   ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = '#c4372b';
-  ctx.fillRect(36, 40, 300, 120);
-  ctx.fillStyle = '#fff8ec';
+  // Masthead: a red block sized to the text, with even padding all round.
   ctx.font = '900 92px Rockwell, "Courier New", serif';
+  ctx.textBaseline = 'alphabetic';
+  const mast = ctx.measureText('NP-R1');
+  const pad = 18;
+  const textW = mast.actualBoundingBoxLeft + mast.actualBoundingBoxRight;
+  const textH = mast.actualBoundingBoxAscent + mast.actualBoundingBoxDescent;
+  const blockX = 36;
+  const blockY = 40;
+  ctx.fillStyle = '#c4372b';
+  ctx.fillRect(blockX, blockY, textW + pad * 2, textH + pad * 2);
+  ctx.fillStyle = '#fff8ec';
+  ctx.fillText('NP-R1', blockX + pad + mast.actualBoundingBoxLeft, blockY + pad + mast.actualBoundingBoxAscent);
   ctx.textBaseline = 'middle';
-  ctx.fillText('NP-R1', 54, 104);
   ctx.fillStyle = '#221a12';
   ctx.font = '900 64px Rockwell, "Courier New", serif';
   ctx.fillText('LISTINGS', 40, 220);
