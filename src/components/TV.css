@@ -407,8 +407,8 @@
   padding: 0;
   border: none;
   cursor: pointer;
-  width: 24px;
-  height: 24px;
+  width: 17px;
+  height: 17px;
   border-radius: 50%;
   background:
     radial-gradient(circle at 50% 50%, #333 0 22%, transparent 24%),

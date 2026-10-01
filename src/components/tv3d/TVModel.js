@@ -146,7 +146,9 @@ const Chrome = (props) => <meshStandardMaterial color={PALETTE.chrome} metalness
 // mix in diffuse shading (as the knobs do) to match the 2D set's silver.
 const Silver = (props) => <meshStandardMaterial color="#d6d6d2" metalness={0.55} roughness={0.3} {...props} />;
 
-const MENU_TRAVEL = 0.035; // a third of the button's 0.1 height
+const MENU_RADIUS = 0.085;
+const MENU_HEIGHT = 0.08;
+const MENU_TRAVEL = MENU_HEIGHT / 3; // sinks a third of its height
 
 /**
  * The MENU push-button. It latches in (sinks into the cabinet) while the
@@ -195,12 +197,12 @@ const MenuButton = ({ position, pressed, onPress }) => {
       }}
     >
       <group ref={groupRef}>
-        <mesh position={[0, 0, 0.05]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-          <cylinderGeometry args={[0.12, 0.13, 0.1, 32]} />
+        <mesh position={[0, 0, MENU_HEIGHT / 2]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+          <cylinderGeometry args={[MENU_RADIUS, MENU_RADIUS * 1.08, MENU_HEIGHT, 32]} />
           <Silver emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
         </mesh>
-        <mesh position={[0, 0, 0.101]}>
-          <circleGeometry args={[0.03, 20]} />
+        <mesh position={[0, 0, MENU_HEIGHT + 0.001]}>
+          <circleGeometry args={[MENU_RADIUS * 0.25, 20]} />
           <meshStandardMaterial color="#2a2a2a" roughness={0.6} />
         </mesh>
       </group>
