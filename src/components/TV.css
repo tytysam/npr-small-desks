@@ -610,46 +610,63 @@
   box-shadow: 0 0 0 2px var(--amber), 0 2px 3px rgba(0, 0, 0, 0.7);
 }
 
-/* ---- Base + slab legs: darker walnut, as on the 3D set -------------------- */
+/* ---- Base + slab legs, as on the 3D set ------------------------------------
+   The base is a board of its own under the cabinet. Each leg is a tapered slab
+   whose splay is cut into its outline (rather than rotating it), so its top
+   edge stays flat and flush against the base; the tops tuck just under it. */
 
 .tv-plinth {
+  position: relative;
+  z-index: 1;
   width: 92%;
-  height: 12px;
+  height: 14px;
   margin-top: -1px;
   border-radius: 0 0 4px 4px;
   background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.5)),
+    /* in the cabinet's shadow at the top, a lit rounded edge at the bottom */
+    linear-gradient(180deg, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.12) 45%, rgba(255, 220, 170, 0.12) 80%, rgba(0, 0, 0, 0.3)),
     var(--wood-warmth),
     var(--wood) 0 55% / 1100px auto,
     var(--wood-fallback);
   background-blend-mode: normal, soft-light, normal, normal;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 220, 170, 0.12);
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.55), inset 1px 0 0 rgba(255, 220, 170, 0.1), inset -1px 0 0 rgba(0, 0, 0, 0.35);
 }
 
 .tv-legs {
   display: flex;
   justify-content: space-between;
-  width: 82%;
+  width: 84%;
+  margin-top: -3px; /* tops sit just under the base */
 }
 
-/* Tapered slabs, broad face forward, splayed outward from the base. */
 .tv-leg {
   position: relative;
-  width: 44px;
-  height: 74px;
+  width: 62px;
+  height: 100px;
   background:
-    linear-gradient(90deg, rgba(255, 225, 185, 0.22), transparent 28%, transparent 62%, rgba(0, 0, 0, 0.45)),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.4)),
+    /* shadow from the base where the leg joins it */
+    linear-gradient(180deg, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0) 14%),
+    linear-gradient(90deg, var(--leg-light), transparent 35%, transparent 60%, var(--leg-dark)),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.38)),
     var(--wood-warmth),
     var(--wood) 30% 40% / 600px auto,
     var(--wood-fallback);
-  background-blend-mode: normal, normal, soft-light, normal, normal;
-  clip-path: polygon(0 0, 100% 0, 76% 100%, 24% 100%);
-  transform-origin: top center;
+  background-blend-mode: normal, normal, normal, soft-light, normal, normal;
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.45));
 }
 
-.tv-leg-left { transform: rotate(17deg); }
-.tv-leg-right { transform: rotate(-17deg); }
+/* Broad flat top under the base, narrowing to a foot that leans outward. */
+.tv-leg-left {
+  --leg-light: rgba(255, 225, 185, 0.24);
+  --leg-dark: rgba(0, 0, 0, 0.45);
+  clip-path: polygon(14% 0, 100% 0, 44% 100%, 0 100%);
+}
+
+.tv-leg-right {
+  --leg-light: rgba(255, 225, 185, 0.14);
+  --leg-dark: rgba(0, 0, 0, 0.5);
+  clip-path: polygon(0 0, 86% 0, 100% 100%, 56% 100%);
+}
 
 /* ---- Small screens ------------------------------------------------------ */
 
@@ -721,8 +738,12 @@
     width: 84%;
   }
 
+  .tv-plinth {
+    height: 10px;
+  }
+
   .tv-leg {
-    width: 30px;
-    height: 50px;
+    width: 40px;
+    height: 64px;
   }
 }
