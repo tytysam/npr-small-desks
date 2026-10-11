@@ -1,0 +1,189 @@
+/* Sized in container units so it reads the same in the 2D tube and the 400px 3D surface. */
+.osd {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  padding: 7cqh 9cqw;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  pointer-events: none;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: #7dff9a;
+  text-shadow: 0 0 0.6cqw rgba(80, 255, 130, 0.9), 0.15cqw 0.15cqw 0 rgba(0, 0, 0, 0.8);
+}
+
+.osd-top {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.6cqh;
+  min-width: 0;
+}
+
+.osd-channel {
+  font-size: 7.5cqw;
+  letter-spacing: 0.4cqw;
+  line-height: 1;
+}
+
+.osd-artist {
+  max-width: 100%;
+  font-size: 3.4cqw;
+  letter-spacing: 0.3cqw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.osd-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1cqh;
+  font-size: 3.8cqw;
+  letter-spacing: 0.4cqw;
+}
+
+.osd-bottom {
+  display: flex;
+  justify-content: center;
+}
+
+.osd-bar {
+  display: flex;
+  align-items: center;
+  gap: 1.6cqw;
+  font-size: 3.4cqw;
+  letter-spacing: 0.3cqw;
+}
+
+.osd-bar-track {
+  display: flex;
+  gap: 0.5cqw;
+}
+
+/* Room for three digits, so the bar doesn't shift going from 99 to 100. */
+.osd-bar-value {
+  display: inline-block;
+  width: 3ch;
+  letter-spacing: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.osd-bar-segment {
+  width: 1.5cqw;
+  height: 3.6cqw;
+  border: 0.25cqw solid rgba(125, 255, 154, 0.55);
+  box-shadow: 0 0 0.5cqw rgba(80, 255, 130, 0.4);
+}
+
+.osd-bar-segment.is-lit {
+  background: #7dff9a;
+}
+
+.osd-hint {
+  font-size: 3.2cqw;
+  letter-spacing: 0.3cqw;
+  animation: osd-blink 1.6s steps(1) infinite;
+}
+
+.osd-blink {
+  animation: osd-blink 1s steps(1) infinite;
+}
+
+.osd-live {
+  margin-right: 2cqw;
+  padding: 0 1cqw;
+  font-size: 3.4cqw;
+  vertical-align: middle;
+  color: #0b1a0e;
+  background: #7dff9a;
+  box-shadow: 0 0 0.8cqw rgba(80, 255, 130, 0.8);
+  text-shadow: none;
+}
+
+/* ---- SETUP menu ------------------------------------------------------- */
+
+.osd-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2.4cqh;
+  padding: 8cqh 10cqw;
+  background: rgba(0, 8, 2, 0.55);
+}
+
+.osd-menu-title {
+  font-size: 5cqw;
+  letter-spacing: 1cqw;
+  border-bottom: 0.3cqw solid rgba(125, 255, 154, 0.6);
+  padding-bottom: 1cqh;
+}
+
+.osd-menu-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2cqh;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 3.4cqw;
+  letter-spacing: 0.3cqw;
+}
+
+.osd-menu-rows li {
+  display: flex;
+  align-items: center;
+  gap: 1.6cqw;
+  padding: 0.4cqh 1.2cqw;
+}
+
+.osd-menu-rows li.is-selected {
+  color: #0b1a0e;
+  background: #7dff9a;
+  text-shadow: none;
+  box-shadow: 0 0 1cqw rgba(80, 255, 130, 0.7);
+}
+
+.osd-menu-rows li.is-selected .osd-bar-segment {
+  border-color: rgba(11, 26, 14, 0.6);
+  box-shadow: none;
+}
+
+.osd-menu-rows li.is-selected .osd-bar-segment.is-lit {
+  background: #0b1a0e;
+}
+
+.osd-menu-label {
+  flex: 1;
+}
+
+.osd-menu-level {
+  display: flex;
+  gap: 0.4cqw;
+}
+
+.osd-menu-level .osd-bar-segment {
+  width: 1.2cqw;
+  height: 3cqw;
+}
+
+.osd-menu-value {
+  min-width: 8ch;
+  text-align: right;
+}
+
+.osd-menu-hint {
+  margin-top: auto;
+  font-size: 2.6cqw;
+  letter-spacing: 0.2cqw;
+  opacity: 0.8;
+  text-align: center;
+}
+
+@keyframes osd-blink {
+  0%, 70% { opacity: 1; }
+  71%, 100% { opacity: 0.25; }
+}

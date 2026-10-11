@@ -1,0 +1,891 @@
+/* ---- The TV guide: a listings digest that opens like a book ---------------
+   Phases (Guide.js): .is-closed (over the stack on the set, shut) →
+   .is-open (grown to the middle, cover swung open) → .is-closing (folded
+   shut, shrunk back). Transitions are declared on the phase being entered,
+   so the first, closed frame doesn't animate. */
+
+.guide-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 900; /* with the owner's manual, under the CRT transition (1000) */
+  display: flex;
+  align-items: safe center;
+  justify-content: center;
+  padding: 16px;
+  overflow-y: auto;
+  background-color: rgba(5, 4, 3, 0);
+  transition: background-color 0.22s, backdrop-filter 0.22s;
+}
+
+.guide-backdrop.is-open {
+  background-color: rgba(5, 4, 3, 0.62);
+  backdrop-filter: blur(2px);
+}
+
+.guide-backdrop.is-closing {
+  transition-delay: 0.16s;
+}
+
+.guide-book {
+  --ink: #221a12;
+  --ink-soft: #6a5a46;
+  --rule: rgba(60, 40, 20, 0.22);
+  --red: #c4372b;
+  --paper: #f3ecda;
+  --turn-ms: 420ms; /* keep in step with TURN_MS in Guide.js */
+  position: relative;
+  flex: none;
+  width: min(100%, 1000px);
+  margin: auto 0;
+  padding-right: 34px; /* the thumb tabs stand out past the right page */
+  font-family: Georgia, 'Times New Roman', serif;
+  color: var(--ink);
+}
+
+.guide-book:focus {
+  outline: none;
+}
+
+.guide-spread {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  perspective: 2400px;
+}
+
+.guide-page-slot {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.guide-spread > .guide-page-right {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+/* ---- Pages: each its own sheet of newsprint ------------------------------- */
+
+.guide-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 16px 20px 10px;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(255, 255, 255, 0.5), transparent 55%),
+    radial-gradient(ellipse at 85% 100%, rgba(150, 110, 60, 0.14), transparent 60%),
+    var(--paper);
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.3), inset 0 0 40px rgba(140, 100, 50, 0.14);
+}
+
+/* the gutter: each page darkens into the fold; the page block shows below */
+.guide-page-left {
+  border-radius: 4px 0 0 4px;
+  background:
+    linear-gradient(90deg, transparent calc(100% - 36px), rgba(80, 55, 25, 0.1) calc(100% - 10px), rgba(80, 55, 25, 0.24)),
+    radial-gradient(ellipse at 20% 0%, rgba(255, 255, 255, 0.5), transparent 55%),
+    var(--paper);
+  box-shadow: 0 3px 0 #e4dbc4, 0 6px 0 #d6ccb2, 0 24px 50px rgba(0, 0, 0, 0.5), inset 0 0 40px rgba(140, 100, 50, 0.14);
+}
+
+.guide-page-right {
+  border-radius: 0 4px 4px 0;
+  background:
+    linear-gradient(270deg, transparent calc(100% - 36px), rgba(80, 55, 25, 0.1) calc(100% - 10px), rgba(80, 55, 25, 0.24)),
+    radial-gradient(ellipse at 80% 100%, rgba(150, 110, 60, 0.14), transparent 60%),
+    var(--paper);
+  box-shadow: 0 3px 0 #e4dbc4, 0 6px 0 #d6ccb2, 0 24px 50px rgba(0, 0, 0, 0.5), inset 0 0 40px rgba(140, 100, 50, 0.14);
+}
+
+.guide-page-single {
+  border-radius: 4px;
+}
+
+/* ---- Running heads: masthead on the left page, search on the right ---------- */
+
+.guide-head {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  min-height: 66px;
+  padding-bottom: 8px;
+  border-bottom: 3px double var(--ink);
+}
+
+.guide-page-left .guide-head {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.guide-page-right .guide-head {
+  justify-content: flex-end;
+  padding-right: 38px; /* room for ✕ */
+}
+
+.guide-masthead {
+  margin: 0;
+  font-family: 'Rockwell', 'Roboto Slab', 'Courier New', serif;
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.guide-brand {
+  display: inline-block;
+  padding: 1px 7px 0;
+  margin-right: 2px;
+  color: #fff8ec;
+  background: var(--red);
+  border-radius: 2px;
+}
+
+.guide-dateline {
+  margin: 0;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+.guide-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.guide-search,
+.guide-jump input {
+  font: 14px Georgia, serif;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 6px 8px;
+}
+
+.guide-search {
+  width: 190px;
+}
+
+.guide-jump label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font: bold 12px 'Rockwell', 'Courier New', serif;
+  letter-spacing: 1px;
+}
+
+.guide-jump input {
+  width: 4.6em;
+  font-variant-numeric: tabular-nums;
+}
+
+.guide-book:focus {
+  outline: none;
+}
+
+.guide-search:focus-visible,
+.guide-jump input:focus-visible,
+.guide-close:focus-visible,
+.guide-row:focus-visible,
+.guide-tab:focus-visible,
+.guide-turn:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 1px;
+}
+
+.guide-close {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  margin-top: -19px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  font-size: 15px;
+  color: var(--ink-soft);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.guide-close:hover {
+  border-color: var(--rule);
+}
+
+/* ---- Listings ---------------------------------------------------------------- */
+
+.guide-rows {
+  flex: 1;
+  min-height: 594px; /* twelve rows, so short pages keep the book's size */
+  list-style: none;
+  margin: 0;
+  padding: 6px 0 0;
+}
+
+.guide-rows li + li {
+  border-top: 1px solid var(--rule);
+}
+
+.guide-row {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+  padding: 5px 4px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.guide-row:hover {
+  background: rgba(196, 55, 43, 0.07);
+}
+
+.guide-ch {
+  /* Big editorial numerals, inked straight onto the page, as tall as the
+     row, ranged right against a hairline rule. */
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 88px; /* fits four digits; keeps the listings aligned down the page */
+  padding-right: 9px;
+  font: 400 38px/1 'DM Serif Display', 'Bodoni 72', Didot, Georgia, serif;
+  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: -0.5px;
+  color: var(--ink);
+  border-right: 1px solid var(--ink);
+}
+
+/* Trim the line box to the figures so they centre on the row. */
+@supports (text-box: trim-both cap alphabetic) {
+  .guide-ch {
+    text-box: trim-both cap alphabetic;
+  }
+}
+
+.guide-slot {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-bottom: 3px;
+}
+
+.guide-line {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.guide-title .guide-marquee {
+  font-weight: bold;
+}
+
+.guide-line time {
+  flex: none;
+  min-width: 4.6em;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+}
+
+.guide-detail {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+/* Titles too long for the column fade at the edge, then glide across to
+   show the rest while the row is hovered or focused. */
+.guide-marquee {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.guide-marquee-text {
+  display: inline-block;
+}
+
+.guide-marquee.is-overflowing {
+  /* keep in step with MARQUEE_FADE_PX in Guide.js */
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent);
+}
+
+.guide-row:hover .is-overflowing .guide-marquee-text,
+.guide-row:focus-visible .is-overflowing .guide-marquee-text {
+  animation: guide-marquee var(--marquee-time) ease-in-out 0.35s infinite alternate;
+}
+
+@keyframes guide-marquee {
+  0%,
+  15% {
+    transform: translateX(0);
+  }
+  85%,
+  100% {
+    transform: translateX(var(--marquee-shift));
+  }
+}
+
+.guide-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--rule);
+}
+
+.guide-progress span {
+  display: block;
+  height: 100%;
+  background: var(--red);
+}
+
+/* The channel you're watching, and a channel jumped to. */
+.guide-row.is-current {
+  background: rgba(255, 200, 80, 0.32);
+}
+
+.guide-row.is-current .guide-ch {
+  color: var(--red);
+  border-right-color: var(--red);
+}
+
+/* leave room for the "you are here" stamp */
+.guide-row.is-current .guide-title {
+  padding-right: 92px;
+}
+
+.guide-row.is-marked {
+  box-shadow: inset 0 0 0 2px var(--red);
+}
+
+.guide-here {
+  /* A rubber stamp, inked onto the row: centred on its height, a little
+     askew, with a double rule and patchy ink. */
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  padding: 4px 7px;
+  font: 900 9px 'Rockwell', 'Courier New', serif;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(178, 38, 28, 0.88);
+  border: 1.5px solid currentColor;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1.5px var(--paper), inset 0 0 0 2.25px currentColor;
+  transform: translateY(-50%) rotate(-4deg);
+  mix-blend-mode: multiply;
+  /* uneven ink: speckled gaps where the stamp didn't take */
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='40'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.4 2.1'/%3E%3C/filter%3E%3Crect width='120' height='40' filter='url(%23n)'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='40'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.4 2.1'/%3E%3C/filter%3E%3Crect width='120' height='40' filter='url(%23n)'/%3E%3C/svg%3E");
+  -webkit-mask-size: 120px 40px;
+  mask-size: 120px 40px;
+  pointer-events: none;
+}
+
+/* Centre the capitals in the frame (all caps sit high in a line box). */
+@supports (text-box: trim-both cap alphabetic) {
+  .guide-here {
+    padding: 5px 7px;
+    text-box: trim-both cap alphabetic;
+  }
+}
+
+.guide-empty {
+  flex: 1;
+  min-height: 594px;
+  margin: 0;
+  padding: 60px 0;
+  font-style: italic;
+  text-align: center;
+  color: var(--ink-soft);
+}
+
+/* ---- Folios and page-turn corners ----------------------------------------- */
+
+.guide-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--rule);
+}
+
+.guide-folio {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+.guide-page-right .guide-folio {
+  margin-left: auto;
+}
+
+.guide-turn {
+  width: 40px;
+  height: 30px;
+  font: bold 20px Georgia, serif;
+  color: var(--ink);
+  background: linear-gradient(135deg, transparent 50%, rgba(80, 55, 25, 0.12) 50%);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.guide-turn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.guide-turn-spacer {
+  width: 40px;
+  height: 30px;
+}
+
+/* ---- Thumb-index tabs, standing out past the right page ----------------------- */
+
+.guide-tabs {
+  position: absolute;
+  top: 84px;
+  bottom: 52px;
+  left: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.guide-tab {
+  flex: 1;
+  min-height: 22px;
+  /* numerals sit high in a centred line box; top padding of 2× nudges them down by 1× */
+  padding: 5px 8px 0 6px;
+  font: bold 10.5px 'Rockwell', 'Courier New', serif;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+  color: var(--ink-soft);
+  background: #e6dcc3;
+  border: none;
+  border-radius: 0 4px 4px 0;
+  box-shadow: inset 2px 0 3px rgba(80, 55, 25, 0.2), 2px 2px 4px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+
+.guide-tab:hover {
+  color: var(--ink);
+}
+
+.guide-tab.is-active {
+  color: #fff8ec;
+  background: var(--red);
+}
+
+/* ---- The cover, and the leaves that swing on the spine ------------------------ */
+
+.guide-cover-leaf,
+.guide-turn-leaf {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transform-style: preserve-3d;
+}
+
+/* On a spread the cover leaf is the left page; closed, it lies folded over
+   the right page with its outside (the cover) up. */
+.is-wide .guide-cover-leaf {
+  z-index: 1;
+  left: 0;
+  width: 50%;
+  transform-origin: 100% 50%;
+}
+
+/* On one page it's just the cover, swinging off to the left. */
+.is-narrow .guide-cover-leaf {
+  z-index: 1;
+  left: 0;
+  width: 100%;
+  transform-origin: 0 50%;
+  pointer-events: none;
+}
+
+.guide-face {
+  position: absolute;
+  inset: 0;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.guide-face > .guide-page {
+  height: 100%;
+}
+
+.guide-face-back {
+  transform: rotateY(180deg);
+}
+
+/* Darkens a leaf as it passes edge-on to the light. */
+.guide-face::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #2a1a0c;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.guide-cover {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 36px 32px;
+  overflow: hidden;
+  color: #fff8ec;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.22), transparent 14px),
+    linear-gradient(160deg, #eadfc4, #c9b994);
+  border-radius: 2px 6px 6px 2px;
+  box-shadow: 4px 4px 0 -1px #e4dbc4, 7px 7px 0 -2px #d6ccb2, 0 24px 50px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+
+.guide-cover-brand {
+  padding: 6px 16px 2px;
+  font: 900 64px 'Rockwell', 'Courier New', serif;
+  background: var(--red);
+  border-radius: 3px;
+}
+
+/* The red badges behind "NP-R1": trim the line box to the capitals so the
+   padding is the same above, below and either side of the lettering. */
+@supports (text-box: trim-both cap alphabetic) {
+  .guide-brand,
+  .guide-cover-brand {
+    text-box: trim-both cap alphabetic;
+  }
+
+  .guide-brand {
+    padding: 0.24em 0.28em;
+  }
+
+  .guide-cover-brand {
+    padding: 0.24em 0.26em;
+  }
+}
+
+.guide-cover-title {
+  font: 900 40px 'Rockwell', 'Courier New', serif;
+  color: var(--ink);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.guide-cover-photo {
+  align-self: center;
+  width: 62%;
+  aspect-ratio: 1;
+  margin: auto 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(rgba(0, 0, 0, 0.3) 1.5px, transparent 2px) 0 0 / 7px 7px,
+    radial-gradient(circle at 40% 35%, #8a6a4a, #2e2117);
+}
+
+.guide-cover-sub {
+  font: italic 20px Georgia, serif;
+  color: var(--ink-soft);
+}
+
+/* ---- Phases: closed, open, closing ------------------------------------------------ */
+
+/* Closed: shut, over the stack on the set (Guide.js measures --from-*). */
+.guide-book.is-closed {
+  opacity: 0;
+  transform: translate(var(--from-x, 0), var(--from-y, 0)) scale(var(--from-s, 1));
+}
+
+/* A closed spread is just the cover over the right page; shift it to centre. */
+.is-wide.is-closed .guide-spread {
+  transform: translateX(-25%);
+}
+
+.is-wide.is-closed .guide-cover-leaf {
+  transform: rotateY(180deg);
+}
+
+.is-narrow.is-open .guide-cover-leaf {
+  transform: rotateY(-180deg);
+}
+
+/* Opening: grow out of the stack, then swing the cover open. */
+.guide-book.is-open {
+  transition: transform 340ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 160ms ease-out;
+}
+
+.guide-book.is-open .guide-spread,
+.guide-book.is-open .guide-cover-leaf {
+  transition: transform 520ms cubic-bezier(0.45, 0, 0.25, 1) 200ms;
+}
+
+.guide-book.is-open .guide-cover-leaf .guide-face::after {
+  animation: guide-edge-shade 520ms cubic-bezier(0.45, 0, 0.25, 1) 200ms;
+}
+
+/* the cover's shadow sweeping across the right page as it lifts away */
+.is-wide.is-open .guide-spread > .guide-page-right::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(40, 25, 10, 0.5), rgba(40, 25, 10, 0.12) 70%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  animation: guide-sweep 520ms ease-out 200ms;
+}
+
+/* Closing: fold shut, then shrink back to the set. */
+.guide-book.is-closing {
+  transition: transform 200ms cubic-bezier(0.5, 0, 0.75, 0) 200ms, opacity 140ms ease-in 270ms;
+}
+
+.guide-book.is-closing .guide-spread,
+.guide-book.is-closing .guide-cover-leaf {
+  transition: transform 240ms cubic-bezier(0.5, 0, 0.5, 1);
+}
+
+.guide-book.is-closing .guide-cover-leaf .guide-face::after {
+  animation: guide-edge-shade 240ms ease-in-out;
+}
+
+/* ---- Page turns: a leaf whose two sides are the pages it carries ------------------ */
+
+.guide-turn-leaf {
+  z-index: 2;
+  pointer-events: none;
+  animation: var(--turn-ms) cubic-bezier(0.45, 0, 0.3, 1) both;
+}
+
+.guide-turn-leaf .guide-face::after {
+  animation: guide-edge-shade var(--turn-ms) cubic-bezier(0.45, 0, 0.3, 1);
+}
+
+/* Forward, the right page turns over to the left; back, the reverse. */
+.is-wide .guide-turn-leaf {
+  width: 50%;
+}
+
+.is-wide .guide-turn-leaf.is-forward {
+  left: 50%;
+  transform-origin: 0 50%;
+  animation-name: guide-turn-forward;
+}
+
+.is-wide .guide-turn-leaf.is-back {
+  left: 0;
+  transform-origin: 100% 50%;
+  animation-name: guide-turn-back;
+}
+
+/* One page: forward, the old page swings away; back, the new one swings in. */
+.is-narrow .guide-turn-leaf {
+  left: 0;
+  width: 100%;
+  transform-origin: 0 50%;
+}
+
+.is-narrow .guide-turn-leaf.is-forward {
+  animation-name: guide-turn-forward;
+}
+
+.is-narrow .guide-turn-leaf.is-back {
+  animation-name: guide-turn-in;
+}
+
+@keyframes guide-turn-forward {
+  from {
+    transform: rotateY(0);
+  }
+  to {
+    transform: rotateY(-180deg);
+  }
+}
+
+@keyframes guide-turn-back {
+  from {
+    transform: rotateY(0);
+  }
+  to {
+    transform: rotateY(180deg);
+  }
+}
+
+@keyframes guide-turn-in {
+  from {
+    transform: rotateY(-180deg);
+  }
+  to {
+    transform: rotateY(0);
+  }
+}
+
+@keyframes guide-edge-shade {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.32;
+  }
+}
+
+@keyframes guide-sweep {
+  0% {
+    opacity: 0;
+  }
+  45% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* No growing, swinging or turning: the guide is simply there, open. */
+  .guide-book,
+  .guide-book *,
+  .guide-book *::before,
+  .guide-book *::after,
+  .guide-backdrop {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .guide-turn-leaf {
+    display: none;
+  }
+
+  /* No gliding titles either; the full title is in the tooltip. */
+  .guide-row:hover .is-overflowing .guide-marquee-text,
+  .guide-row:focus-visible .is-overflowing .guide-marquee-text {
+    animation: none;
+  }
+}
+
+/* ---- Small screens: a single page ------------------------------------------------- */
+
+@media (max-width: 680px) {
+  .guide-backdrop {
+    padding: 8px;
+  }
+
+  .guide-book {
+    padding-right: 0;
+  }
+
+  .guide-spread {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .guide-page {
+    padding: 12px 12px 8px;
+  }
+
+  .guide-page-single .guide-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding-right: 0;
+  }
+
+  .guide-page-single .guide-dateline,
+  .guide-page-single .guide-tools,
+  .guide-page-single .guide-tabs {
+    grid-column: 1 / -1;
+  }
+
+  .guide-page-single .guide-masthead {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .guide-page-single .guide-close {
+    position: static;
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0;
+  }
+
+  .guide-masthead {
+    font-size: 21px;
+  }
+
+  .guide-search {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+  }
+
+  .guide-rows,
+  .guide-empty {
+    min-height: 0;
+  }
+
+  .guide-ch {
+    width: 66px;
+    padding-right: 7px;
+    font-size: 30px;
+  }
+
+  .guide-tabs {
+    position: static;
+    flex-direction: row;
+    gap: 2px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .guide-tab {
+    flex: none;
+    min-height: 26px;
+    padding-top: 2px;
+    border-radius: 4px 4px 0 0;
+    box-shadow: inset 0 -2px 3px rgba(80, 55, 25, 0.2);
+  }
+
+  .guide-cover {
+    padding: 24px 20px;
+  }
+
+  .guide-cover-brand {
+    font-size: 48px;
+  }
+
+  .guide-cover-title {
+    font-size: 30px;
+  }
+}

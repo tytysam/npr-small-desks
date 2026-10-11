@@ -1,0 +1,321 @@
+# Roadmap
+
+What's worth doing next on the small-desk TV, in three groups. Items move from
+**Planned** → **Done** as they land; each notes where the work lives.
+
+Order agreed: performance → functional additions → (after review) broadcast
+mode and the CRT settings menu.
+
+---
+
+## 1. Performance
+
+### 1.1 Build-time channel list — **Done**
+**Problem.** Every page load called YouTube's `search.list`, which costs 100
+of the default 10,000 daily quota units — roughly 100 visits a day before
+every viewer sees NO SIGNAL. The key was shipped in the client bundle
+(`REACT_APP_*` variables are public), and a search for "tiny desk" only
+returned 50 loosely-matched results.
+
+**Change.** `scripts/fetch-channels.mjs` walks NPR Music's uploads playlist
+(`playlistItems.list`, 1 unit per 50 videos), keeps embeddable Tiny Desk
+videos, looks up their durations (`videos.list`, 1 unit per 50), and writes
+`public/channels.json`. The app fetches that static file; no API key reaches
+the browser. Durations are included so broadcast mode (3.1) can be scheduled
+without another API change.
+
+- Runs automatically before `npm run build` (`prebuild`); `npm run channels`
+  refreshes it on demand.
+- The key is read from `YOUTUBE_API_KEY` (preferred) or the legacy
+  `REACT_APP_YOUTUBE_API_KEY` in `.env`. Without a key the script keeps the
+  existing `channels.json`, so builds still work — commit the file.
+- Result: 1,906 playable concerts back to 2009 (was 50), ~60 KB gzipped,
+  and the key no longer appears anywhere in the build output.
+- **Manual follow-up:** rename the `.env` variable to `YOUTUBE_API_KEY`. Any
+  build deployed before this change shipped the key to browsers, so treat it
+  as public: restrict it to the YouTube Data API in Google Cloud, or rotate it.
+
+### 1.2 Render the 3D scene on demand — **Done**
+**Problem.** The scene is static unless you orbit or turn a knob, but R3F
+redrew it every frame, and `ContactShadows` re-rendered its depth pass every
+frame too.
+
+**Change.** `frameloop="demand"` on the Canvas (R3F redraws when props change
+or controls invalidate) and `ContactShadows frames={1}`.
+`src/components/tv3d/TV3D.js`.
+
+- Measured: an idle 3D set now requests 0 frames in 3 s (was ~180). Orbiting
+  renders normally and stops ~1.3 s after release, once damping settles.
+
+### 1.3 Prefetch the 3D chunk — **Done**
+The three.js chunk (~250 KB gzipped) starts downloading when the pointer
+hovers or keyboard-focuses the 2D/3D toggle, so switching is near-instant.
+`src/App.js`, `src/components/ModeToggle.js`.
+
+### 1.4 Free GPU textures that are replaced — **Done**
+Switching 2D↔3D already releases everything: R3F force-loses the WebGL
+context when the Canvas unmounts. The real leak was within a session — each
+channel change built a new tuning-strip texture and never disposed the old
+one. Hand-built textures, materials and geometries are now disposed when
+replaced or unmounted (`useDisposable` in `src/components/tv3d/useDisposable.js`).
+
+### 1.5 Drop axios — **Done**
+Its only use was the YouTube request; `fetch` covers loading
+`channels.json` (main bundle 72.4 → 61.0 KB gzipped).
+
+### Considered, not worth it yet
+- **Wood textures in a worker.** Generation is ~165 ms once, on first 3D
+  mount, and is hidden by the CRT power-off transition.
+
+---
+
+## 2. Functional additions
+
+### 2.1 Clean titles — **Done**
+Titles arrive HTML-escaped (`&#39;WEIRD AL&#39;`). Decoded once in the
+channel script, along with artist-name parsing.
+
+### 2.2 On-screen display — **Done**
+A phosphor-green OSD inside the tube, shared by both sets: channel number and
+artist on channel change, a segmented bar for volume and brightness, and
+persistent PAUSE / MUTE indicators. `src/components/Osd.js`.
+
+### 2.3 Working controls — **Done**
+- **Power:** the chrome slide switch turns the set off and on, with the CRT
+  collapse/warm-up played inside the tube. Playback pauses while off, and
+  power-cycling retries a failed channel load.
+- **Brightness:** the small black knob on the rail adjusts picture
+  brightness.
+
+The channel dial's position now lives in the app, so both sets (and the
+keyboard) turn the same dial.
+
+### 2.4 Keyboard shortcuts — **Done**
+| Key | Action |
+|---|---|
+| ↑ / ↓ | Channel up / down |
+| ← / → | Volume down / up |
+| M | Mute / unmute |
+| Space | Pause / play |
+| P | Power |
+
+Ignored while a knob or button has focus, since those handle their own keys.
+
+### 2.5 Persistence and share links — **Done**
+Volume, brightness and the last channel are remembered. The address bar
+tracks the current video (`?v=<id>`), so a link opens on the same concert.
+Priority on load: `?v=` → last channel → random.
+
+Browsers block autoplay with sound, so the set still starts muted; the first
+click or key press anywhere restores the remembered volume, and the OSD says
+so.
+
+### 2.6 Better error state — **Done**
+NO SIGNAL now retries on its own with backoff (3 s, 10 s, 30 s, 60 s), and
+power-cycling the set retries immediately.
+
+### 2.7 Review follow-ups — **Done**
+- **Clean picture.** YouTube's own UI is gone: the player fills the 4:3 tube
+  (the 16:9 frame's sides crop off), a shield keeps the pointer from
+  summoning its hover overlay, captions are switched off whenever YouTube
+  loads them, and static covers the tube until each video actually plays.
+  Unplayable videos are skipped. `src/components/Screen.js`.
+  - YouTube also overlays its title bar (and a small pause glyph and
+    "More videos" pill) for the first few seconds of every video. Rendering
+    the player at 1280×720 and tucking the top 9% above the glass hid the
+    title bar, but it didn't achieve the look we wanted, so it was reverted.
+    Those first-seconds overlays remain, inside YouTube's iframe.
+- **3D tube alignment.** At some window sizes the tube's picture and OSD
+  drew tens of pixels off the bezel, clipping the SETUP menu and hints.
+  Chrome mis-composites drei's CSS-3D layer when the canvas has a fractional
+  size or position; the 3D area now snaps to whole, even pixels
+  (`tv3d/TV3D.css` + `TV3D.js`).
+- **Play/pause lever.** A chrome bat-handle toggle on the rail of both sets:
+  up plays, down pauses. It shares state with Space and the PAUSE indicator,
+  and flipping it while the set is off decides whether it resumes on power-up.
+- **Steady level readout.** The OSD number has a fixed three-digit slot, so
+  the volume/brightness bar no longer shifts going from 99 to 100.
+
+### 2.8 Owner's manual — **Done**
+A brass "?" beside the 2D/3D toggle (or the **?** key) opens a short
+instruction card styled like the sheet that came with the set, Model NP-R1.
+It glows on a first visit until opened once. It's a proper modal (focus moves
+in and back, Esc / ✕ / click outside close it) and the TV's shortcuts pause
+while it's open. Both sets' badges now read NP-R1. `src/components/Help.js`.
+
+### 2.9 2D set, rebuilt to match 3D — **Done**
+The 2D cabinet now follows the 3D model's construction (overhanging top
+board, raised walnut rim around a recessed front board, slim honey bezel
+rolling in to the tube, grooved rail, base on splayed slab legs), keeping its
+larger picture. Both sets share one wood generator (`src/js/woodGrain.js`):
+3D wraps the canvases as textures, 2D uses them as CSS backgrounds
+(`useWoodImages`), painted once per visit in idle time (~150 ms, after first
+paint); CSS wood stands in until then. Knobs, buttons and the control column
+are unchanged.
+
+---
+
+## 3. New features
+
+### 3.1 Broadcast mode — **Done**
+Each station runs the whole lineup back to back on a loop, starting from a
+different point. What's on air is a pure function of the wall clock (counted
+from 2026-01-01 UTC), so everyone tuned to the same station sees the same
+moment — shared TV without a server.
+
+- **Spread out.** At first station k began with video k, so neighbouring
+  stations showed the same concerts seconds apart. Now the loop plays in a
+  fixed shuffle (each concert placed by a hash of its video id, so new
+  uploads slot in without reordering the rest), and station k joins it at
+  {k·φ} of the way round. Golden-ratio spacing keeps every pair of
+  neighbours at least ~38% of the loop apart.
+
+- The OSD tags live stations **LIVE**; links share the station (`?ch=700`),
+  and anyone opening one joins it mid-programme.
+- Live TV doesn't wait: resuming from pause, powering on, or switching
+  2D/3D rejoins the schedule *now*. A programme that ends hands straight to
+  the next one on the schedule.
+- **VCR** (in SETUP) is the old behaviour: station k plays video k from the
+  start, and links share the video (`?v=`). A `?v=` link opened in Live mode
+  plays that concert once, then channel changes return to live stations.
+- The start offset rides in the YouTube URL (`&t=`), so the player opens at
+  the right moment instead of seeking after it starts.
+- `src/js/schedule.js` (unit-tested), `src/hooks/useTuner.js`.
+
+### 3.2 CRT settings menu — **Done**
+A SETUP menu drawn inside the tube in the OSD's phosphor style, opened with
+the chrome knob on the rail (now **MENU**) or **O**, closed with MENU, O or
+Esc. It's driven by the set's own controls, so it works identically in 2D and
+3D: the channel control (dial or ↑/↓) picks a row, the volume control (knob
+or ←/→) changes it.
+
+| Setting | Effect |
+|---|---|
+| Broadcast | Live / VCR (see 3.1) |
+| Scanlines | 0–10 scanline strength |
+| Curvature | 0–10 edge fall-off and corner darkening |
+| Warm-up | On: a slow ~2 s power-on bloom; off: near-instant |
+| Degauss | Colour shiver as each new picture locks in |
+| VHS | Tape jitter, colour bleed, a rolling tracking band, and PLAY ▶ |
+| Hiss | Tuning hiss (3.3) |
+| Captions | The video's captions (4.3) |
+
+Settings persist. `src/js/crtSettings.js` (unit-tested),
+`src/components/Osd.js` (`SetupMenu`), `src/components/Screen.css`.
+
+### 3.3 Antenna retune (random channel) — **Done**
+With ~1,900 channels, stepping the dial only ever shows a sliver of the
+lineup. Moving the antenna retunes to a random channel, like chasing
+reception on an analog set.
+
+- **Gesture.** Drag the antenna (swing it on its ball mount in 3D, pivot
+  the rod in 2D), tap it on touch screens (it wobbles), or press **R**.
+- **While it moves:** the picture drops out in steps (static, rolling
+  vertical hold, ghosting), the video's audio ducks under a synthesized
+  hiss (Web Audio noise; follows volume/mute, no assets).
+- **On release:** about a second of "finding a station," then it locks onto
+  a random channel and the OSD shows the jump (`CH 0712 · ARTIST`). The
+  dial and ↑/↓ carry on from there.
+- **Picking.** A shuffle bag: no repeats until most of the lineup has come
+  up, and never the channel you just left.
+- **LAST.** A recall control (Backspace / L) returns to the previous
+  channel, since a stray bump shouldn't lose a concert you liked.
+- **Why not map antenna angle to channel?** 1,900 channels over ~120° of
+  swing is ~0.06° per channel: unsteerable, so it would feel random anyway.
+- **With broadcast mode (3.1)** a retune lands mid-programme on that
+  channel's schedule, which is what flipping around on a real set felt like.
+
+- **Built as:** `useRetune` (reception state machine), `useAntennaGesture`
+  (drag / tap / hold, shared by the DOM and three.js antennas), the shuffle
+  bag in `src/js/shuffleBag.js` (unit-tested) and the Web Audio hiss in
+  `src/js/hiss.js`. Keys: **R** retune, **S** scan, **L** / Backspace last.
+- Picture: static, a rolling picture with a blanking bar, and jitter.
+  Ghosting (a doubled image) isn't possible on a cross-origin iframe.
+
+Also in scope (agreed, done):
+- **Hiss on by default**, following the set's volume and mute.
+- **SCAN.** Hold the antenna or press S to hop to a new random channel every
+  few seconds until released.
+- **Signal sweet spot.** While dragging, static eases in and out as the
+  antenna passes hidden "good" angles, so it feels like hunting for reception.
+
+### 3.4 TV guide — **Done**
+A listings digest lies on top of the set: a tilted cover on two older issues
+in 2D, a stack of three with spines facing you in 3D (the cover shows when
+you orbit up). Clicking it, or **G**, opens the book as a two-page spread
+drawn over either set (one page on phones).
+
+- **Listings.** Live: each channel's concert on now (start time, progress)
+  and the next one. VCR: each channel's own concert, billing, year and
+  length. Times refresh every 30 s while it's open.
+- **Finding things.** Opens to your channel ("you are here"). Page turns
+  (← / →, corner buttons, swipe), thumb-index tabs per hundred channels, a
+  `CH ___` jump, and search by artist or title (case- and accent-blind).
+- **Search, live.** Each hit says where it's on now ("On now · 14 min in",
+  tunes that station); if no station is showing it, it says when it next
+  airs and plays it from the top instead, as a `?v=` link would.
+- **It opens like a book.** The closed digest grows out of the stack on
+  the set (in 3D, from where you clicked), then its cover swings open on the
+  spine: the left page is the inside of the cover. Page turns flip a leaf
+  carrying the old and new pages; closing folds it shut and shrinks it back
+  to the set. Reduced motion: it just appears, open.
+- Picking a listing tunes like the dial (OSD, LAST, share link) and folds
+  the book shut. It's a modal like the owner's manual; both now share
+  `useDialog`.
+- `src/js/listings.js` and `findAiring` in `src/js/schedule.js`
+  (unit-tested), `src/components/Guide.js`, `GuideStack` in
+  `tv3d/TVModel.js`.
+
+---
+
+## 4. Next
+
+Ideas agreed for after the TV guide. 4.1 and 4.3 are done, 4.2 was tried
+and dropped; the rest are
+unscheduled, roughly in order of size.
+
+### Quick wins
+- **4.1 Lock-screen and media-key controls — Done.** The Media Session API:
+  the artist, channel and thumbnail on the lock screen / OS media hub, and
+  play/pause plus next/previous (channel up/down) from media keys
+  (`src/App.js`). In practice media keys usually reach YouTube's player
+  directly (it's the frame playing audio), so the set also follows the
+  player's own play/pause events: the lever, PAUSE and the next toggle stay
+  true however the video was paused.
+- **4.2 Thumbnails in the guide — Dropped.** Halftone thumbnails beside each
+  listing and on the cover were tried; they cluttered the page. Thumbnails
+  remain only as the lock-screen artwork (`src/js/thumbnails.js`).
+- **4.3 Captions option — Done.** A Captions row in SETUP for people who
+  need them (off by default to keep the picture clean). On selects the
+  video's English track, including YouTube's auto-generated ones (else its
+  first track). About a quarter of the lineup, mostly older concerts, has no
+  captions at all, so nothing can show on those. `src/components/Screen.js`.
+- **4.4 Control sounds.** Synthesized like the hiss: dial detent clicks, the
+  power switch's clunk, the lever's snap. Follows volume and mute.
+
+### Medium
+- **4.5 Station IDs.** A 3–4 s NP-R1 ident (test card, channel number,
+  chime) in the tube whenever the picture changes. On theme, and it hides
+  YouTube's title bar and pause glyph during each video's first seconds.
+- **4.6 Favourite channels.** Hold the dial (or a key) to store the current
+  channel in one of the 12 dial positions; the dial then steps through
+  favourites, and the guide marks them and gets a favourites page.
+- **4.7 Sleep timer.** A SETUP row (15 / 30 / 60 min) that powers the set
+  down with the CRT collapse.
+- **4.8 Themed channel bands.** Map dial positions to slices of the lineup:
+  by year (publish dates, already in the data), home concerts (titles), or
+  genre (YouTube tags, fetched with the existing details call).
+
+### Bigger
+- **4.9 Watch-together.** Live viewer counts per channel and an optional
+  "follow my channel" link over a realtime service (PartyKit, Liveblocks,
+  Supabase Realtime). Broadcast mode already keeps everyone in sync, so it
+  only carries presence and channel changes; autoplay policy is the catch.
+- **4.10 Phone as remote.** Open a link on a phone to control the set on a
+  laptop. Needs the same realtime layer as 4.9.
+- **4.11 More cabinets.** 1950s Bakelite, 1980s silver portable, Trinitron.
+  The 2D tokens (`TV.css`), the 3D palette (`tv3d/materials.js`) and the
+  shared wood generator keep much of this declarative.
+- **4.12 A "small desk" room.** The 3D set on a desk with a lamp, tinted by
+  the current concert's thumbnail colour (the iframe itself can't be
+  sampled).
