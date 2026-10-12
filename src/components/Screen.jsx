@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import ReactPlayer from 'react-player';
 import Osd, { SetupMenu } from './Osd';
 import { CRT_DEFAULTS } from '../js/crtSettings';

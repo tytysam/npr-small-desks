@@ -1,6 +1,6 @@
 # Roadmap
 
-What's worth doing next on the small-desk TV, in three groups. Items move from
+What's worth doing next on the small-desk TV, in five groups. Items move from
 **Planned** → **Done** as they land; each notes where the work lives.
 
 Order agreed: performance → functional additions → (after review) broadcast
@@ -24,7 +24,7 @@ videos, looks up their durations (`videos.list`, 1 unit per 50), and writes
 the browser. Durations are included so broadcast mode (3.1) can be scheduled
 without another API change.
 
-- Runs automatically before `npm run build` (`prebuild`); `npm run channels`
+- Runs automatically as part of `pnpm build`; `pnpm channels`
   refreshes it on demand.
 - The key is read from `YOUTUBE_API_KEY` (preferred) or the legacy
   `REACT_APP_YOUTUBE_API_KEY` in `.env`. Without a key the script keeps the
@@ -42,7 +42,7 @@ frame too.
 
 **Change.** `frameloop="demand"` on the Canvas (R3F redraws when props change
 or controls invalidate) and `ContactShadows frames={1}`.
-`src/components/tv3d/TV3D.js`.
+`src/components/tv3d/TV3D.jsx`.
 
 - Measured: an idle 3D set now requests 0 frames in 3 s (was ~180). Orbiting
   renders normally and stops ~1.3 s after release, once damping settles.
@@ -50,7 +50,7 @@ or controls invalidate) and `ContactShadows frames={1}`.
 ### 1.3 Prefetch the 3D chunk — **Done**
 The three.js chunk (~250 KB gzipped) starts downloading when the pointer
 hovers or keyboard-focuses the 2D/3D toggle, so switching is near-instant.
-`src/App.js`, `src/components/ModeToggle.js`.
+`src/App.jsx`, `src/components/ModeToggle.jsx`.
 
 ### 1.4 Free GPU textures that are replaced — **Done**
 Switching 2D↔3D already releases everything: R3F force-loses the WebGL
@@ -78,7 +78,7 @@ channel script, along with artist-name parsing.
 ### 2.2 On-screen display — **Done**
 A phosphor-green OSD inside the tube, shared by both sets: channel number and
 artist on channel change, a segmented bar for volume and brightness, and
-persistent PAUSE / MUTE indicators. `src/components/Osd.js`.
+persistent PAUSE / MUTE indicators. `src/components/Osd.jsx`.
 
 ### 2.3 Working controls — **Done**
 - **Power:** the chrome slide switch turns the set off and on, with the CRT
@@ -119,7 +119,7 @@ power-cycling the set retries immediately.
   (the 16:9 frame's sides crop off), a shield keeps the pointer from
   summoning its hover overlay, captions are switched off whenever YouTube
   loads them, and static covers the tube until each video actually plays.
-  Unplayable videos are skipped. `src/components/Screen.js`.
+  Unplayable videos are skipped. `src/components/Screen.jsx`.
   - YouTube also overlays its title bar (and a small pause glyph and
     "More videos" pill) for the first few seconds of every video. Rendering
     the player at 1280×720 and tucking the top 9% above the glass hid the
@@ -129,7 +129,7 @@ power-cycling the set retries immediately.
   drew tens of pixels off the bezel, clipping the SETUP menu and hints.
   Chrome mis-composites drei's CSS-3D layer when the canvas has a fractional
   size or position; the 3D area now snaps to whole, even pixels
-  (`tv3d/TV3D.css` + `TV3D.js`).
+  (`tv3d/TV3D.css` + `TV3D.jsx`).
 - **Play/pause lever.** A chrome bat-handle toggle on the rail of both sets:
   up plays, down pauses. It shares state with Space and the PAUSE indicator,
   and flipping it while the set is off decides whether it resumes on power-up.
@@ -141,7 +141,7 @@ A brass "?" beside the 2D/3D toggle (or the **?** key) opens a short
 instruction card styled like the sheet that came with the set, Model NP-R1.
 It glows on a first visit until opened once. It's a proper modal (focus moves
 in and back, Esc / ✕ / click outside close it) and the TV's shortcuts pause
-while it's open. Both sets' badges now read NP-R1. `src/components/Help.js`.
+while it's open. Both sets' badges now read NP-R1. `src/components/Help.jsx`.
 
 ### 2.9 2D set, rebuilt to match 3D — **Done**
 The 2D cabinet now follows the 3D model's construction (overhanging top
@@ -201,7 +201,7 @@ or ←/→) changes it.
 | Captions | The video's captions (4.3) |
 
 Settings persist. `src/js/crtSettings.js` (unit-tested),
-`src/components/Osd.js` (`SetupMenu`), `src/components/Screen.css`.
+`src/components/Osd.jsx` (`SetupMenu`), `src/components/Screen.css`.
 
 ### 3.3 Antenna retune (random channel) — **Done**
 With ~1,900 channels, stepping the dial only ever shows a sliver of the
@@ -263,8 +263,8 @@ drawn over either set (one page on phones).
   the book shut. It's a modal like the owner's manual; both now share
   `useDialog`.
 - `src/js/listings.js` and `findAiring` in `src/js/schedule.js`
-  (unit-tested), `src/components/Guide.js`, `GuideStack` in
-  `tv3d/TVModel.js`.
+  (unit-tested), `src/components/Guide.jsx`, `GuideStack` in
+  `tv3d/TVModel.jsx`.
 
 ---
 
@@ -278,7 +278,7 @@ unscheduled, roughly in order of size.
 - **4.1 Lock-screen and media-key controls — Done.** The Media Session API:
   the artist, channel and thumbnail on the lock screen / OS media hub, and
   play/pause plus next/previous (channel up/down) from media keys
-  (`src/App.js`). In practice media keys usually reach YouTube's player
+  (`src/App.jsx`). In practice media keys usually reach YouTube's player
   directly (it's the frame playing audio), so the set also follows the
   player's own play/pause events: the lever, PAUSE and the next toggle stay
   true however the video was paused.
@@ -289,7 +289,7 @@ unscheduled, roughly in order of size.
   need them (off by default to keep the picture clean). On selects the
   video's English track, including YouTube's auto-generated ones (else its
   first track). About a quarter of the lineup, mostly older concerts, has no
-  captions at all, so nothing can show on those. `src/components/Screen.js`.
+  captions at all, so nothing can show on those. `src/components/Screen.jsx`.
 - **4.4 Control sounds.** Synthesized like the hiss: dial detent clicks, the
   power switch's clunk, the lever's snap. Follows volume and mute.
 
@@ -319,3 +319,68 @@ unscheduled, roughly in order of size.
 - **4.12 A "small desk" room.** The 3D set on a desk with a lamp, tinted by
   the current concert's thumbnail colour (the iframe itself can't be
   sampled).
+
+---
+
+## 5. Tooling (next round)
+
+Follow-ups from the move to pnpm and Vite (October 2026). All **Planned**.
+
+### 5.1 React 19 and the three.js stack — **Planned**
+**Problem.** R3F is pinned to v8, drei to v9 and `three` to `0.174.0`
+because the app is on React 18 (R3F v9 needs React 19).
+
+**Change.** Upgrade React 19, R3F 9, drei 10 and a current `three`
+together; recheck `useDisposable`, `frameloop="demand"` and the knob drag
+code against the new versions. `src/components/tv3d/`.
+
+### 5.2 react-player 3, then `"type": "module"` — **Planned**
+**Problem.** react-player 2 is CommonJS. With `"type": "module"` in
+`package.json`, Vite 8 applies Node's interop and the default import becomes
+`{ default: ReactPlayer }`, which breaks the screen. So `package.json` has no
+`"type"`, and the configs are `vite.config.mjs` and `eslint.config.mjs`.
+
+**Change.** Move to react-player 3 (ESM). Its props and callbacks changed,
+so `src/components/Screen.jsx` needs reworking. Then add `"type": "module"`
+and rename the configs back to `.js`.
+
+### 5.3 React Compiler lint rules — **Planned**
+**Problem.** `eslint-plugin-react-hooks` v7's `recommended` config adds the
+React Compiler rules. They report 18 findings, so `eslint.config.mjs`
+enables only `rules-of-hooks` and `exhaustive-deps`, as CRA did. The
+findings are 11 `refs` (the latest-value ref pattern in the knobs,
+`useShortcuts`, `useDialog`, `useRetune`, `App.jsx` and `TVModel.jsx`), 3
+`set-state-in-effect`, 2 `immutability`, 1 `purity` and 1 `use-memo`.
+
+**Change.** Switch to `reactHooks.configs.flat.recommended` and refactor
+the flagged hooks (for example `useEffectEvent` once on React 19, see 5.1).
+
+### 5.4 Keep the channel-check state out of `node_modules` — **Planned**
+**Problem.** `fetch-channels.mjs` keeps its last-check times in
+`node_modules/.cache`, so any clean reinstall forces a full sweep (roughly
+100–250 quota units).
+
+**Change.** Store it in a gitignored `.cache/` at the repo root.
+
+### 5.5 Component tests — **Planned**
+**Problem.** Only the pure logic in `src/js` is tested.
+
+**Change.** Add Vitest with jsdom and Testing Library for the knobs, guide
+and OSD.
+
+### 5.6 Lint in CI or before commit — **Planned**
+**Problem.** CRA linted during every build; Vite doesn't, so `pnpm lint`
+only runs when someone remembers to.
+
+**Change.** Run `pnpm lint` and `pnpm test --run` in CI or a pre-commit
+hook. Consider oxlint, which the `create-vite` React template now uses in
+place of ESLint.
+
+### 5.7 Bundle chunking — **Planned**
+**Problem.** Vite's main chunk is 70.9 KB gzipped, against the 61.0 KB
+recorded under CRA in 1.5. The lazy TV3D chunk (about 250 KB gzipped)
+triggers Vite's 500 KB chunk-size warning on every build.
+
+**Change.** Compare the two builds to see what moved into the main chunk,
+then either split three.js into its own vendor chunk or raise
+`build.chunkSizeWarningLimit` for the 3D chunk.

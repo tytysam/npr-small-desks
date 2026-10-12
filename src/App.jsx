@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
 import TV from './components/TV';
 import ModeToggle from './components/ModeToggle';
 import { HelpButton, HelpCard } from './components/Help';

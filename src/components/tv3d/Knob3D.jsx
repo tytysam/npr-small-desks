@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useCallback, useState } from 'react';
+import { useRef, useMemo, useCallback, useState } from 'react';
 import * as THREE from 'three';
 import { normalizeDelta } from '../../hooks/useKnobDrag';
 import { makeKnurlTexture, PALETTE } from './materials';

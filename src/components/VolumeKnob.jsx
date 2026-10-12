@@ -1,11 +1,11 @@
-import React, { useRef, useCallback } from 'react';
+import { useRef, useCallback } from 'react';
 import useKnobDrag from '../hooks/useKnobDrag';
 import './Knob.css';
 
 const SWEEP_DEG = 270;
 
 // Map volume (0–1) onto a 270° sweep centred on twelve o'clock.
-export const volumeToAngle = (vol) => vol * SWEEP_DEG - SWEEP_DEG / 2;
+const volumeToAngle = (vol) => vol * SWEEP_DEG - SWEEP_DEG / 2;
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 
 const VolumeKnob = ({ volume, onVolumeChange }) => {

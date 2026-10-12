@@ -3,7 +3,7 @@
  * Builds public/channels.json: every embeddable Tiny Desk video on NPR Music's
  * channel, with a clean title, parsed artist name and duration.
  *
- * Runs before `npm run build` and via `npm run channels`. The YouTube key stays
+ * Runs as part of `pnpm build` and via `pnpm channels`. The YouTube key stays
  * on this machine — the app only ever fetches the static JSON. Without a key
  * the existing file is kept, so builds work anywhere once it's committed.
  *
@@ -118,7 +118,7 @@ const main = async () => {
   const full = args.has('--full') || existing.length === 0 || (cache.sweptAt && now - lastSwept > FULL_SWEEP_MS);
 
   if (!full && !args.has('--force') && now - lastChecked < FRESH_MS) {
-    console.log('[channels] Checked within the last day; skipping (npm run channels -- --force to refresh).');
+    console.log('[channels] Checked within the last day; skipping (pnpm channels --force to refresh).');
     return;
   }
 
