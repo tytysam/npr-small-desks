@@ -1,4 +1,3 @@
-import React from 'react';
 import { describeCrt } from '../js/crtSettings';
 import './Osd.css';
 

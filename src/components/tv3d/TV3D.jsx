@@ -1,4 +1,4 @@
-import React, { Suspense, useRef, useState, useCallback, useEffect, useLayoutEffect } from 'react';
+import { Suspense, useRef, useState, useCallback, useEffect, useLayoutEffect } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, ContactShadows, Environment, Lightformer } from '@react-three/drei';
 import TVModel from './TVModel';

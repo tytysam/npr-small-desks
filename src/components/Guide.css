@@ -76,6 +76,10 @@
     radial-gradient(ellipse at 85% 100%, rgba(150, 110, 60, 0.14), transparent 60%),
     var(--paper);
   box-shadow: 0 24px 50px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.3), inset 0 0 40px rgba(140, 100, 50, 0.14);
+  /* Keeps the stamp's multiply blend on the paper. Without it, Firefox
+     flattens the cover leaf's 3D context when the stamp is on the left page,
+     and the inside page shows through the closed cover. */
+  isolation: isolate;
 }
 
 /* the gutter: each page darkens into the fold; the page block shows below */

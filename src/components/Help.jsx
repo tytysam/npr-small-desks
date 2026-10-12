@@ -1,4 +1,4 @@
-import React, { useRef, forwardRef } from 'react';
+import { useRef, forwardRef } from 'react';
 import useDialog from '../hooks/useDialog';
 import './Help.css';
 

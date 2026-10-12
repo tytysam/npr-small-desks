@@ -1,4 +1,4 @@
-import React, { useRef, useCallback } from 'react';
+import { useRef, useCallback } from 'react';
 import useKnobDrag from '../hooks/useKnobDrag';
 import { BRIGHTNESS_MIN, BRIGHTNESS_MAX } from '../js/picture';
 

@@ -6,7 +6,7 @@
  * YouTube video id and `duration` is in seconds.
  */
 export const fetchChannelList = async () => {
-  const response = await fetch(`${process.env.PUBLIC_URL}/channels.json`);
+  const response = await fetch(`${import.meta.env.BASE_URL}channels.json`);
   if (!response.ok) throw new Error(`channels.json: ${response.status}`);
   const { channels } = await response.json();
   if (!channels?.length) throw new Error('channels.json has no channels');

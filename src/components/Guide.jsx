@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } from 'react';
 import useDialog from '../hooks/useDialog';
 import { findAiring } from '../js/schedule';
 import { PER_PAGE, indexTabs, listingFor, searchChannels } from '../js/listings';

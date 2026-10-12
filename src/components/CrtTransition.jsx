@@ -1,4 +1,3 @@
-import React from 'react';
 import './CrtTransition.css';
 
 export const CRT_OFF_MS = 320;

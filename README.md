@@ -15,11 +15,11 @@ What's been done and what might come next is in
 
 ## Getting started
 
-Requires Node 18 or later.
+Requires Node 20.19+ or 22.12+ (Vite 8) and pnpm.
 
 ```sh
-npm install
-npm start          # http://localhost:3000
+pnpm install
+pnpm start         # http://localhost:3000
 ```
 
 The channel lineup (`public/channels.json`) is committed, so the app runs
@@ -28,10 +28,12 @@ without a YouTube API key. A key is only needed to refresh the lineup; see
 
 | Script | What it does |
 |---|---|
-| `npm start` | Development server |
-| `npm test` | Unit tests (Jest) |
-| `npm run build` | Production build in `build/`; refreshes the lineup first if a key is set |
-| `npm run channels` | Refresh `public/channels.json` (see below) |
+| `pnpm start` | Development server |
+| `pnpm test` | Unit tests (Vitest, watch mode; `pnpm test --run` runs once) |
+| `pnpm build` | Production build in `build/`; refreshes the lineup first if a key is set |
+| `pnpm preview` | Serve the production build locally |
+| `pnpm lint` | ESLint |
+| `pnpm channels` | Refresh `public/channels.json` (see below) |
 
 ## Using the set
 
@@ -124,14 +126,14 @@ no API key reaches the browser and visitors use no YouTube API quota.
 - Put the key in `.env` as `YOUTUBE_API_KEY=...`. The older
   `REACT_APP_YOUTUBE_API_KEY` name still works for the script, but the
   `REACT_APP_` prefix is meant for values that are safe to ship to browsers.
-- `npm run channels` refreshes the file, and it also runs before
-  `npm run build`. Routine runs are cheap:
+- `pnpm channels` refreshes the file, and it also runs as part of
+  `pnpm build`. Routine runs are cheap:
   - It skips if it already checked in the last day.
   - Otherwise it only pages back to the newest video it already has, which
     costs 1–2 quota units.
   - Once a week it does a full sweep (roughly 100–250 units) to drop videos
     that were removed or can no longer be embedded.
-- `npm run channels -- --force` checks now, and `-- --full` forces a full
+- `pnpm channels --force` checks now, and `--full` forces a full
   sweep. When it last checked is kept in `node_modules/.cache`, so a run that
   finds nothing new leaves `channels.json` untouched.
 - Without a key the existing file is kept, so commit it. Leave the key off
@@ -152,16 +154,16 @@ fonts).
 
 ```
 src/
-  App.js              app state: tuning, volume, power, menus, shortcuts
+  App.jsx             app state: tuning, volume, power, menus, shortcuts
   components/
-    TV.js             the 2D set
+    TV.jsx            the 2D set
     tv3d/             the 3D set (loaded on first use)
-      TVModel.js      cabinet, controls, antenna, guide stack
+      TVModel.jsx     cabinet, controls, antenna, guide stack
       materials.js    procedural textures and geometry
-    Screen.js         the picture tube (shared by both sets)
-    Osd.js            on-screen display and the SETUP menu
-    Guide.js          the TV guide
-    Help.js           the owner's manual
+    Screen.jsx        the picture tube (shared by both sets)
+    Osd.jsx           on-screen display and the SETUP menu
+    Guide.jsx         the TV guide
+    Help.jsx          the owner's manual
   hooks/              tuner, antenna gesture, retune, settings, shortcuts…
   js/
     schedule.js       the broadcast schedule
@@ -180,7 +182,7 @@ scripts/
   a depth-only hole where the screen sits, so the iframe shows through while
   the cabinet still hides it correctly. Chrome draws that layer out of place
   when the canvas lands on fractional pixels, so the 3D area is snapped to
-  whole, even pixels (`TV3D.css`, `TV3D.js`).
+  whole, even pixels (`TV3D.css`, `TV3D.jsx`).
 - **Clean picture.** YouTube's controls are hidden: the 16:9 player is cropped
   to the 4:3 tube, a shield blocks its hover overlay, captions are switched
   off, and static covers the tube until each video actually plays.
@@ -200,10 +202,11 @@ scripts/
 
 ## Tests
 
-`npm test` runs the unit tests for the pure logic:
+`pnpm test` runs the unit tests for the pure logic:
 - the schedule (`schedule.test.js`)
 - the guide's listings and search (`listings.test.js`)
 - the shuffle bag (`shuffleBag.test.js`)
 - the SETUP settings (`crtSettings.test.js`)
 
-The build also lints with the CRA `react-app` ESLint config.
+`pnpm lint` runs ESLint (`eslint.config.js`): the recommended JS rules, the
+Rules of Hooks and exhaustive-deps, and React Fast Refresh checks.

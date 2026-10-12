@@ -1,4 +1,3 @@
-import React from 'react';
 import Screen from './Screen';
 import VolumeKnob from './VolumeKnob';
 import ChannelKnob from './ChannelKnob';
