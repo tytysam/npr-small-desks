@@ -1,5 +1,6 @@
-import { useRef, useCallback } from 'react';
+import { useCallback } from 'react';
 import useKnobDrag from '../hooks/useKnobDrag';
+import useLatest from '../hooks/useLatest';
 import './Knob.css';
 
 const SWEEP_DEG = 270;
@@ -9,15 +10,14 @@ const volumeToAngle = (vol) => vol * SWEEP_DEG - SWEEP_DEG / 2;
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 
 const VolumeKnob = ({ volume, onVolumeChange }) => {
-  const volumeRef = useRef(volume);
-  volumeRef.current = volume;
+  const volumeRef = useLatest(volume);
 
   const onDelta = useCallback(
     (delta) => {
       const next = clamp01(volumeRef.current + delta / SWEEP_DEG);
       if (next !== volumeRef.current) onVolumeChange(next);
     },
-    [onVolumeChange]
+    [volumeRef, onVolumeChange]
   );
 
   const { ref, isDragging, handlers } = useKnobDrag({ onDelta, keyStep: 13.5, wheelStep: 9 });

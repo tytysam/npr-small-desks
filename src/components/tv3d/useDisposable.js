@@ -21,7 +21,9 @@ const dispose = (value, depth = 0) => {
  * StrictMode's mount/unmount/mount in development is harmless.
  */
 const useDisposable = (factory, deps) => {
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are the caller's, as with useMemo
+  // Deps are the caller's, as with useMemo; eslint.config.js checks them at
+  // each call site (`additionalHooks`).
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/use-memo
   const value = useMemo(factory, deps);
   useEffect(() => () => dispose(value), [value]);
   return value;

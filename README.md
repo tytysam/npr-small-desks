@@ -134,7 +134,7 @@ no API key reaches the browser and visitors use no YouTube API quota.
   - Once a week it does a full sweep (roughly 100–250 units) to drop videos
     that were removed or can no longer be embedded.
 - `pnpm channels --force` checks now, and `--full` forces a full
-  sweep. When it last checked is kept in `node_modules/.cache`, so a run that
+  sweep. When it last checked is kept in `.cache/` (gitignored), so a run that
   finds nothing new leaves `channels.json` untouched.
 - Without a key the existing file is kept, so commit it. Leave the key off
   your hosting provider unless you want deploys to refresh the list.
@@ -195,18 +195,32 @@ scripts/
 - **Antenna.** Retuning picks from a shuffle bag, so channels don't repeat
   until most of the lineup has come up. The hiss is Web Audio noise, not an
   audio file.
-- **Dependencies.** `@react-three/fiber` is pinned to v8 and
-  `@react-three/drei` to v9 because the app is on React 18 (R3F v9 needs
-  React 19). `three` is pinned to `0.174.0`, the release contemporary with
-  those versions.
+- **Dependencies.** React 19 with `@react-three/fiber` 9, `@react-three/drei`
+  10 and `three` 0.186. drei's `<Html>` (the 3D set's screen) is patched in
+  `patches/`: as published it rebuilds its React root whenever its effect
+  re-runs, and under React 19 that leaves the screen empty. Recheck the patch
+  when upgrading drei.
 
 ## Tests
 
-`pnpm test` runs the unit tests for the pure logic:
+`pnpm test` runs Vitest (watching; `pnpm test --run` runs once). Unit tests
+for the pure logic, in Node:
 - the schedule (`schedule.test.js`)
 - the guide's listings and search (`listings.test.js`)
 - the shuffle bag (`shuffleBag.test.js`)
 - the SETUP settings (`crtSettings.test.js`)
 
-`pnpm lint` runs ESLint (`eslint.config.js`): the recommended JS rules, the
-Rules of Hooks and exhaustive-deps, and React Fast Refresh checks.
+Component tests, in jsdom with Testing Library (each file opts in with
+`// @vitest-environment jsdom`; stubs for what jsdom lacks are in
+`src/test/setup.js`):
+- the volume and brightness knobs (`knobs.test.jsx`)
+- the on-screen display (`Osd.test.jsx`)
+- the TV guide: picking, closing, paging, search, jump, live listings
+  (`Guide.test.jsx`)
+
+CI (`.github/workflows/ci.yml`) runs the lint, the tests and a build on
+pushes to `master` and on pull requests.
+
+`pnpm lint` runs ESLint (`eslint.config.js`): the recommended JS rules,
+`eslint-plugin-react-hooks`' recommended set (the Rules of Hooks,
+exhaustive-deps and the React Compiler checks) and React Fast Refresh checks.

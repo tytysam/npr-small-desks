@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import useLatest from './useLatest';
 
 const SEEK_MS = 950; // "finding a station" after the antenna settles
 const SCAN_HOP_MS = 4000; // time on each channel while scanning
@@ -29,8 +30,7 @@ const useRetune = ({ onLock }) => {
   const spotsRef = useRef(randomSpots());
   const seekTimerRef = useRef(null);
   const scanTimerRef = useRef(null);
-  const onLockRef = useRef(onLock);
-  onLockRef.current = onLock;
+  const onLockRef = useLatest(onLock);
 
   const seek = useCallback(() => {
     clearTimeout(seekTimerRef.current);
@@ -41,7 +41,7 @@ const useRetune = ({ onLock }) => {
       setPhase('idle');
       setInterference(0);
     }, SEEK_MS);
-  }, []);
+  }, [onLockRef]);
 
   const beginDrag = useCallback(() => {
     clearTimeout(seekTimerRef.current);

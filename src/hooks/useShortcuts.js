@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useEffectEvent } from 'react';
 
 const SLIDER_KEYS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'];
 
@@ -20,23 +20,21 @@ const focusedControlOwns = (target, key) => {
  * `enabled` is false (e.g. a dialog is open).
  */
 const useShortcuts = (bindings, { enabled = true } = {}) => {
-  const bindingsRef = useRef(bindings);
-  bindingsRef.current = bindings;
-  const enabledRef = useRef(enabled);
-  enabledRef.current = enabled;
+  // Reads the latest bindings without re-subscribing on every render.
+  const onKeyDown = useEffectEvent((e) => {
+    if (!enabled || e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (focusedControlOwns(e.target, e.key)) return;
+    const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    const handler = bindings[key];
+    if (!handler) return;
+    e.preventDefault();
+    handler();
+  });
 
   useEffect(() => {
-    const onKeyDown = (e) => {
-      if (!enabledRef.current || e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
-      if (focusedControlOwns(e.target, e.key)) return;
-      const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-      const handler = bindingsRef.current[key];
-      if (!handler) return;
-      e.preventDefault();
-      handler();
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    const listener = (e) => onKeyDown(e);
+    window.addEventListener('keydown', listener);
+    return () => window.removeEventListener('keydown', listener);
   }, []);
 };
 

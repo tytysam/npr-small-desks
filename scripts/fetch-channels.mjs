@@ -17,7 +17,7 @@
  * - A full sweep (every upload, every video re-checked, which drops ones that
  *   were deleted or made unembeddable) runs weekly, or with `--full`.
  *
- * When it last checked / swept is kept in node_modules/.cache, not in
+ * When it last checked / swept is kept in .cache/ (gitignored), not in
  * channels.json, so a run that finds nothing new leaves the file untouched.
  */
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
@@ -30,7 +30,9 @@ const NPR_MUSIC_CHANNEL = 'UC4eYXhJI4-7wSWc8UNRwD4A';
 const UPLOADS_PLAYLIST = `UU${NPR_MUSIC_CHANNEL.slice(2)}`;
 const MAX_PAGES = 200; // 10,000 uploads; NPR Music has a few thousand
 const MIN_SECONDS = 120; // drop Shorts and trailers
-const CACHE = join(ROOT, 'node_modules', '.cache', 'fetch-channels.json');
+const CACHE = join(ROOT, '.cache', 'fetch-channels.json');
+// Where the state lived before; read once so moving it doesn't force a full sweep.
+const LEGACY_CACHE = join(ROOT, 'node_modules', '.cache', 'fetch-channels.json');
 const FRESH_MS = 24 * 60 * 60 * 1000;
 const FULL_SWEEP_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -110,7 +112,7 @@ const main = async () => {
   }
 
   const existing = readJson(OUT)?.channels ?? [];
-  const cache = readJson(CACHE) ?? {};
+  const cache = readJson(CACHE) ?? readJson(LEGACY_CACHE) ?? {};
   const now = Date.now();
   // Without a cache (fresh clone, CI), the file's own date stands in for the last check.
   const lastChecked = Date.parse(cache.checkedAt ?? readJson(OUT)?.generatedAt ?? 0) || 0;

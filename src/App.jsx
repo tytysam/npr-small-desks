@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
+import { useState, useEffect, useEffectEvent, useCallback, useRef, Suspense, lazy } from 'react';
 import TV from './components/TV';
 import ModeToggle from './components/ModeToggle';
 import { HelpButton, HelpCard } from './components/Help';
@@ -12,6 +12,7 @@ import useCrtSettings from './hooks/useCrtSettings';
 import usePersistentState from './hooks/usePersistentState';
 import useOsd from './hooks/useOsd';
 import useShortcuts from './hooks/useShortcuts';
+import useLatest from './hooks/useLatest';
 import { BRIGHTNESS_MIN, BRIGHTNESS_MAX } from './js/picture';
 import { CRT_ITEMS } from './js/crtSettings';
 import { setHiss } from './js/hiss';
@@ -260,20 +261,19 @@ function App() {
     if (navigator.mediaSession) navigator.mediaSession.playbackState = isOn && !isPaused ? 'playing' : 'paused';
   }, [isOn, isPaused]);
 
-  const mediaActionsRef = useRef({});
-  mediaActionsRef.current = {
-    play: () => (isPaused ? togglePause() : !isOn && togglePower()),
-    pause: () => !isPaused && togglePause(),
-    nexttrack: () => changeChannel(1),
-    previoustrack: () => changeChannel(-1),
-  };
+  const onMediaAction = useEffectEvent((action) => {
+    if (action === 'play') return isPaused ? togglePause() : !isOn && togglePower();
+    if (action === 'pause') return !isPaused && togglePause();
+    if (action === 'nexttrack') return changeChannel(1);
+    if (action === 'previoustrack') return changeChannel(-1);
+  });
   useEffect(() => {
     const session = navigator.mediaSession;
     if (!session) return undefined;
-    const actions = Object.keys(mediaActionsRef.current);
+    const actions = ['play', 'pause', 'nexttrack', 'previoustrack'];
     actions.forEach((action) => {
       try {
-        session.setActionHandler(action, () => mediaActionsRef.current[action]());
+        session.setActionHandler(action, () => onMediaAction(action));
       } catch {
         // Not every browser supports every action.
       }
@@ -293,12 +293,11 @@ function App() {
   // player, so the power switch, lever, PAUSE and the next toggle stay true to
   // the picture. Pauses the set causes itself (power off, the CRT mode switch)
   // are ignored.
-  const playerSyncRef = useRef({});
-  playerSyncRef.current = { isOn, isPaused, transition, live: Boolean(program?.live), rejoin: tuner.rejoin, togglePower };
+  const playerSyncRef = useLatest({ isOn, isPaused, transition, live: Boolean(program?.live), rejoin: tuner.rejoin, togglePower });
   const handlePlayerPause = useCallback(() => {
     const { isOn: on, isPaused: paused, transition: phase } = playerSyncRef.current;
     if (on && !paused && phase === 'idle') setIsPaused(true);
-  }, []);
+  }, [playerSyncRef]);
   const handlePlayerPlay = useCallback(() => {
     const { isOn: on, isPaused: paused, live, rejoin: rejoinNow, togglePower: powerOn } = playerSyncRef.current;
     if (!on) {
@@ -311,7 +310,7 @@ function App() {
     if (!paused) return;
     if (live) rejoinNow(); // live TV doesn't wait, as with the lever
     setIsPaused(false);
-  }, []);
+  }, [playerSyncRef]);
 
   // --- playback ----------------------------------------------------------
   const handleProgress = useCallback(({ playedSeconds }) => {

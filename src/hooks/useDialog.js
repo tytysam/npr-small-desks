@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useEffectEvent } from 'react';
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -9,15 +9,14 @@ const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), [tabin
  * left to the caller, which knows what opened the dialog.
  */
 const useDialog = (containerRef, { onClose, initialFocusRef }) => {
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  const close = useEffectEvent(() => onClose());
 
   useEffect(() => {
     (initialFocusRef?.current ?? containerRef.current?.querySelector(FOCUSABLE))?.focus();
     const onKeyDown = (e) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        onCloseRef.current();
+        close();
         return;
       }
       if (e.key !== 'Tab' || !containerRef.current) return;

@@ -1,0 +1,30 @@
+diff --git a/web/Html.js b/web/Html.js
+index 81d68b7f4e9893a7d0b436a398bb38883d333374..4dceea83185ed7b14d161ef26db374a0e8c97d5d 100644
+--- a/web/Html.js
++++ b/web/Html.js
+@@ -140,7 +140,8 @@ const Html = /* @__PURE__ */React.forwardRef(({
+   }, [occlude]);
+   React.useLayoutEffect(() => {
+     if (group.current) {
+-      const currentRoot = root.current = ReactDOM.createRoot(el);
++      // Patched: reuse the root when the effect re-runs (StrictMode, a new target).
++      const currentRoot = root.current || (root.current = ReactDOM.createRoot(el));
+       scene.updateMatrixWorld();
+       if (transform) {
+         el.style.cssText = `position:absolute;top:0;left:0;pointer-events:none;overflow:hidden;`;
+@@ -153,7 +154,14 @@ const Html = /* @__PURE__ */React.forwardRef(({
+       }
+       return () => {
+         if (target) target.removeChild(el);
+-        currentRoot.unmount();
++        // Patched: unmount only once el is really gone, after the commit. A re-run
++        // re-attaches it straight away; unmounting and recreating the root mid-commit
++        // leaves the new root's DOM detached under React 19.
++        queueMicrotask(() => {
++          if (el.isConnected || root.current !== currentRoot) return;
++          root.current = null;
++          currentRoot.unmount();
++        });
+       };
+     }
+   }, [target, transform]);

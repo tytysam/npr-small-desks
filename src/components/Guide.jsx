@@ -143,7 +143,8 @@ export const GuideBook = ({ channels, schedule, station, broadcast, origin, onTu
   const [marked, setMarked] = useState(null);
   const [jump, setJump] = useState('');
   const [now, setNow] = useState(Date.now);
-  const [phase, setPhase] = useState('closed'); // 'closed' → 'open' → 'closing'
+  // 'closed' → 'open' → 'closing'; with reduced motion it's simply open.
+  const [phase, setPhase] = useState(() => (reducedMotion() ? 'open' : 'closed'));
   const [from, setFrom] = useState(null); // where the closed book starts: CSS vars
   const [turning, setTurning] = useState(null); // { dir, from }: a page turn in progress
 
@@ -168,11 +169,7 @@ export const GuideBook = ({ channels, schedule, station, broadcast, origin, onTu
   }, []);
 
   useEffect(() => {
-    if (!from) return undefined;
-    if (reducedMotion()) {
-      setPhase('open');
-      return undefined;
-    }
+    if (!from || reducedMotion()) return undefined;
     let id = requestAnimationFrame(() => {
       id = requestAnimationFrame(() => setPhase('open'));
     });

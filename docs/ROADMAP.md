@@ -324,63 +324,147 @@ unscheduled, roughly in order of size.
 
 ## 5. Tooling (next round)
 
-Follow-ups from the move to pnpm and Vite (October 2026). All **Planned**.
+Follow-ups from the move to pnpm and Vite (October 2026), all done in a second pass.
 
-### 5.1 React 19 and the three.js stack — **Planned**
+### 5.1 React 19 and the three.js stack — **Done**
 **Problem.** R3F is pinned to v8, drei to v9 and `three` to `0.174.0`
 because the app is on React 18 (R3F v9 needs React 19).
 
-**Change.** Upgrade React 19, R3F 9, drei 10 and a current `three`
-together; recheck `useDisposable`, `frameloop="demand"` and the knob drag
-code against the new versions. `src/components/tv3d/`.
+**Change.** React 19.3, R3F 9.8, drei 10.7 and `three` 0.186.
+- **drei `<Html>` patch.** The 3D screen came up empty, in dev and in
+  production. `<Html>` creates a React root for its contents and rebuilds it
+  whenever its effect re-runs. R3F 9 connects the event source after the
+  scene's first render, which changes `<Html>`'s container once, and StrictMode
+  (now passed into the R3F tree) re-runs effects in dev. In both cases
+  React 19 defers the old root's unmount mid-commit, and that leaves the new
+  root's DOM detached. The patch (`patches/@react-three__drei@10.7.9.patch`)
+  reuses the root and only unmounts it once the element has actually been
+  removed. Still the same code in drei's current source, so worth reporting
+  upstream.
+- `shadows="percentage"` on the Canvas: three removed `PCFSoftShadowMap`, which
+  R3F's plain `shadows` asks for (it already fell back to `PCFShadowMap`).
+- `HelpButton` takes `ref` as a prop instead of using `forwardRef`.
+- Verified in headless Chrome: 2D and 3D render, 2D↔3D switching leaves one
+  screen and no stray roots, knob drags tune, orbiting works, sound unlocks.
+  The one console notice left, `THREE.Clock` deprecated, comes from R3F.
+- Bundles grew: main 70.9 → 93.7 KB gzipped (React 19's `react-dom`), 3D
+  chunk 250 → 277 KB. See 5.7.
 
-### 5.2 react-player 3, then `"type": "module"` — **Planned**
+### 5.2 react-player 3, then `"type": "module"` — **Done**
 **Problem.** react-player 2 is CommonJS. With `"type": "module"` in
 `package.json`, Vite 8 applies Node's interop and the default import becomes
-`{ default: ReactPlayer }`, which breaks the screen. So `package.json` has no
-`"type"`, and the configs are `vite.config.mjs` and `eslint.config.mjs`.
+`{ default: ReactPlayer }`, which breaks the screen. So `package.json` had no
+`"type"`, and the configs were `vite.config.mjs` and `eslint.config.mjs`.
 
-**Change.** Move to react-player 3 (ESM). Its props and callbacks changed,
-so `src/components/Screen.jsx` needs reworking. Then add `"type": "module"`
-and rename the configs back to `.js`.
+**Change.** react-player 3.4 (ESM), `"type": "module"`, and the configs are
+back to `vite.config.js` and `eslint.config.js`. In `Screen.jsx`:
+- `url` → `src`; the YouTube parameters move up out of `playerVars` in
+  `config.youtube`.
+- The ref is now a `<youtube-video>` media element; the IFrame API player
+  (captions) is its `.api`, not `getInternalPlayer()`.
+- `onProgress` is gone: `onTimeUpdate` reads `currentTime` and passes
+  `{ playedSeconds }` on, so `App.jsx` is unchanged.
+- `onReady` now fires on every load event, before the API player exists, so
+  the `onApiChange` listener is attached once per player from `onPlay`.
+- Checked in headless Chrome: muted autoplay on a fresh visit, sound on the
+  first click, captions on/off, VCR resuming at the same point across a
+  2D↔3D switch, and A/B'd time-to-play against react-player 2 (same).
+- Main bundle 93.7 → 87.9 KB gzipped.
 
-### 5.3 React Compiler lint rules — **Planned**
+### 5.3 React Compiler lint rules — **Done**
 **Problem.** `eslint-plugin-react-hooks` v7's `recommended` config adds the
-React Compiler rules. They report 18 findings, so `eslint.config.mjs`
-enables only `rules-of-hooks` and `exhaustive-deps`, as CRA did. The
-findings are 11 `refs` (the latest-value ref pattern in the knobs,
-`useShortcuts`, `useDialog`, `useRetune`, `App.jsx` and `TVModel.jsx`), 3
-`set-state-in-effect`, 2 `immutability`, 1 `purity` and 1 `use-memo`.
+React Compiler rules. They reported 18 findings, so `eslint.config.js`
+enabled only `rules-of-hooks` and `exhaustive-deps`, as CRA did.
 
-**Change.** Switch to `reactHooks.configs.flat.recommended` and refactor
-the flagged hooks (for example `useEffectEvent` once on React 19, see 5.1).
+**Change.** The full `recommended` set is on and lint is clean.
+- **Latest-value refs written during render (11).** Listeners that an effect
+  subscribes now use `useEffectEvent` (`useShortcuts`, `useDialog`, the Media
+  Session handlers in `App.jsx`). Values read by handlers and timers passed
+  elsewhere (the knobs, `useRetune`, `App`'s player sync, `Screen`'s captions)
+  use `useLatest` (`src/hooks/useLatest.js`), which updates its ref in a layout
+  effect instead of during render.
+- **setState in effects (3).** `Screen`'s arrival static and degauss are
+  derived from which picture has settled, so only their timers set state. The
+  guide starts `open` under reduced motion instead of switching in an effect.
+  `useTuner`'s first tune-in (URL, storage, randomness once the lineup loads)
+  stays an effect, annotated.
+- **Reassigned locals in render (2).** The guide stack and antenna layouts are
+  computed once from their constants (`GUIDE_LAYERS`, `ANTENNA_LAYOUT`).
+- **`useDisposable` (1).** Annotated: it forwards the caller's deps to
+  `useMemo`. `exhaustive-deps` now checks those deps at every call site
+  (`additionalHooks`).
+- **`Date.now()` in render (1).** A lazy `useState` initializer.
+- Checked in headless Chrome: shortcuts (two volume steps, channel, ignored
+  while the guide is open), Esc closing the guide, Media Session
+  play/pause/next, antenna retune, 2D and 3D knobs, the degauss burst
+  (~900 ms, once), and the guide opening straight away under reduced motion.
 
-### 5.4 Keep the channel-check state out of `node_modules` — **Planned**
+### 5.4 Keep the channel-check state out of `node_modules` — **Done**
 **Problem.** `fetch-channels.mjs` keeps its last-check times in
 `node_modules/.cache`, so any clean reinstall forces a full sweep (roughly
 100–250 quota units).
 
-**Change.** Store it in a gitignored `.cache/` at the repo root.
+**Change.** It lives in a gitignored `.cache/` at the repo root. The script
+reads the old `node_modules/.cache` file once, so the move didn't force a
+sweep. `scripts/fetch-channels.mjs`.
 
-### 5.5 Component tests — **Planned**
-**Problem.** Only the pure logic in `src/js` is tested.
+### 5.5 Component tests — **Done**
+**Problem.** Only the pure logic in `src/js` was tested.
 
-**Change.** Add Vitest with jsdom and Testing Library for the knobs, guide
-and OSD.
+**Change.** Vitest + jsdom + Testing Library (`@testing-library/react` 16,
+`user-event`, `jest-dom`). Component test files opt into jsdom per file, so
+the logic tests stay in Node. `src/test/setup.js` adds jest-dom's matchers
+and stubs `matchMedia`, `ResizeObserver` and `scrollIntoView`.
+- Knobs (`knobs.test.jsx`): slider semantics, key and wheel steps, stopping
+  at the ends, and stepping from the latest value (fails if `useLatest`
+  stops updating; checked).
+- OSD (`Osd.test.jsx`): channel/LIVE panel, level bar, standing indicators,
+  the hint.
+- Guide (`Guide.test.jsx`, reduced motion so nothing animates): the current
+  channel marked, picking tunes and closes, Esc, next page, search, jump to
+  channel, live now/next listings.
+- 39 tests, about a second.
 
-### 5.6 Lint in CI or before commit — **Planned**
+### 5.6 Lint in CI or before commit — **Done**
 **Problem.** CRA linted during every build; Vite doesn't, so `pnpm lint`
-only runs when someone remembers to.
+only ran when someone remembered to.
 
-**Change.** Run `pnpm lint` and `pnpm test --run` in CI or a pre-commit
-hook. Consider oxlint, which the `create-vite` React template now uses in
-place of ESLint.
+**Change.** GitHub Actions (`.github/workflows/ci.yml`) on pushes to
+`master` and on pull requests: a frozen `pnpm install` on Node 24 LTS, then
+`pnpm lint`, `pnpm test --run` and `pnpm build`. There's no YouTube key in CI,
+so the build uses the committed `channels.json`. Ran the same steps locally
+without a key, from a clean install; the first real run happens on the next
+push.
+- Not done: a pre-commit hook, since commits are made by hand and CI
+  already gates PRs; oxlint, which the `create-vite` template now uses,
+  since ESLint carries the React Compiler rules (5.3).
 
-### 5.7 Bundle chunking — **Planned**
-**Problem.** Vite's main chunk is 70.9 KB gzipped, against the 61.0 KB
-recorded under CRA in 1.5. The lazy TV3D chunk (about 250 KB gzipped)
-triggers Vite's 500 KB chunk-size warning on every build.
+### 5.7 Bundle chunking — **Done**
+**Problem.** The main chunk had grown (61.0 KB gzipped under CRA, 70.9 under
+Vite, 93.7 after React 19) and the 3D chunk triggered Vite's 500 KB warning
+on every build.
 
-**Change.** Compare the two builds to see what moved into the main chunk,
-then either split three.js into its own vendor chunk or raise
-`build.chunkSizeWarningLimit` for the 3D chunk.
+**Change.** Measured first (per-package byte counts from the source maps):
+- Nothing had wandered into the main chunk. ~62 KB of it was `react-dom`
+  (React 19's client is bigger than 18's); the app itself is ~20 KB.
+- The 3D chunk is mostly three.js (~153 KB gzipped) and R3F (~51 KB): no fat,
+  just big.
+
+So the win is caching, not size: `vite.config.js` splits `react` (react,
+react-dom, scheduler), `three` and `r3f` (R3F, drei and their helpers) into
+chunks of their own, so a deploy that only touches app code invalidates
+~20 KB instead of ~90 KB (or ~280 KB for the 3D set).
+- Verified in the production build: up front loads the app, the React
+  chunk, the CSS and react-player's YouTube element (about 100 KB
+  transferred); `three`, `r3f` and `TV3D` load only when switching to 3D.
+- `chunkSizeWarningLimit` is 850 KB, just above the largest chunk. All the
+  big ones are lazy: three.js (~740 KB) and react-player's DASH, HLS and Mux
+  players, which never load for YouTube. The build is warning-free.
+
+### Considered, not worth it yet
+- **Dropping react-player's other players from the build.** v3 has no
+  YouTube-only entry; it would mean a custom player list and importing
+  `youtube-video-element` directly. They're never downloaded, so it would
+  only shrink the build directory.
+- **Tree-shaking three.js.** R3F registers the whole `THREE` namespace by
+  default; opting out means `extend`-ing each object the scene uses.
