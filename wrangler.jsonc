@@ -1,0 +1,12 @@
+// Cloudflare Workers static-assets config. There's no Worker script: the
+// site is just the Vite build, served from Cloudflare's edge.
+{
+  "name": "npr-small-desk",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./build",
+    // State lives in query params (?ch= / ?v=), so any unknown path just
+    // loads the app.
+    "not_found_handling": "single-page-application"
+  }
+}
