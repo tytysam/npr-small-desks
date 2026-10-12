@@ -1,4 +1,4 @@
-import { useRef, forwardRef } from 'react';
+import { useRef } from 'react';
 import useDialog from '../hooks/useDialog';
 import './Help.css';
 
@@ -28,7 +28,7 @@ const KEYS = [
 ];
 
 /** The "?" plaque beside the 2D/3D toggle. Glows until it's been opened once. */
-export const HelpButton = forwardRef(({ onClick, pulse }, ref) => (
+export const HelpButton = ({ onClick, pulse, ref }) => (
   <button
     ref={ref}
     type="button"
@@ -39,8 +39,7 @@ export const HelpButton = forwardRef(({ onClick, pulse }, ref) => (
   >
     ?
   </button>
-));
-HelpButton.displayName = 'HelpButton';
+);
 
 /**
  * The owner's manual: a short card on how the set works. A modal dialog —

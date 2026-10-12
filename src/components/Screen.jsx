@@ -2,6 +2,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import ReactPlayer from 'react-player';
 import Osd, { SetupMenu } from './Osd';
 import { CRT_DEFAULTS } from '../js/crtSettings';
+import useLatest from '../hooks/useLatest';
 import './Screen.css';
 
 const STATIC_BURST_MS = 380;
@@ -109,8 +110,9 @@ const Screen = ({
   osd,
 }) => {
   const playerRef = useRef(null);
-  const [showStatic, setShowStatic] = useState(false);
-  const [degaussing, setDegaussing] = useState(false);
+  // The picture whose arrival burst (static, then degauss) has played out.
+  const [staticDoneUrl, setStaticDoneUrl] = useState(null);
+  const [degaussDoneUrl, setDegaussDoneUrl] = useState(null);
   const [startedUrl, setStartedUrl] = useState(null);
   const [powerPhase, onPowerAnimationEnd] = usePowerPhase(isOn);
   const videoId = video?.id;
@@ -119,27 +121,26 @@ const Screen = ({
   const tuning = Boolean(url) && !error && startedUrl !== url;
 
   // Once the picture comes in: the static fades out, and (if enabled) the
-  // degauss coil shakes the colours for a moment.
+  // degauss coil shakes the colours for a moment. Only when a new picture
+  // arrives: turning degauss on later doesn't replay it.
+  const arrived = Boolean(url) && !tuning;
+  const showStatic = arrived && staticDoneUrl !== url;
+  const degaussing = arrived && crt.degauss && degaussDoneUrl !== url;
   useEffect(() => {
-    if (tuning || !url) return undefined;
-    setShowStatic(true);
-    if (crt.degauss) setDegaussing(true);
-    const staticTimer = setTimeout(() => setShowStatic(false), STATIC_BURST_MS);
-    const degaussTimer = setTimeout(() => setDegaussing(false), DEGAUSS_MS);
+    if (!arrived) return undefined;
+    const staticTimer = setTimeout(() => setStaticDoneUrl(url), STATIC_BURST_MS);
+    const degaussTimer = setTimeout(() => setDegaussDoneUrl(url), DEGAUSS_MS);
     return () => {
       clearTimeout(staticTimer);
       clearTimeout(degaussTimer);
     };
-    // Only when a new picture arrives, not when the setting changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tuning, url]);
+  }, [arrived, url]);
 
   // Captions follow the SETUP setting: off by default to keep the picture
   // clean, or the video's English track (else its first) when turned on.
-  const captionsRef = useRef(crt.captions);
-  captionsRef.current = crt.captions;
+  const captionsRef = useLatest(crt.captions);
   const applyCaptions = useCallback(() => {
-    const player = playerRef.current?.getInternalPlayer();
+    const player = playerRef.current?.api; // the YouTube IFrame API player
     if (!player) return;
     if (!captionsRef.current) {
       player.setOption?.('captions', 'track', {});
@@ -156,23 +157,28 @@ const Screen = ({
     const current = player.getOption?.('captions', 'track')?.languageCode;
     const listed = tracks.find((t) => t.languageCode?.startsWith('en')) ?? tracks[0];
     player.setOption?.('captions', 'track', { languageCode: current || listed?.languageCode || 'en' });
-  }, []);
+  }, [captionsRef]);
 
   useEffect(() => applyCaptions(), [crt.captions, applyCaptions]);
 
   // YouTube (re)loads its captions module lazily for each video and fires
-  // onApiChange when it does — the moment to apply the setting again.
-  const handleReady = useCallback(() => {
-    const player = playerRef.current?.getInternalPlayer();
-    player?.addEventListener?.('onApiChange', applyCaptions);
-    applyCaptions();
-  }, [applyCaptions]);
-
+  // onApiChange when it does — the moment to apply the setting again. The API
+  // player exists by the time a video plays; listen once per player.
+  const listenedApiRef = useRef(null);
   const handlePlay = useCallback(() => {
+    const api = playerRef.current?.api;
+    if (api && listenedApiRef.current !== api) {
+      listenedApiRef.current = api;
+      api.addEventListener?.('onApiChange', applyCaptions);
+    }
     applyCaptions();
     setStartedUrl(url);
     onPlayerPlay?.();
   }, [applyCaptions, url, onPlayerPlay]);
+
+  const handleTimeUpdate = useCallback(() => {
+    onProgress?.({ playedSeconds: playerRef.current?.currentTime ?? 0 });
+  }, [onProgress]);
 
   let picture;
   let variant = '';
@@ -192,31 +198,28 @@ const Screen = ({
         <div className="screen-player" data-video={videoId} data-start={start}>
           <ReactPlayer
             ref={playerRef}
-            url={url}
+            src={url}
             playing={playing}
             muted={volume === 0}
             volume={volume}
             width="100%"
             height="100%"
-            progressInterval={500}
-            onReady={handleReady}
             onPlay={handlePlay}
             onPause={onPlayerPause}
-            onProgress={onProgress}
+            onTimeUpdate={handleTimeUpdate}
             onEnded={onEnded}
             onError={onEnded /* skip videos that won't play (removed, region-locked) */}
             config={{
+              // YouTube player parameters
               youtube: {
-                playerVars: {
-                  modestbranding: 1,
-                  rel: 0,
-                  controls: 0,
-                  disablekb: 1,
-                  fs: 0,
-                  playsinline: 1,
-                  iv_load_policy: 3,
-                  cc_load_policy: 0,
-                },
+                modestbranding: 1,
+                rel: 0,
+                controls: 0,
+                disablekb: 1,
+                fs: 0,
+                playsinline: 1,
+                iv_load_policy: 3,
+                cc_load_policy: 0,
               },
             }}
           />

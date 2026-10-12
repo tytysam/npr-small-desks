@@ -143,7 +143,8 @@ export const GuideBook = ({ channels, schedule, station, broadcast, origin, onTu
   const [marked, setMarked] = useState(null);
   const [jump, setJump] = useState('');
   const [now, setNow] = useState(Date.now);
-  const [phase, setPhase] = useState('closed'); // 'closed' → 'open' → 'closing'
+  // 'closed' → 'open' → 'closing'; with reduced motion it's simply open.
+  const [phase, setPhase] = useState(() => (reducedMotion() ? 'open' : 'closed'));
   const [from, setFrom] = useState(null); // where the closed book starts: CSS vars
   const [turning, setTurning] = useState(null); // { dir, from }: a page turn in progress
 
@@ -168,11 +169,7 @@ export const GuideBook = ({ channels, schedule, station, broadcast, origin, onTu
   }, []);
 
   useEffect(() => {
-    if (!from) return undefined;
-    if (reducedMotion()) {
-      setPhase('open');
-      return undefined;
-    }
+    if (!from || reducedMotion()) return undefined;
     let id = requestAnimationFrame(() => {
       id = requestAnimationFrame(() => setPhase('open'));
     });
@@ -227,7 +224,10 @@ export const GuideBook = ({ channels, schedule, station, broadcast, origin, onTu
     (direction) => {
       const next = first + direction * perSpread;
       if (next < 0 || next > lastFirst) return;
-      setStart(next);
+      // Aim at the spread's last entry, so its thumb tab is the newest section
+      // that starts on it (the last page shows the last tab), whichever way
+      // you paged in.
+      setStart(Math.min(next + perSpread, total) - 1);
       setMarked(null);
       // A turn cuts short any turn still in progress, so quick presses keep up.
       clearTimeout(turnTimerRef.current);
@@ -235,7 +235,7 @@ export const GuideBook = ({ channels, schedule, station, broadcast, origin, onTu
       setTurning({ dir: direction, from: first });
       turnTimerRef.current = setTimeout(() => setTurning(null), TURN_MS);
     },
-    [first, perSpread, lastFirst]
+    [first, perSpread, lastFirst, total]
   );
 
   const search = (value) => {
@@ -356,9 +356,11 @@ export const GuideBook = ({ channels, schedule, station, broadcast, origin, onTu
   // --- pages -----------------------------------------------------------------------
   // `side` is 'left' / 'right' on a spread or 'single'. Live pages are
   // interactive; copies (the faces of a turning leaf) are print only.
-  const summary = hits
-    ? `${total} ${total === 1 ? 'concert' : 'concerts'}`
-    : `Channels ${first + 1}–${Math.min(first + perSpread, total)}`;
+  // For the spread the page belongs to, which isn't the current one on a page turning away.
+  const summary = (number) =>
+    hits
+      ? `${total} ${total === 1 ? 'concert' : 'concerts'}`
+      : `Channels ${spreadOf(number) + 1}–${Math.min(spreadOf(number) + perSpread, total)}`;
 
   const masthead = (live) => (
     <>
@@ -407,12 +409,22 @@ export const GuideBook = ({ channels, schedule, station, broadcast, origin, onTu
     </button>
   );
 
-  const tabStrip = !hits && (
-    <nav className="guide-tabs" aria-label="Channels by hundred">
-      {tabs.map((tab, t) => {
-        // The tab for the channel asked for, or else for the top of the spread.
-        const shown = start >= first && start < first + perSpread ? start : first;
-        return (
+  // The page controls are drawn on copies of a page too (a turning leaf's
+  // faces, which are inert), so they turn with it rather than popping in once
+  // it lands. Each shows the state of the spread its page belongs to.
+  const spreadOf = (number) => Math.floor((number * PER_PAGE) / perSpread) * perSpread;
+
+  const tabStrip = (number) => {
+    if (hits) return null;
+    const spread = spreadOf(number);
+    // The tab for the channel asked for (paging asks for the spread's last
+    // entry), or else for the top of the spread. A page from another spread
+    // (one turning away) shows the tab that paging to it would.
+    let shown = Math.min(spread + perSpread, total) - 1;
+    if (spread === first) shown = start >= first && start < first + perSpread ? start : first;
+    return (
+      <nav className="guide-tabs" aria-label="Channels by hundred">
+        {tabs.map((tab, t) => (
           <button
             key={tab.label}
             type="button"
@@ -425,18 +437,18 @@ export const GuideBook = ({ channels, schedule, station, broadcast, origin, onTu
           >
             {tab.label}
           </button>
-        );
-      })}
-    </nav>
-  );
+        ))}
+      </nav>
+    );
+  };
 
-  const prevButton = (
-    <button type="button" className="guide-turn" aria-label="Previous page" disabled={first === 0} onClick={() => turn(-1)}>
+  const prevButton = (number) => (
+    <button type="button" className="guide-turn" aria-label="Previous page" disabled={spreadOf(number) === 0} onClick={() => turn(-1)}>
       ‹
     </button>
   );
-  const nextButton = (
-    <button type="button" className="guide-turn" aria-label="Next page" disabled={first >= lastFirst} onClick={() => turn(1)}>
+  const nextButton = (number) => (
+    <button type="button" className="guide-turn" aria-label="Next page" disabled={spreadOf(number) >= lastFirst} onClick={() => turn(1)}>
       ›
     </button>
   );
@@ -449,13 +461,13 @@ export const GuideBook = ({ channels, schedule, station, broadcast, origin, onTu
         className={`guide-page guide-page-${side}`}
         aria-label={live ? `Page ${number + 1}` : undefined}
         aria-hidden={live ? undefined : 'true'}
-        inert={live ? undefined : ''}
+        inert={!live}
       >
         <header className="guide-head">
           {side !== 'right' && masthead(live)}
           {side !== 'left' && tools(live)}
-          {side !== 'left' && live && closeButton}
-          {side === 'single' && live && tabStrip}
+          {side !== 'left' && closeButton}
+          {side === 'single' && tabStrip(number)}
         </header>
         {total === 0 && number === 0 ? (
           <p className="guide-empty">No listings for “{query.trim()}”.</p>
@@ -463,11 +475,11 @@ export const GuideBook = ({ channels, schedule, station, broadcast, origin, onTu
           <ol className="guide-rows">{entries.map((entry) => (hits ? searchRow(entry) : stationRow(entry, live)))}</ol>
         )}
         <footer className="guide-foot">
-          {side !== 'right' && (live ? prevButton : <span className="guide-turn-spacer" />)}
+          {side !== 'right' && prevButton(number)}
           <span className="guide-folio">
-            {side === 'left' ? `p. ${number + 1}` : `${summary} · p. ${number + 1}`}
+            {side === 'left' ? `p. ${number + 1}` : `${summary(number)} · p. ${number + 1}`}
           </span>
-          {side !== 'left' && (live ? nextButton : <span className="guide-turn-spacer" />)}
+          {side !== 'left' && nextButton(number)}
         </footer>
       </section>
     );
@@ -545,7 +557,7 @@ export const GuideBook = ({ channels, schedule, station, broadcast, origin, onTu
                   <Cover />
                 </div>
               </div>
-              {tabStrip}
+              {tabStrip(firstPage)}
             </>
           )}
           {leaf}

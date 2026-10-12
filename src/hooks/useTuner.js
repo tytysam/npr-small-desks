@@ -23,7 +23,7 @@ const useTuner = ({ channels, broadcast }) => {
   const [station, setStation] = useState(null);
   const [previous, setPrevious] = useState(null);
   const [override, setOverride] = useState(null);
-  const [tune, setTune] = useState({ at: Date.now(), startAt: 0 });
+  const [tune, setTune] = useState(() => ({ at: Date.now(), startAt: 0 }));
   const [lastStation, setLastStation] = usePersistentState('npr-small-desk:lastStation', null, isStation);
 
   const schedule = useMemo(() => (channels.length ? makeSchedule(channels) : null), [channels]);
@@ -39,12 +39,16 @@ const useTuner = ({ channels, broadcast }) => {
     let next = pickRandomIndex(channels.length);
     if (isStation(lastStationRef.current) && lastStationRef.current < channels.length) next = lastStationRef.current;
     if (isStation(linkedChannel) && linkedChannel < channels.length) next = linkedChannel;
+    // Picking the first station reads the URL, storage and randomness, so it
+    // happens here, once the lineup has loaded, not during render.
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (linkedVideo >= 0) {
       next = linkedVideo;
       if (broadcast) setOverride(channels[linkedVideo].id);
     }
     setStation(next);
     setTune({ at: Date.now(), startAt: 0 });
+    /* eslint-enable react-hooks/set-state-in-effect */
     // Only on arrival of the lineup; later mode changes retune explicitly.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channels]);

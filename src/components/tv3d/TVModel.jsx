@@ -5,6 +5,7 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import Knob3D from './Knob3D';
 import useDisposable from './useDisposable';
 import useAntennaGesture from '../../hooks/useAntennaGesture';
+import useLatest from '../../hooks/useLatest';
 import { BRIGHTNESS_MIN, BRIGHTNESS_MAX } from '../../js/picture';
 import ScreenSurface, { SCREEN_W, SCREEN_H } from './ScreenSurface';
 import {
@@ -239,6 +240,18 @@ const GUIDE_ISSUES = [
   { color: '#d9a43a', ink: '#3a2a12', text: 'NP-R1 LISTINGS · NO. 37', thickness: 0.075, yaw: -0.02, dx: -0.04 },
 ];
 
+// Stacked bottom-up: the last issue lies on the board, the guide on top.
+const GUIDE_LAYERS = (() => {
+  let y = 0;
+  return GUIDE_ISSUES.map((issue, i) => ({ ...issue, i }))
+    .reverse()
+    .map((issue) => {
+      const centre = y + issue.thickness / 2;
+      y += issue.thickness;
+      return { ...issue, centre };
+    });
+})();
+
 /**
  * The stack of guides on top of the set. Clicking any of them opens the
  * guide; the top one lifts a little on hover and while it's open.
@@ -281,14 +294,6 @@ const GuideStack = ({ position, open, onOpen }) => {
     if (topRef.current) topRef.current.position.y = topRef.current.userData.restY + m.y;
   });
 
-  // Stacked bottom-up: the last issue lies on the board, the guide on top.
-  let y = 0;
-  const layers = GUIDE_ISSUES.map((issue, i) => ({ ...issue, i })).reverse().map((issue) => {
-    const centre = y + issue.thickness / 2;
-    y += issue.thickness;
-    return { ...issue, centre };
-  });
-
   return (
     <group
       position={position}
@@ -311,7 +316,7 @@ const GuideStack = ({ position, open, onOpen }) => {
         document.body.style.cursor = '';
       }}
     >
-      {layers.map(({ i, thickness, yaw, dx, centre }) => (
+      {GUIDE_LAYERS.map(({ i, thickness, yaw, dx, centre }) => (
         <mesh
           key={i}
           ref={i === 0 ? topRef : undefined}
@@ -337,6 +342,15 @@ const ANTENNA_SECTIONS = [
   { r: 0.016, len: 0.52 },
 ];
 const ANTENNA_LENGTH = ANTENNA_SECTIONS.reduce((sum, { len }) => sum + len - 0.04, 0.05);
+// Each section's centre height: they telescope, overlapping by 0.04.
+const ANTENNA_LAYOUT = (() => {
+  let y = 0.05;
+  return ANTENNA_SECTIONS.map((section) => {
+    const cy = y + section.len / 2;
+    y += section.len - 0.04;
+    return { ...section, cy };
+  });
+})();
 
 /**
  * Three-section telescoping rod on a ball mount, leaning back slightly.
@@ -409,7 +423,6 @@ const Antenna = ({ position, angle, wobble, onBusy, onDragStart, onAim, onReleas
     if (swingRef.current) swingRef.current.rotation.z = -(angle + flick) * DEG;
   });
 
-  let y = 0.05;
   return (
     <group
       ref={mountRef}
@@ -431,22 +444,18 @@ const Antenna = ({ position, angle, wobble, onBusy, onDragStart, onAim, onReleas
         <Chrome emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
       </mesh>
       <group ref={swingRef} rotation={[0, 0, -angle * DEG]}>
-        {ANTENNA_SECTIONS.map(({ r, len }, i) => {
-          const cy = y + len / 2;
-          y += len - 0.04;
-          return (
-            <group key={i}>
-              <mesh position={[0, cy, 0]} castShadow>
-                <cylinderGeometry args={[r, r, len, 16]} />
-                <Chrome roughness={0.15} emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
-              </mesh>
-              <mesh position={[0, cy + len / 2 - 0.02, 0]}>
-                <cylinderGeometry args={[r * 1.35, r * 1.35, 0.04, 16]} />
-                <Chrome roughness={0.3} />
-              </mesh>
-            </group>
-          );
-        })}
+        {ANTENNA_LAYOUT.map(({ r, len, cy }, i) => (
+          <group key={i}>
+            <mesh position={[0, cy, 0]} castShadow>
+              <cylinderGeometry args={[r, r, len, 16]} />
+              <Chrome roughness={0.15} emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
+            </mesh>
+            <mesh position={[0, cy + len / 2 - 0.02, 0]}>
+              <cylinderGeometry args={[r * 1.35, r * 1.35, 0.04, 16]} />
+              <Chrome roughness={0.3} />
+            </mesh>
+          </group>
+        ))}
         <mesh position={[0, ANTENNA_LENGTH + 0.04, 0]}>
           <sphereGeometry args={[0.028, 16, 12]} />
           <Chrome />
@@ -571,22 +580,20 @@ const TVModel = ({
   const domeGeometry = useDisposable(() => makeDomeGeometry(SCREEN_W, SCREEN_H, 0.09), []);
 
   // --- volume knob -------------------------------------------------------
-  const volumeRef = useRef(volume);
-  volumeRef.current = volume;
+  const volumeRef = useLatest(volume);
   const handleVolumeDelta = useCallback(
     (delta) => {
       const next = clamp01(volumeRef.current + delta / VOLUME_SWEEP);
       if (next !== volumeRef.current) onVolumeChange(next);
     },
-    [onVolumeChange]
+    [volumeRef, onVolumeChange]
   );
 
   // --- brightness knob ---------------------------------------------------
-  const brightnessRef = useRef(brightness);
-  brightnessRef.current = brightness;
+  const brightnessRef = useLatest(brightness);
   const handleBrightnessDelta = useCallback(
     (delta) => onBrightnessChange(brightnessRef.current + (delta / VOLUME_SWEEP) * (BRIGHTNESS_MAX - BRIGHTNESS_MIN)),
-    [onBrightnessChange]
+    [brightnessRef, onBrightnessChange]
   );
 
   // --- power switch ------------------------------------------------------

@@ -72,7 +72,7 @@ const TV3D = (props) => {
       <Canvas
         eventSource={wrapperRef}
         onCreated={(state) => state.setEvents({ compute: computePointer })}
-        shadows
+        shadows="percentage" /* PCFShadowMap: three removed the soft variant R3F defaults to */
         gl={{ alpha: true, antialias: true }}
         dpr={[1, 2]}
         frameloop="demand"

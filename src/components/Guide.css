@@ -27,6 +27,8 @@
 }
 
 .guide-book {
+  --row-h: 50px; /* every listing is this tall, Live or VCR, so a page's height is known */
+  --rows-h: calc(6px + 12 * var(--row-h) + 11px); /* a full page: twelve rows and the rules between */
   --ink: #221a12;
   --ink-soft: #6a5a46;
   --rule: rgba(60, 40, 20, 0.22);
@@ -116,6 +118,7 @@
   min-height: 66px;
   padding-bottom: 8px;
   border-bottom: 3px double var(--ink);
+  flex-shrink: 0; /* squeezed to its min-height, the column would wrap the dateline up beside the masthead */
 }
 
 .guide-page-left .guide-head {
@@ -226,7 +229,10 @@
 
 .guide-rows {
   flex: 1;
-  min-height: 594px; /* twelve rows, so short pages keep the book's size */
+  /* A full page's worth, so a short last page keeps the book's size. The book
+     takes its height from the right page; the left one is on the cover leaf,
+     out of flow. */
+  min-height: var(--rows-h);
   list-style: none;
   margin: 0;
   padding: 6px 0 0;
@@ -242,6 +248,7 @@
   align-items: stretch;
   gap: 10px;
   width: 100%;
+  height: var(--row-h);
   padding: 5px 4px;
   font: inherit;
   color: inherit;
@@ -417,7 +424,7 @@
 
 .guide-empty {
   flex: 1;
-  min-height: 594px;
+  min-height: var(--rows-h);
   margin: 0;
   padding: 60px 0;
   font-style: italic;
@@ -461,11 +468,6 @@
 .guide-turn:disabled {
   opacity: 0.3;
   cursor: default;
-}
-
-.guide-turn-spacer {
-  width: 40px;
-  height: 30px;
 }
 
 /* ---- Thumb-index tabs, standing out past the right page ----------------------- */
@@ -852,11 +854,6 @@
     flex: 1;
     width: auto;
     min-width: 0;
-  }
-
-  .guide-rows,
-  .guide-empty {
-    min-height: 0;
   }
 
   .guide-ch {

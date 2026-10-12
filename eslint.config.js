@@ -8,13 +8,10 @@ export default defineConfig([
   globalIgnores(['build']),
   {
     files: ['**/*.{js,jsx}'],
-    extends: [js.configs.recommended, reactRefresh.configs.vite],
-    plugins: { 'react-hooks': reactHooks },
-    // The two classic hooks rules CRA enforced. react-hooks v7's `recommended`
-    // adds React Compiler rules; adopting those is on the roadmap.
+    extends: [js.configs.recommended, reactHooks.configs.flat.recommended, reactRefresh.configs.vite],
     rules: {
-      'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'warn',
+      // useDisposable takes deps like useMemo; check them at each call site.
+      'react-hooks/exhaustive-deps': ['warn', { additionalHooks: '^useDisposable$' }],
     },
     languageOptions: {
       globals: globals.browser,
@@ -22,11 +19,11 @@ export default defineConfig([
     },
   },
   {
-    files: ['**/*.test.js'],
+    files: ['**/*.test.{js,jsx}', 'src/test/**'],
     languageOptions: { globals: globals.vitest },
   },
   {
-    files: ['scripts/**', '*.config.mjs'],
+    files: ['scripts/**', '*.config.js'],
     languageOptions: { globals: globals.node },
   },
 ]);

@@ -1,5 +1,6 @@
-import { useRef, useCallback } from 'react';
+import { useCallback } from 'react';
 import useKnobDrag from '../hooks/useKnobDrag';
+import useLatest from '../hooks/useLatest';
 import { BRIGHTNESS_MIN, BRIGHTNESS_MAX } from '../js/picture';
 
 const SWEEP_DEG = 270;
@@ -10,12 +11,11 @@ const toAngle = (b) => ((b - BRIGHTNESS_MIN) / RANGE) * SWEEP_DEG - SWEEP_DEG / 
 
 /** The small black trim knob on the rail: picture brightness. */
 const BrightnessKnob = ({ brightness, onBrightnessChange }) => {
-  const brightnessRef = useRef(brightness);
-  brightnessRef.current = brightness;
+  const brightnessRef = useLatest(brightness);
 
   const onDelta = useCallback(
     (delta) => onBrightnessChange(brightnessRef.current + (delta / SWEEP_DEG) * RANGE),
-    [onBrightnessChange]
+    [brightnessRef, onBrightnessChange]
   );
 
   const { ref, isDragging, handlers } = useKnobDrag({ onDelta, keyStep: 13.5, wheelStep: 9 });
