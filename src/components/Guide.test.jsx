@@ -77,6 +77,33 @@ describe('GuideBook', () => {
     expect(row(38)).toHaveClass('is-marked');
   });
 
+  test('the last page shows the last thumb tab, however you page to it', async () => {
+    // 110 channels: the last spread (97–110) straddles the "1" and "101" tabs.
+    const lineup = Array.from({ length: 110 }, (_, i) => ({ ...channels[i % channels.length], id: `video-${i}` }));
+    renderGuide({ channels: lineup, station: 0 });
+    const active = () => screen.getAllByRole('button').find((b) => b.classList.contains('is-active'))?.textContent;
+    await userEvent.click(screen.getByRole('button', { name: '101' }));
+    expect(active()).toBe('101');
+    await userEvent.click(screen.getByRole('button', { name: 'Previous page' }));
+    expect(active()).toBe('1');
+    await userEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    expect(row(110)).toBeDefined();
+    expect(active()).toBe('101');
+  });
+
+  test('a turning page carries its controls, inert', async () => {
+    window.matchMedia = (query) => ({ matches: false, media: query, addEventListener() {}, removeEventListener() {} });
+    renderGuide();
+    await userEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    const copies = [...document.querySelectorAll('.guide-turn-leaf .guide-page')];
+    expect(copies).toHaveLength(2);
+    copies.forEach((copy) => expect(copy).toHaveAttribute('inert'));
+    const controls = (label) => copies.flatMap((copy) => [...copy.querySelectorAll(`[aria-label="${label}"]`)]);
+    expect(controls('Previous page')).toHaveLength(1);
+    expect(controls('Next page')).toHaveLength(1);
+    expect(controls('Close')).toHaveLength(1);
+  });
+
   test('live listings show what is on now and next', () => {
     renderGuide({ broadcast: true, schedule: makeSchedule(channels) });
     const current = row(3);
