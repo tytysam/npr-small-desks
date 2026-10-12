@@ -1,0 +1,42 @@
+name: Refresh channels
+
+on:
+  schedule:
+    # Mondays at 10:00 UTC.
+    - cron: '0 10 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: refresh-channels
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Only the channel script runs, and it needs nothing from node_modules,
+      # so there's no install step.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      # A full sweep, since this runs weekly: picks up new videos and drops
+      # ones that were deleted or made unembeddable. Costs ~100-200 quota units.
+      - run: node scripts/fetch-channels.mjs --full
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+
+      # The push to master is what triggers Cloudflare to redeploy.
+      - name: Commit if changed
+        run: |
+          git diff --quiet -- public/channels.json && { echo "No changes."; exit 0; }
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898289+github-actions[bot]@users.noreply.github.com'
+          git add public/channels.json
+          git commit -m 'chore: refresh channels.json'
+          git push
