@@ -2,12 +2,24 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="/favicon.ico" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#141414" />
     <meta name="description" content="A retro TV that plays NPR Tiny Desk concerts" />
-    <link rel="apple-touch-icon" href="/logo192.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
+    <!-- Link previews. Scrapers need absolute URLs: update these with a custom domain. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="NPR Small Desk" />
+    <meta property="og:title" content="NPR Small Desk" />
+    <meta property="og:description" content="Tiny Desk concerts on a retro TV. Flip the dial and see what's on." />
+    <meta property="og:url" content="https://npr-small-desk.tylercsamuelson.workers.dev/" />
+    <meta property="og:image" content="https://npr-small-desk.tylercsamuelson.workers.dev/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="A wood-grain retro TV next to the words NPR Small Desk" />
+    <meta name="twitter:card" content="summary_large_image" />
     <!-- DM Serif Display: the TV guide's channel numerals -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -18,5 +30,7 @@
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
     <script type="module" src="/src/index.jsx"></script>
+    <!-- Cloudflare Web Analytics: cookie-free page views. -->
+    <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "5307a21a260f44889c2df5fde2180936"}'></script>
   </body>
 </html>

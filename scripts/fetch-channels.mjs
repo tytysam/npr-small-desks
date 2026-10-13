@@ -19,6 +19,9 @@
  *
  * When it last checked / swept is kept in .cache/ (gitignored), not in
  * channels.json, so a run that finds nothing new leaves the file untouched.
+ *
+ * `--strict` (the scheduled refresh) fails on a missing key or a failed
+ * refresh instead of keeping the old file, so the run shows up as failed.
  */
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -37,6 +40,7 @@ const FRESH_MS = 24 * 60 * 60 * 1000;
 const FULL_SWEEP_MS = 7 * 24 * 60 * 60 * 1000;
 
 const args = new Set(process.argv.slice(2));
+const strict = args.has('--strict');
 
 const API = 'https://www.googleapis.com/youtube/v3';
 
@@ -107,6 +111,7 @@ const main = async () => {
   const key = readKey();
   if (!key) {
     const note = existsSync(OUT) ? 'keeping the existing public/channels.json' : 'public/channels.json does not exist yet';
+    if (strict) throw new Error('No YOUTUBE_API_KEY found.');
     console.warn(`[channels] No YOUTUBE_API_KEY found; ${note}.`);
     return;
   }
@@ -201,5 +206,5 @@ const main = async () => {
 main().catch((err) => {
   console.error(`[channels] ${err.message}`);
   // A failed refresh shouldn't block a build that already has data to ship.
-  process.exit(existsSync(OUT) ? 0 : 1);
+  process.exit(existsSync(OUT) && !strict ? 0 : 1);
 });
