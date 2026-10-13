@@ -27,7 +27,7 @@ jobs:
 
       # A full sweep, since this runs weekly: picks up new videos and drops
       # ones that were deleted or made unembeddable. Costs ~100-200 quota units.
-      - run: node scripts/fetch-channels.mjs --full
+      - run: node scripts/fetch-channels.mjs --full --strict
         env:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
 

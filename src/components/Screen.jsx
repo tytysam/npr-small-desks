@@ -176,6 +176,14 @@ const Screen = ({
     onPlayerPlay?.();
   }, [applyCaptions, url, onPlayerPlay]);
 
+  // When a video finishes, the player fires `pause` just before `ended`.
+  // That's not the viewer pausing, so don't pass it on: the set would go
+  // paused and the next video would load stopped.
+  const handlePause = useCallback(() => {
+    if (playerRef.current?.api?.getPlayerState?.() === 0) return; // YT.PlayerState.ENDED
+    onPlayerPause?.();
+  }, [onPlayerPause]);
+
   const handleTimeUpdate = useCallback(() => {
     onProgress?.({ playedSeconds: playerRef.current?.currentTime ?? 0 });
   }, [onProgress]);
@@ -205,7 +213,7 @@ const Screen = ({
             width="100%"
             height="100%"
             onPlay={handlePlay}
-            onPause={onPlayerPause}
+            onPause={handlePause}
             onTimeUpdate={handleTimeUpdate}
             onEnded={onEnded}
             onError={onEnded /* skip videos that won't play (removed, region-locked) */}
