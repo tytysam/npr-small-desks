@@ -74,6 +74,42 @@ const crtStyle = (crt, brightness) => ({
 });
 
 /**
+ * The YouTube player, kept on one iframe for as long as it's mounted.
+ *
+ * Changing ReactPlayer's `src` builds a brand-new iframe, and Chrome won't
+ * start media in a new frame while the page is hidden (a minimised or fully
+ * covered window): the next programme would sit unstarted until the set came
+ * back into view. So the iframe keeps the URL it opened with, and later
+ * programmes load into it through the YouTube API — the frame that's already
+ * playing is allowed to carry on. Cued rather than played while the set is
+ * paused or off, so the swap doesn't start it.
+ */
+const YouTubePlayer = ({ ref, url, videoId, start, playing, ...props }) => {
+  const [src] = useState(url);
+  const shownUrlRef = useRef(url);
+  const playingRef = useLatest(playing);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element || shownUrlRef.current === url) return undefined;
+    let cancelled = false;
+    // The first programme may still be loading; swap once the API is ready.
+    Promise.resolve(element.loadComplete).then(() => {
+      if (cancelled || !element.api) return;
+      shownUrlRef.current = url;
+      const next = { videoId, startSeconds: start };
+      if (playingRef.current) element.api.loadVideoById(next);
+      else element.api.cueVideoById(next);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [ref, url, videoId, start, playingRef]);
+
+  return <ReactPlayer ref={ref} src={src} playing={playing} {...props} />;
+};
+
+/**
  * The picture tube. Shared by the 2D and 3D sets.
  *
  * `startAt` (seconds) rides in the video URL, so the player opens at that
@@ -204,9 +240,11 @@ const Screen = ({
     picture = (
       <>
         <div className="screen-player" data-video={videoId} data-start={start}>
-          <ReactPlayer
+          <YouTubePlayer
             ref={playerRef}
-            src={url}
+            url={url}
+            videoId={videoId}
+            start={start}
             playing={playing}
             muted={volume === 0}
             volume={volume}
