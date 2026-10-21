@@ -121,9 +121,9 @@ describe('GuideBook', () => {
     expect(onBroadcastChange).toHaveBeenCalledWith(true);
   });
 
-  test('tapes are labelled with their length', () => {
+  test('tapes list their running time where live listings show the hour', () => {
     renderGuide();
-    expect(within(row(3)).getByText('T-15')).toBeInTheDocument(); // 900 s
+    expect(within(row(3)).getByText('15 min')).toBeInTheDocument(); // 900 s
   });
 });
 

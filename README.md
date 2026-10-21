@@ -112,11 +112,11 @@ control changes it, so it works the same with the knobs, keys, 2D or 3D.
 The listings digest on top of the set (or **G**) opens to the channel you're
 watching. The masthead switches between **On Air** (Live) and **Tapes**
 (VCR). On Air, each channel shows what's on now (with progress) and what's
-next, with times; Tapes lists each channel's concert as a cassette label. Turn pages with ← / →,
-the corner buttons or a swipe, jump with the thumb tabs or the `CH` box, or
-search by artist or title (press `/`). Each search result says which channel
-it's on right now, or plays it from the start if no channel is showing it.
-Pick any listing to tune in.
+next, with times; Tapes lists each channel's concert and its running time.
+Turn pages with ← / →, the corner buttons or a swipe, jump with the thumb
+tabs or the `CH` box, or search by artist or title (press `/`). Each search
+result says which channel it's on right now, or plays it from the start if no
+channel is showing it. Pick any listing to tune in.
 
 ### Remembered between visits
 

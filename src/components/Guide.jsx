@@ -17,8 +17,6 @@ const MARQUEE_FADE_PX = 24; // the edge fade (Guide.css); glide far enough to cl
 const dateline = (ms) => new Date(ms).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
 const minutes = (seconds) => `${Math.max(1, Math.round(seconds / 60))} min`;
 const year = (video) => video.publishedAt?.slice(0, 4) ?? '';
-// A tape's length, as written on a cassette's spine: "T-18".
-const tapeLength = (video) => `T-${Math.max(1, Math.ceil(video.duration / 60))}`;
 // "Artist: Tiny Desk (Home) Concert" → "Tiny Desk (Home) Concert"
 const billing = (video) => {
   const rest = video.title.startsWith(`${video.artist}:`) ? video.title.slice(video.artist.length + 1).trim() : video.title;
@@ -124,7 +122,7 @@ const Cover = () => (
  * (`origin`, the stack's centre and width on screen) and opens to a two-page
  * spread (one page on small screens). On Air (Live), each station shows
  * what's on now and next with times; on Tapes (VCR), each station's one
- * concert, printed like a cassette label. The masthead switches between the
+ * concert and its running time. The masthead switches between the
  * two (`onBroadcastChange`). Search turns the pages into matching concerts,
  * with where (and when) to catch each one.
  *
@@ -314,7 +312,7 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
     };
     if (!broadcast || !schedule) {
       const video = channels[s];
-      return <Row key={s} {...props} titleTime={tapeLength(video)} title={video.artist} detail={`${billing(video)} · ${year(video)}`} />;
+      return <Row key={s} {...props} titleTime={minutes(video.duration)} title={video.artist} detail={`${billing(video)} · ${year(video)}`} />;
     }
     const { now: on, next } = listingFor(schedule, s, now, true);
     return (
@@ -339,7 +337,7 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
           key={i}
           ch={i + 1}
           current={i === station}
-          titleTime={tapeLength(video)}
+          titleTime={minutes(video.duration)}
           title={title}
           detail={`${billing(video)} · ${year(video)}`}
           onClick={pick(() => onTune(i))}
@@ -396,7 +394,7 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
               tabIndex={live ? undefined : -1}
               onClick={() => onBroadcastChange?.(value)}
             >
-              {label}
+              <span className="guide-mode-label">{label}</span>
             </button>
           ))}
         </div>
@@ -562,7 +560,7 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
     <div className={`guide-backdrop ${phaseClass}`} onMouseDown={(e) => e.target === e.currentTarget && requestClose()}>
       <div
         ref={bookRef}
-        className={`guide-book ${phaseClass} ${narrow ? 'is-narrow' : 'is-wide'}${broadcast ? '' : ' is-tapes'}`}
+        className={`guide-book ${phaseClass} ${narrow ? 'is-narrow' : 'is-wide'}`}
         style={from ?? undefined}
         role="dialog"
         aria-modal="true"
