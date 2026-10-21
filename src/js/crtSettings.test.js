@@ -23,3 +23,9 @@ test('describes values for the menu', () => {
   expect(describeCrt(CRT_DEFAULTS, byKey.vhs)).toBe('Off');
   expect(describeCrt(CRT_DEFAULTS, byKey.scanlines)).toBe(5);
 });
+
+test('the VHS look is labelled Tape FX, so it reads apart from VCR playback', () => {
+  const vhs = CRT_ITEMS.find((i) => i.key === 'vhs');
+  expect(vhs.label).toBe('Tape FX');
+  expect(normalizeCrt({ vhs: true }).vhs).toBe(true); // saved settings keep the old key
+});

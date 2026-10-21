@@ -492,6 +492,8 @@ const TVModel = ({
   antenna,
   guideOpen,
   onGuideOpen,
+  broadcast,
+  onBroadcastToggle,
   onKnobDragging,
 }) => {
   // --- materials ---------------------------------------------------------
@@ -516,6 +518,14 @@ const TVModel = ({
         color: '#24130a',
         letterSpacing: 10,
       }),
+    []
+  );
+  const onAirTexture = useDisposable(
+    () => makeLabelTexture('ON AIR', { width: 256, height: 80, font: 'bold 52px "Courier New", monospace', color: '#ffe9e0', letterSpacing: 6 }),
+    []
+  );
+  const inputLabelTexture = useDisposable(
+    () => makeLabelTexture('TV    VCR', { width: 320, height: 72, font: 'bold 46px "Courier New", monospace', color: '#e8dfc8' }),
     []
   );
   const tuningTexture = useDisposable(
@@ -631,6 +641,25 @@ const TVModel = ({
   }, []);
   const handleLeverOut = useCallback(() => {
     setLeverHovered(false);
+    document.body.style.cursor = '';
+  }, []);
+
+  // --- TV/VCR input selector ----------------------------------------------
+  const [inputHovered, setInputHovered] = useState(false);
+  const handleInputClick = useCallback(
+    (e) => {
+      e.stopPropagation();
+      onBroadcastToggle();
+    },
+    [onBroadcastToggle]
+  );
+  const handleInputOver = useCallback((e) => {
+    e.stopPropagation();
+    setInputHovered(true);
+    document.body.style.cursor = 'pointer';
+  }, []);
+  const handleInputOut = useCallback(() => {
+    setInputHovered(false);
     document.body.style.cursor = '';
   }, []);
 
@@ -763,7 +792,7 @@ const TVModel = ({
         </group>
       </group>
 
-      {/* lower rail: groove, badge, tuning strip, louvres, play lever, pilot lamp, brightness knob */}
+      {/* lower rail: groove, badge, tuning strip, TV/VCR selector, louvres, play lever, pilot lamp, brightness knob */}
       <group position={[0, RAIL_Y, BOARD_Z]}>
         <mesh geometry={railGrooveGeometry} position={[0, 0, 0.001]}>
           <meshStandardMaterial color="#1a0e05" roughness={0.9} />
@@ -781,6 +810,34 @@ const TVModel = ({
           <planeGeometry args={[2.3, 0.2]} />
           <meshBasicMaterial map={tuningTexture} toneMapped={false} />
         </mesh>
+
+        {/* TV/VCR input selector: a slide switch, left for the broadcast, with
+            the ON AIR lamp above it lit while live */}
+        <group position={[0.68, 0, 0]}>
+          <mesh position={[0, 0.15, 0.008]}>
+            <boxGeometry args={[0.24, 0.075, 0.012]} />
+            <meshStandardMaterial
+              color={broadcast ? '#d8352a' : '#2a0d08'}
+              emissive="#ff3a28"
+              emissiveIntensity={broadcast ? 1.4 : 0}
+              roughness={0.4}
+            />
+          </mesh>
+          <Plate texture={onAirTexture} position={[0, 0.15, 0.0145]} size={[0.2, 0.0625]} />
+          <pointLight position={[0, 0.15, 0.2]} color="#ff3a28" intensity={broadcast ? 0.25 : 0} distance={0.6} />
+
+          <group onClick={handleInputClick} onPointerOver={handleInputOver} onPointerOut={handleInputOut}>
+            <mesh position={[0, 0, 0.004]}>
+              <boxGeometry args={[0.3, 0.09, 0.012]} />
+              <meshStandardMaterial color="#0e0e0d" roughness={0.8} />
+            </mesh>
+            <mesh position={[broadcast ? -0.07 : 0.07, 0, 0.02]} castShadow>
+              <boxGeometry args={[0.13, 0.06, 0.03]} />
+              <Silver emissive="#ffffff" emissiveIntensity={inputHovered ? 0.08 : 0} />
+            </mesh>
+          </group>
+          <Plate texture={inputLabelTexture} position={[0, -0.12, 0.003]} size={[0.32, 0.072]} />
+        </group>
 
         {Array.from({ length: 5 }, (_, i) => (
           <mesh key={i} position={[1.28, 0.12 - i * 0.06, 0.004]}>

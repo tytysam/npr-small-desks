@@ -158,6 +158,79 @@
   color: var(--ink-soft);
 }
 
+.guide-subhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+/* The two editions, On Air and Tapes, as a pair of tabs set into the masthead.
+   Each button draws its own frame, so the active fill always runs right up
+   to it (a fill clipped inside a shared frame can leave a sliver of paper). */
+.guide-modes {
+  display: inline-flex;
+}
+
+.guide-mode {
+  display: inline-flex;
+  align-items: center;
+  height: 23px;
+  padding: 0 9px;
+  font: 900 11px/1 'Rockwell', 'Roboto Slab', 'Courier New', serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: none;
+  border: 1.5px solid var(--ink);
+  cursor: pointer;
+}
+
+.guide-mode:first-child {
+  border-radius: 3px 0 0 3px;
+}
+
+.guide-mode:last-child {
+  border-radius: 0 3px 3px 0;
+}
+
+/* One divider between them, belonging to the button that's on (so its fill
+   meets it); the other drops that side. The labels don't move as it swaps. */
+.guide-mode:first-child:not(.is-on) {
+  border-right: none;
+}
+
+.guide-mode:last-child:not(.is-on) {
+  border-left: none;
+}
+
+/* Centre the capitals in the button (all caps sit high in a line box). */
+@supports (text-box: trim-both cap alphabetic) {
+  .guide-mode {
+    text-box: trim-both cap alphabetic;
+  }
+}
+
+/* Nudged down to sit optically centred in the button. */
+.guide-mode-label {
+  transform: translateY(1px);
+}
+
+.guide-mode:hover {
+  background: rgba(196, 55, 43, 0.1);
+}
+
+.guide-mode.is-on {
+  color: #fff8ec;
+  background: var(--red);
+  cursor: default;
+}
+
+.guide-mode:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: -4px;
+}
+
 .guide-tools {
   display: flex;
   align-items: center;

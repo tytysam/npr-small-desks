@@ -9,12 +9,47 @@ describe('Osd', () => {
     render(<Osd {...base} flash="channel" />);
     expect(screen.getByText('CH 07')).toBeInTheDocument();
     expect(screen.getByText('Mac Miller')).toBeInTheDocument();
-    expect(screen.queryByText('LIVE')).not.toBeInTheDocument();
   });
 
-  test('broadcast stations are tagged LIVE', () => {
-    render(<Osd {...base} flash="channel" live />);
-    expect(screen.getByText('LIVE')).toBeInTheDocument();
+  test('a live station carries a standing LIVE bug with the time', () => {
+    const { container } = render(<Osd {...base} live />);
+    const bug = container.querySelector('.osd-bug');
+    expect(bug).toHaveClass('is-live');
+    expect(bug.textContent).toMatch(/^LIVE \d{1,2}:\d{2}/);
+  });
+
+  test('VCR shows the tape counter instead, with the deck paused or playing', () => {
+    const { container, rerender } = render(<Osd {...base} tapeSeconds={754} />);
+    expect(container.querySelector('.osd-bug')).toHaveTextContent('▶ 0:12:34');
+    rerender(<Osd {...base} tapeSeconds={754} paused />);
+    expect(container.querySelector('.osd-bug')).toHaveTextContent('❚❚ 0:12:34');
+  });
+
+  test('no bug before a channel is tuned', () => {
+    const { container } = render(<Osd {...base} channelNumber={null} live />);
+    expect(container.querySelector('.osd-bug')).toBeNull();
+  });
+
+  test('switching modes announces the one now on', () => {
+    const { rerender } = render(<Osd {...base} banner="mode" live />);
+    expect(screen.getByText('LIVE TV')).toBeInTheDocument();
+    rerender(<Osd {...base} banner="mode" />);
+    expect(screen.getByText('VCR')).toBeInTheDocument();
+    expect(screen.getByText('Playing from the top')).toBeInTheDocument();
+    rerender(<Osd {...base} banner="rejoin" live />);
+    expect(screen.getByText('Rejoining the broadcast')).toBeInTheDocument();
+  });
+
+  test('pausing a live station says play rejoins it; a tape just pauses', () => {
+    const { rerender } = render(<Osd {...base} paused live />);
+    expect(screen.getByText('PLAY REJOINS LIVE')).toBeInTheDocument();
+    rerender(<Osd {...base} paused />);
+    expect(screen.queryByText('PLAY REJOINS LIVE')).not.toBeInTheDocument();
+  });
+
+  test('no PLAY ▶ deck indicator while live', () => {
+    render(<Osd {...base} live />);
+    expect(screen.queryByText(/PLAY ▶/)).not.toBeInTheDocument();
   });
 
   test('a volume change shows a level bar', () => {

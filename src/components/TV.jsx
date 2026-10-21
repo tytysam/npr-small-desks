@@ -34,7 +34,8 @@ const WoodGrainFilters = () => (
  * a walnut cabinet whose raised rim frames a recessed front board, a slim
  * honey-wood bezel rolling in to a pillow-shaped tube, a recessed metal control
  * column with chrome knurled dials and a perforated speaker, a grooved lower
- * rail carrying the tuning strip (artist name) and pilot lamp, a telescoping
+ * rail carrying the tuning strip (artist name), the TV/VCR input selector
+ * with its ON AIR lamp, and the pilot lamp, a telescoping
  * antenna, and a base on splayed slab legs. The TV guide lies on top. The wood is the same procedural
  * grain the 3D set uses.
  */
@@ -56,6 +57,8 @@ const TV = ({
   antenna,
   guideOpen,
   onGuideOpen,
+  broadcast,
+  onBroadcastToggle,
 }) => {
   const wood = useWoodImages();
   const woodStyle = wood
@@ -143,6 +146,28 @@ const TV = ({
 
             <div className="tv-tuning-strip">
               <span className="tv-tuning-text">{artistName || 'Tiny Desk'}</span>
+            </div>
+
+            {/* input selector: left for the broadcast (ON AIR lit), right for the VCR */}
+            <div className="tv-input">
+              <span className={`tv-on-air ${broadcast ? 'is-on' : ''}`} aria-hidden="true">
+                On Air
+              </span>
+              <button
+                type="button"
+                className={`tv-input-switch ${broadcast ? '' : 'is-vcr'}`}
+                role="switch"
+                aria-checked={broadcast}
+                aria-label="Live TV"
+                title={broadcast ? 'Live TV (switch to VCR)' : 'VCR (switch to live TV)'}
+                onClick={onBroadcastToggle}
+              >
+                <span className="tv-input-slider" />
+              </button>
+              <span className="tv-input-labels" aria-hidden="true">
+                <span>TV</span>
+                <span>VCR</span>
+              </span>
             </div>
 
             <div className="tv-louvres" aria-hidden="true">

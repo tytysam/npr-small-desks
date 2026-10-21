@@ -24,7 +24,7 @@ beforeEach(() => {
 const renderGuide = (props = {}) => {
   const handlers = { onTune: vi.fn(), onPlayVideo: vi.fn(), onClose: vi.fn() };
   render(<GuideBook channels={channels} schedule={null} station={2} broadcast={false} origin={null} {...handlers} {...props} />);
-  return handlers;
+  return { ...handlers, ...props };
 };
 const row = (ch) => screen.getAllByRole('button').find((b) => b.querySelector('.guide-ch')?.textContent === String(ch));
 
@@ -110,4 +110,20 @@ describe('GuideBook', () => {
     expect(current.querySelectorAll('time')).toHaveLength(2); // start times for now and next
     expect(current.querySelector('.guide-progress')).not.toBeNull();
   });
+
+  test('the masthead shows which edition is open and switches between them', async () => {
+    const { onBroadcastChange } = renderGuide({ onBroadcastChange: vi.fn() });
+    const [onAir] = screen.getAllByRole('button', { name: 'On Air' });
+    const [tapes] = screen.getAllByRole('button', { name: 'Tapes' });
+    expect(tapes).toHaveAttribute('aria-pressed', 'true');
+    expect(onAir).toHaveAttribute('aria-pressed', 'false');
+    await userEvent.click(onAir);
+    expect(onBroadcastChange).toHaveBeenCalledWith(true);
+  });
+
+  test('tapes list their running time where live listings show the hour', () => {
+    renderGuide();
+    expect(within(row(3)).getByText('15 min')).toBeInTheDocument(); // 900 s
+  });
 });
+

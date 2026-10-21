@@ -52,6 +52,7 @@ function App() {
   const [isOn, setIsOn] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [osdFlash, flashOsd] = useOsd();
+  const [osdBanner, flashBanner] = useOsd(2600); // 'mode' | 'rejoin': announced mid-screen
   const [menuIndex, setMenuIndex] = useState(null); // SETUP menu row, or null when closed
   const menuAdjustRef = useRef(0);
 
@@ -85,14 +86,18 @@ function App() {
     if (station !== null) flashOsd('channel');
   }, [station, videoId, flashOsd]);
 
-  // Switching Live/VCR picks the programme up from now.
+  // Switching Live/VCR (the TV/VCR switch, V, or SETUP) retunes the channel
+  // from now, dropping any one-off concert, and announces the mode.
   const broadcastRef = useRef(crt.broadcast);
-  const { rejoin } = tuner;
+  const { tuneTo } = tuner;
   useEffect(() => {
     if (broadcastRef.current === crt.broadcast) return;
     broadcastRef.current = crt.broadcast;
-    rejoin(0);
-  }, [crt.broadcast, rejoin]);
+    if (station !== null) tuneTo(station);
+    flashBanner('mode');
+  }, [crt.broadcast, station, tuneTo, flashBanner]);
+
+  const toggleBroadcast = useCallback(() => adjustCrtSetting('broadcast', 1), [adjustCrtSetting]);
 
   useEffect(() => {
     const timers = transitionTimersRef.current;
@@ -212,9 +217,12 @@ function App() {
   // Works while the set is off too: it decides whether it resumes on power-up.
   // Live TV doesn't wait for you, so resuming a live station rejoins it now.
   const togglePause = useCallback(() => {
-    if (isPaused && program?.live) tuner.rejoin();
+    if (isPaused && program?.live) {
+      tuner.rejoin();
+      flashBanner('rejoin');
+    }
     setIsPaused(!isPaused);
-  }, [isPaused, program, tuner]);
+  }, [isPaused, program, tuner, flashBanner]);
 
   // --- antenna -----------------------------------------------------------
   const retuneByHand = useCallback(() => {
@@ -293,13 +301,21 @@ function App() {
   // player, so the power switch, lever, PAUSE and the next toggle stay true to
   // the picture. Pauses the set causes itself (power off, the CRT mode switch)
   // are ignored.
-  const playerSyncRef = useLatest({ isOn, isPaused, transition, live: Boolean(program?.live), rejoin: tuner.rejoin, togglePower });
+  const playerSyncRef = useLatest({
+    isOn,
+    isPaused,
+    transition,
+    live: Boolean(program?.live),
+    rejoin: tuner.rejoin,
+    togglePower,
+    flashBanner,
+  });
   const handlePlayerPause = useCallback(() => {
     const { isOn: on, isPaused: paused, transition: phase } = playerSyncRef.current;
     if (on && !paused && phase === 'idle') setIsPaused(true);
   }, [playerSyncRef]);
   const handlePlayerPlay = useCallback(() => {
-    const { isOn: on, isPaused: paused, live, rejoin: rejoinNow, togglePower: powerOn } = playerSyncRef.current;
+    const { isOn: on, isPaused: paused, live, rejoin: rejoinNow, togglePower: powerOn, flashBanner: announce } = playerSyncRef.current;
     if (!on) {
       // Played while the set was off: switch it on (which also rejoins a live
       // station), with the lever up.
@@ -308,7 +324,10 @@ function App() {
       return;
     }
     if (!paused) return;
-    if (live) rejoinNow(); // live TV doesn't wait, as with the lever
+    if (live) {
+      rejoinNow(); // live TV doesn't wait, as with the lever
+      announce('rejoin');
+    }
     setIsPaused(false);
   }, [playerSyncRef]);
 
@@ -393,6 +412,7 @@ function App() {
       l: recallChannel,
       Backspace: recallChannel,
       o: toggleMenu,
+      v: toggleBroadcast,
       Escape: closeMenu,
       '?': openHelp,
       g: () => openGuide(),
@@ -422,6 +442,7 @@ function App() {
     menu: menuOpen ? { items: CRT_ITEMS, selected: menuIndex, settings: crt } : null,
     osd: {
       flash: osdFlash,
+      banner: osdBanner,
       channelNumber: station === null ? null : station + 1,
       live: Boolean(program?.live),
       artist: video?.artist ?? '',
@@ -431,7 +452,6 @@ function App() {
       muted: muted && (soundUnlocked || savedVolume === 0),
       scanning: retune.scanning,
       tuning: retune.phase === 'seeking',
-      vhs: crt.vhs,
       hint: video && !error && muted && !soundUnlocked && savedVolume > 0 ? 'Click anywhere for sound' : null,
     },
   };
@@ -454,6 +474,8 @@ function App() {
     antenna,
     guideOpen,
     onGuideOpen: openGuide,
+    broadcast: crt.broadcast,
+    onBroadcastToggle: toggleBroadcast,
   };
 
   return (
@@ -481,6 +503,7 @@ function App() {
           schedule={tuner.schedule}
           station={station}
           broadcast={crt.broadcast}
+          onBroadcastChange={(next) => next !== crt.broadcast && toggleBroadcast()}
           origin={guideOrigin}
           onTune={tuneFromGuide}
           onPlayVideo={(index) => tuneFromGuide(index, { fromTheTop: true })}
