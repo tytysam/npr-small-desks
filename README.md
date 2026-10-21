@@ -64,6 +64,7 @@ without a YouTube API key. A key is only needed to refresh the lineup; see
 | R | Retune the antenna (random channel) |
 | S | Scan: hop to a random channel every few seconds |
 | L / Backspace | Last channel |
+| V | Switch between Live TV and VCR |
 | O / Esc | Open / close SETUP |
 | G | Open the TV guide |
 | ? | Owner's manual |
@@ -80,8 +81,15 @@ the same thing. What's on is a pure function of the clock (counted from
 2026-01-01 UTC). Links share the channel (`?ch=700`), and whoever opens
 one joins mid-concert, at the same moment as everyone else.
 
-Switch Broadcast to **VCR** in SETUP and each channel instead plays its own
-concert from the start; links then share the video (`?v=<id>`).
+Flip the **TV / VCR** switch on the rail (or press **V**, pick **Tapes** in
+the guide, or change Broadcast in SETUP) and each channel instead plays its
+own concert from the start; links then share the video (`?v=<id>`).
+
+You can always tell which you're on: the red **ON AIR** lamp lights while
+live, and the corner of the screen shows either `● LIVE` and the time or the
+VCR's tape counter. Pausing works differently too. A live channel doesn't
+wait, so pressing play rejoins it at the current moment. A tape picks up
+where you left off.
 
 ### SETUP
 
@@ -95,15 +103,16 @@ control changes it, so it works the same with the knobs, keys, 2D or 3D.
 | Curvature | Edge fall-off and corner darkening, 0–10 |
 | Warm-up | A slow power-on bloom, or near-instant |
 | Degauss | A colour shiver as each new picture locks in |
-| VHS | Tape jitter, colour bleed, a tracking band, and PLAY ▶ |
+| Tape FX | Tape jitter, colour bleed and a tracking band (just the look; see VCR above for tape playback) |
 | Hiss | Tuning hiss while the antenna moves |
 | Captions | The video's captions (English, including auto-generated, where the concert has any), off by default |
 
 ### The TV guide
 
 The listings digest on top of the set (or **G**) opens to the channel you're
-watching. Live, each channel shows what's on now (with progress) and what's
-next, with times; in VCR mode, each channel's concert. Turn pages with ← / →,
+watching. The masthead switches between **On Air** (Live) and **Tapes**
+(VCR). On Air, each channel shows what's on now (with progress) and what's
+next, with times; Tapes lists each channel's concert as a cassette label. Turn pages with ← / →,
 the corner buttons or a swipe, jump with the thumb tabs or the `CH` box, or
 search by artist or title (press `/`). Each search result says which channel
 it's on right now, or plays it from the start if no channel is showing it.

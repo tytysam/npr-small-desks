@@ -2,14 +2,20 @@ import { useRef } from 'react';
 import useDialog from '../hooks/useDialog';
 import './Help.css';
 
+const MODES = [
+  ['Live TV', 'ON AIR lit', 'Channels follow a schedule, so anyone on the same channel sees the same moment. Pause or power off and you rejoin at "live".'],
+  ['VCR', 'tape counter', 'Each channel plays a concert from the top. Pause picks up where you left off; links share the concert.'],
+];
+
 const CONTROLS = [
-  ['Channel dial', "Turn to flip channels. Everything's live, so anyone on the same channel is watching with you."],
+  ['TV / VCR switch', 'Live broadcast or tapes. (Also V, or the guide.)'],
+  ['Channel dial', 'Turn to flip channels.'],
   ['Volume knob', 'The set starts quiet; click anywhere for sound.'],
   ['Antenna', 'Wiggle it to land somewhere random. Hold it to scan.'],
   ['Lever', 'Down to pause, up to play.'],
   ['Slide switch', 'Power. (Also the classic fix for no signal.)'],
   ['Black knob', 'Brightness.'],
-  ['Chrome knob by the badge', 'MENU: scanlines, VHS mode, captions, Live vs. VCR.'],
+  ['Chrome knob by the badge', 'MENU: scanlines, Tape FX, captions and more.'],
   ['TV listings', "The guide on top of the set. Find an artist, tap to tune."],
   ['2D / 3D', 'Same set, in 3D. Drag to look around.'],
 ];
@@ -23,6 +29,7 @@ const KEYS = [
   ['R', 'retune'],
   ['S', 'scan'],
   ['L', 'last'],
+  ['V', 'TV/VCR'],
   ['O', 'menu'],
   ['G', 'guide'],
 ];
@@ -62,6 +69,19 @@ export const HelpCard = ({ onClose }) => {
         </h2>
         <p className="help-model">Model NP-R1 · every Tiny Desk concert, on the air</p>
 
+        <h3 className="help-heading">Two ways to watch</h3>
+        <dl className="help-modes">
+          {MODES.map(([term, cue, description]) => (
+            <div key={term} className="help-mode">
+              <dt>
+                {term} <span className="help-cue">{cue}</span>
+              </dt>
+              <dd>{description}</dd>
+            </div>
+          ))}
+        </dl>
+
+        <h3 className="help-heading">Controls</h3>
         <dl className="help-controls">
           {CONTROLS.map(([term, description]) => (
             <div key={term} className="help-control">

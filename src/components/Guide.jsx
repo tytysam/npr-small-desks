@@ -2,6 +2,7 @@ import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } fr
 import useDialog from '../hooks/useDialog';
 import { findAiring } from '../js/schedule';
 import { PER_PAGE, indexTabs, listingFor, searchChannels } from '../js/listings';
+import { clock } from '../js/clock';
 import './Guide.css';
 
 const NARROW = '(max-width: 680px)';
@@ -13,15 +14,22 @@ const MARQUEE_PX_PER_S = 40;
 const MARQUEE_HOLD_S = 1.2; // pause at each end, split across the two ends
 const MARQUEE_FADE_PX = 24; // the edge fade (Guide.css); glide far enough to clear it
 
-const clock = (ms) => new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 const dateline = (ms) => new Date(ms).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
 const minutes = (seconds) => `${Math.max(1, Math.round(seconds / 60))} min`;
 const year = (video) => video.publishedAt?.slice(0, 4) ?? '';
+// A tape's length, as written on a cassette's spine: "T-18".
+const tapeLength = (video) => `T-${Math.max(1, Math.ceil(video.duration / 60))}`;
 // "Artist: Tiny Desk (Home) Concert" → "Tiny Desk (Home) Concert"
 const billing = (video) => {
   const rest = video.title.startsWith(`${video.artist}:`) ? video.title.slice(video.artist.length + 1).trim() : video.title;
   return rest || 'Tiny Desk Concert';
 };
+
+// The masthead's two editions: what's on the air (Live), or the tapes (VCR).
+const MODES = [
+  [true, 'On Air'],
+  [false, 'Tapes'],
+];
 
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -114,9 +122,11 @@ const Cover = () => (
 /**
  * The TV guide: a listings digest that grows out of the stack on the set
  * (`origin`, the stack's centre and width on screen) and opens to a two-page
- * spread (one page on small screens). Live, each station shows what's on now
- * and next with times; in VCR mode, each station's one concert. Search turns
- * the pages into matching concerts, with where (and when) to catch each one.
+ * spread (one page on small screens). On Air (Live), each station shows
+ * what's on now and next with times; on Tapes (VCR), each station's one
+ * concert, printed like a cassette label. The masthead switches between the
+ * two (`onBroadcastChange`). Search turns the pages into matching concerts,
+ * with where (and when) to catch each one.
  *
  * It's built like a book: on a spread, the left page is the back of the
  * front cover, which swings open around the spine; page turns flip a leaf
@@ -126,7 +136,7 @@ const Cover = () => (
  * Picking a listing calls `onTune(station)`, or `onPlayVideo(index)` to play
  * a concert from the top when no station is showing it right now.
  */
-export const GuideBook = ({ channels, schedule, station, broadcast, origin, onTune, onPlayVideo, onClose }) => {
+export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastChange, origin, onTune, onPlayVideo, onClose }) => {
   const bookRef = useRef(null);
   const spreadRef = useRef(null);
   const searchRef = useRef(null);
@@ -304,7 +314,7 @@ export const GuideBook = ({ channels, schedule, station, broadcast, origin, onTu
     };
     if (!broadcast || !schedule) {
       const video = channels[s];
-      return <Row key={s} {...props} title={video.artist} detail={`${billing(video)} · ${year(video)} · ${minutes(video.duration)}`} />;
+      return <Row key={s} {...props} titleTime={tapeLength(video)} title={video.artist} detail={`${billing(video)} · ${year(video)}`} />;
     }
     const { now: on, next } = listingFor(schedule, s, now, true);
     return (
@@ -325,7 +335,15 @@ export const GuideBook = ({ channels, schedule, station, broadcast, origin, onTu
     const title = video.artist;
     if (!broadcast || !schedule) {
       return (
-        <Row key={i} ch={i + 1} current={i === station} title={title} detail={`${billing(video)} · ${year(video)}`} onClick={pick(() => onTune(i))} />
+        <Row
+          key={i}
+          ch={i + 1}
+          current={i === station}
+          titleTime={tapeLength(video)}
+          title={title}
+          detail={`${billing(video)} · ${year(video)}`}
+          onClick={pick(() => onTune(i))}
+        />
       );
     }
     const airing = findAiring(schedule, i, now);
@@ -367,9 +385,26 @@ export const GuideBook = ({ channels, schedule, station, broadcast, origin, onTu
       <h2 id={live ? 'guide-title' : undefined} className="guide-masthead">
         <span className="guide-brand">NP-R1</span> Listings
       </h2>
-      <p className="guide-dateline">
-        {dateline(now)} · {broadcast ? `Live · ${clock(now)}` : 'VCR'}
-      </p>
+      <div className="guide-subhead">
+        <div className="guide-modes" role="group" aria-label="Listings">
+          {MODES.map(([value, label]) => (
+            <button
+              key={label}
+              type="button"
+              className={`guide-mode${broadcast === value ? ' is-on' : ''}`}
+              aria-pressed={broadcast === value}
+              tabIndex={live ? undefined : -1}
+              onClick={() => onBroadcastChange?.(value)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <p className="guide-dateline">
+          {dateline(now)}
+          {broadcast && ` · ${clock(now)}`}
+        </p>
+      </div>
     </>
   );
 
@@ -527,7 +562,7 @@ export const GuideBook = ({ channels, schedule, station, broadcast, origin, onTu
     <div className={`guide-backdrop ${phaseClass}`} onMouseDown={(e) => e.target === e.currentTarget && requestClose()}>
       <div
         ref={bookRef}
-        className={`guide-book ${phaseClass} ${narrow ? 'is-narrow' : 'is-wide'}`}
+        className={`guide-book ${phaseClass} ${narrow ? 'is-narrow' : 'is-wide'}${broadcast ? '' : ' is-tapes'}`}
         style={from ?? undefined}
         role="dialog"
         aria-modal="true"

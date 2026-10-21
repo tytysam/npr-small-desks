@@ -155,6 +155,9 @@ const Screen = ({
   const start = Math.floor(startAt);
   const url = videoId ? `https://www.youtube.com/watch?v=${videoId}${start > 0 ? `&t=${start}` : ''}` : null;
   const tuning = Boolean(url) && !error && startedUrl !== url;
+  // The OSD's tape counter: whole seconds into the video, for this picture.
+  const [tape, setTape] = useState({ url: null, seconds: 0 });
+  const tapeSeconds = tape.url === url ? tape.seconds : start;
 
   // Once the picture comes in: the static fades out, and (if enabled) the
   // degauss coil shakes the colours for a moment. Only when a new picture
@@ -221,8 +224,11 @@ const Screen = ({
   }, [onPlayerPause]);
 
   const handleTimeUpdate = useCallback(() => {
-    onProgress?.({ playedSeconds: playerRef.current?.currentTime ?? 0 });
-  }, [onProgress]);
+    const playedSeconds = playerRef.current?.currentTime ?? 0;
+    onProgress?.({ playedSeconds });
+    const seconds = Math.floor(playedSeconds);
+    setTape((t) => (t.url === url && t.seconds === seconds ? t : { url, seconds }));
+  }, [onProgress, url]);
 
   let picture;
   let variant = '';
@@ -294,7 +300,7 @@ const Screen = ({
       {rolling && <div className="screen-rollbar" aria-hidden="true" />}
       {crt.vhs && isOn && video && !error && <div className="screen-vhs-band" aria-hidden="true" />}
       <div className="screen-scanlines" aria-hidden="true" />
-      {powerPhase === 'on' && (menu ? <SetupMenu {...menu} /> : osd && <Osd {...osd} />)}
+      {powerPhase === 'on' && (menu ? <SetupMenu {...menu} /> : osd && <Osd {...osd} tapeSeconds={tapeSeconds} />)}
       {powerPhase !== 'on' && (
         <div className={`screen-power screen-power-${powerPhase}`} onAnimationEnd={onPowerAnimationEnd} aria-hidden="true">
           <div className="screen-power-beam" />

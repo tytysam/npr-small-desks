@@ -16,10 +16,96 @@
 
 .osd-top {
   display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 3cqw;
+  min-width: 0;
+}
+
+/* Channel and artist, flashed top right. Zero height, overflowing
+   downward, so the top row is only ever as tall as the mode bug: the
+   flash coming and going never moves the banner or indicators below. */
+.osd-now {
+  flex: 1;
+  display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 0.6cqh;
   min-width: 0;
+  height: 0;
+}
+
+/* ---- mode bug: LIVE with the time, or the VCR's tape counter ---------- */
+
+.osd-bug {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 1.2cqw;
+  padding: 0.5cqh 1.4cqw;
+  font-size: 3.2cqw;
+  letter-spacing: 0.3cqw;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  border: 0.25cqw solid rgba(125, 255, 154, 0.55);
+  background: rgba(0, 10, 3, 0.35);
+}
+
+.osd-bug-dot {
+  width: 1.8cqw;
+  height: 1.8cqw;
+  border-radius: 50%;
+  background: #ff4a3d;
+  box-shadow: 0 0 1cqw rgba(255, 74, 61, 0.9);
+  animation: osd-on-air 2.4s ease-in-out infinite;
+}
+
+.osd-bug.is-vcr {
+  border-style: dashed;
+}
+
+/* ▶ and ❚❚ differ in width; a fixed box keeps the counter from shifting. */
+.osd-bug-glyph {
+  display: inline-block;
+  width: 1.6em;
+  text-align: center;
+}
+
+/* ---- the middle: standing indicators, and the mode banner over them --- */
+
+.osd-middle {
+  position: relative;
+  min-height: 0;
+}
+
+.osd-banner-slot {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.osd-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1cqh;
+  padding: 2cqh 5cqw;
+  background: rgba(0, 10, 3, 0.55);
+  border-top: 0.4cqw solid rgba(125, 255, 154, 0.7);
+  border-bottom: 0.4cqw solid rgba(125, 255, 154, 0.7);
+}
+
+.osd-banner-title {
+  font-size: 10cqw;
+  letter-spacing: 1.2cqw;
+  line-height: 1;
+}
+
+.osd-banner-sub {
+  font-size: 3cqw;
+  letter-spacing: 0.3cqw;
 }
 
 .osd-channel {
@@ -94,15 +180,9 @@
   animation: osd-blink 1s steps(1) infinite;
 }
 
-.osd-live {
-  margin-right: 2cqw;
-  padding: 0 1cqw;
-  font-size: 3.4cqw;
-  vertical-align: middle;
-  color: #0b1a0e;
-  background: #7dff9a;
-  box-shadow: 0 0 0.8cqw rgba(80, 255, 130, 0.8);
-  text-shadow: none;
+.osd-note {
+  font-size: 2.8cqw;
+  opacity: 0.85;
 }
 
 /* ---- SETUP menu ------------------------------------------------------- */
@@ -181,6 +261,17 @@
   letter-spacing: 0.2cqw;
   opacity: 0.8;
   text-align: center;
+}
+
+@keyframes osd-on-air {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .osd-bug-dot {
+    animation: none;
+  }
 }
 
 @keyframes osd-blink {

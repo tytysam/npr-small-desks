@@ -8,7 +8,7 @@ export const CRT_ITEMS = [
   { key: 'curvature', label: 'Curvature', type: 'level' },
   { key: 'warmup', label: 'Warm-up', type: 'toggle' },
   { key: 'degauss', label: 'Degauss', type: 'toggle' },
-  { key: 'vhs', label: 'VHS', type: 'toggle' },
+  { key: 'vhs', label: 'Tape FX', type: 'toggle' },
   { key: 'hiss', label: 'Hiss', type: 'toggle' },
   { key: 'captions', label: 'Captions', type: 'toggle' },
 ];
