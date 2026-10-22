@@ -24,6 +24,7 @@ import {
   makeFrameGeometry,
   makeDomeGeometry,
   makeGuideTextures,
+  makeBackPanelTexture,
 } from './materials';
 
 // Layout (world units). The cabinet is centred on the origin; +Z faces the viewer.
@@ -507,6 +508,7 @@ const TVModel = ({
   const sliderRibs = useDisposable(() => makeKnurlTexture(9), []);
   const perforated = useDisposable(() => makePerforatedTexture({ repeat: [10, 8] }), []);
   const glareTexture = useDisposable(makeGlareTexture, []);
+  const backPanelTexture = useDisposable(makeBackPanelTexture, []);
   const channelRingTexture = useDisposable(makeChannelRingTexture, []);
   const volumeTicksTexture = useDisposable(makeVolumeTicksTexture, []);
   const badgeTexture = useDisposable(
@@ -697,6 +699,12 @@ const TVModel = ({
       {woodMesh(parts.board, walnut, false)}
       {woodMesh(parts.top, walnut)}
       {woodMesh(parts.plinth, walnutShade)}
+      {/* the hardboard back, with the inspector's tag */}
+      <mesh position={[0, 0, -CABINET.d / 2 - 0.003]} rotation={[0, Math.PI, 0]} receiveShadow>
+        <planeGeometry args={[CABINET.w - 0.3, CABINET.h - 0.3]} />
+        {/* faintly self-lit: the lights are all in front, and the print should still read */}
+        <meshStandardMaterial map={backPanelTexture} emissiveMap={backPanelTexture} emissive="#ffffff" emissiveIntensity={0.22} roughness={0.85} />
+      </mesh>
 
       {/* honey-wood bezel, rolling down into the cabinet toward the tube */}
       {woodMesh(parts.bezel, honey)}

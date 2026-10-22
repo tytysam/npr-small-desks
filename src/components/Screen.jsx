@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import ReactPlayer from 'react-player';
 import Osd, { SetupMenu } from './Osd';
+import SignOff from './SignOff';
 import { CRT_DEFAULTS } from '../js/crtSettings';
 import useLatest from '../hooks/useLatest';
 import './Screen.css';
@@ -123,12 +124,15 @@ const YouTubePlayer = ({ ref, url, videoId, start, playing, ...props }) => {
  * video actually plays —
  * hiding the title bar and "More videos" YouTube shows while loading.
  *
+ * `signOff` shows channel 000's sign-off in place of a video.
+ *
  * `interference` (0–1, from the antenna) layers snow over the picture and
  * rolls it when reception is bad. `crt` holds the SETUP menu's settings;
  * `menu` renders that menu in place of the OSD.
  */
 const Screen = ({
   video,
+  signOff = false,
   volume,
   playing = true,
   isOn = true,
@@ -240,6 +244,8 @@ const Screen = ({
         <div className="no-signal-sub">Searching for signal…</div>
       </>
     );
+  } else if (signOff) {
+    picture = <SignOff volume={volume} playing={playing && isOn} />;
   } else if (isLoading || !video) {
     variant = 'screen-black';
   } else {

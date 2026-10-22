@@ -51,6 +51,13 @@ describe('Screen', () => {
     expect(player.api.loadVideoById).not.toHaveBeenCalled();
   });
 
+  it('shows the sign-off, not a player, on channel 000', () => {
+    player.props = null;
+    const { getByLabelText } = render(<Screen video={null} signOff volume={0.5} />);
+    expect(getByLabelText('Color bars')).toBeInTheDocument();
+    expect(player.props).toBeNull();
+  });
+
   it("doesn't pass on the pause YouTube fires as a video ends", () => {
     const { onEnded, onPlayerPause } = renderScreen();
     player.state = YT_ENDED;

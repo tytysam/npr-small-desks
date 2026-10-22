@@ -30,6 +30,13 @@ describe('Osd', () => {
     expect(container.querySelector('.osd-bug')).toBeNull();
   });
 
+  test('channel 000 reads CH 000, with no mode bug', () => {
+    const { container } = render(<Osd {...base} flash="channel" channelNumber={0} signOff artist="Sign-off" />);
+    expect(screen.getByText('CH 000')).toBeInTheDocument();
+    expect(screen.getByText('Sign-off')).toBeInTheDocument();
+    expect(container.querySelector('.osd-bug')).toBeNull();
+  });
+
   test('switching modes announces the one now on', () => {
     const { rerender } = render(<Osd {...base} banner="mode" live />);
     expect(screen.getByText('LIVE TV')).toBeInTheDocument();

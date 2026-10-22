@@ -3,6 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { GuideBook } from './Guide';
 import { makeSchedule } from '../js/schedule';
+import { SIGN_OFF } from '../js/channels';
 
 const ARTISTS = ['Anderson .Paak', 'Billie Eilish', 'Chika', 'Dua Lipa', 'Esperanza Spalding', 'Fred again..'];
 const channels = Array.from({ length: 40 }, (_, i) => {
@@ -75,6 +76,38 @@ describe('GuideBook', () => {
     renderGuide();
     await userEvent.type(screen.getByRole('textbox', { name: 'Jump to channel' }), '38{Enter}');
     expect(row(38)).toHaveClass('is-marked');
+  });
+
+  test('channel 0 tunes to the sign-off', async () => {
+    const { onTune, onClose } = renderGuide();
+    await userEvent.type(screen.getByRole('textbox', { name: 'Jump to channel' }), '0{Enter}');
+    expect(onTune).toHaveBeenCalledWith(SIGN_OFF);
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  test('the right search lists the sign-off as channel 000', async () => {
+    const { onTune } = renderGuide();
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search listings' }), 'samuelson');
+    expect(screen.queryByText(/No listings/)).not.toBeInTheDocument();
+    await userEvent.click(row('000'));
+    expect(onTune).toHaveBeenCalledWith(SIGN_OFF);
+  });
+
+  test('opens on the first page when tuned to the sign-off', () => {
+    renderGuide({ station: SIGN_OFF });
+    expect(row(1)).toBeDefined();
+  });
+
+  test('the 0 tab opens the colophon, and the next page leaves it for channel 1', async () => {
+    renderGuide({ station: 30 });
+    await userEvent.click(screen.getByRole('button', { name: '0' }));
+    expect(screen.getByText('NPR Small Desk · built by Tyler Samuelson')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'The NP-R1, drawn in type' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '0' })).toHaveClass('is-active');
+    expect(row(31)).toBeUndefined();
+    await userEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    expect(screen.queryByText('NPR Small Desk · built by Tyler Samuelson')).not.toBeInTheDocument();
+    expect(row(1)).toBeDefined();
   });
 
   test('the last page shows the last thumb tab, however you page to it', async () => {

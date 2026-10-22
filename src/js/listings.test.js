@@ -1,5 +1,5 @@
 import { makeSchedule, onAir, EPOCH_MS } from './schedule';
-import { PER_PAGE, pageOf, pageCount, indexTabs, listingFor, searchChannels } from './listings';
+import { PER_PAGE, pageOf, pageCount, indexTabs, listingFor, searchChannels, searchFindsSignOff } from './listings';
 
 const lineup = [
   { artist: 'Björk', title: 'Björk: Tiny Desk Concert', duration: 100 },
@@ -46,4 +46,14 @@ test('search ignores case and accents and matches every word', () => {
   expect(searchChannels(lineup, 'TANK bangas')).toEqual([2]);
   expect(searchChannels(lineup, 'tiny desk')).toEqual([0, 1, 2]);
   expect(searchChannels(lineup, '  ')).toEqual([]);
+});
+
+test('the right search finds the sign-off, and only that', () => {
+  expect(searchFindsSignOff('Sign off')).toBe(true);
+  expect(searchFindsSignOff('samuelson')).toBe(true);
+  expect(searchFindsSignOff('TYLER')).toBe(true);
+  expect(searchFindsSignOff('credits')).toBe(true);
+  expect(searchFindsSignOff('tyler childers')).toBe(false);
+  expect(searchFindsSignOff('si')).toBe(false); // too short to give it away
+  expect(searchFindsSignOff('bjork')).toBe(false);
 });

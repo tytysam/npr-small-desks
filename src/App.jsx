@@ -81,7 +81,8 @@ function App() {
 
   // Show the channel whenever the picture changes: tuning, jumps, and the
   // next programme coming on air.
-  const videoId = program?.video.id;
+  const videoId = program?.video?.id;
+  const signOff = Boolean(program?.signOff);
   useEffect(() => {
     if (station !== null) flashOsd('channel');
   }, [station, videoId, flashOsd]);
@@ -256,14 +257,19 @@ function App() {
   const nowShowing = program?.video ?? null;
   useEffect(() => {
     const session = navigator.mediaSession;
-    if (!session || !nowShowing || station === null || typeof window.MediaMetadata !== 'function') return;
+    if (!session || station === null || typeof window.MediaMetadata !== 'function') return;
+    if (signOff) {
+      session.metadata = new window.MediaMetadata({ title: 'Sign-off', artist: 'CH 000', album: 'NP-R1' });
+      return;
+    }
+    if (!nowShowing) return;
     session.metadata = new window.MediaMetadata({
       title: nowShowing.artist,
       artist: `Tiny Desk Concert · CH ${station + 1}${program.live ? ' · Live' : ''}`,
       album: 'NP-R1',
       artwork: mediaArtwork(nowShowing.id),
     });
-  }, [nowShowing, station, program?.live]);
+  }, [nowShowing, signOff, station, program?.live]);
 
   useEffect(() => {
     if (navigator.mediaSession) navigator.mediaSession.playbackState = isOn && !isPaused ? 'playing' : 'paused';
@@ -423,8 +429,10 @@ function App() {
   // --- what the tube shows -----------------------------------------------
   const muted = volume === 0;
   const video = program?.video ?? null;
+  const artist = signOff ? 'Sign-off' : (video?.artist ?? '');
   const screen = {
     video,
+    signOff,
     startAt: program?.startAt ?? 0,
     // The picture's sound drops away under the interference.
     volume: volume * (1 - retune.interference * 0.9),
@@ -445,14 +453,15 @@ function App() {
       banner: osdBanner,
       channelNumber: station === null ? null : station + 1,
       live: Boolean(program?.live),
-      artist: video?.artist ?? '',
+      signOff,
+      artist,
       volume,
       brightness: (brightness - BRIGHTNESS_MIN) / (BRIGHTNESS_MAX - BRIGHTNESS_MIN),
       paused: isPaused,
       muted: muted && (soundUnlocked || savedVolume === 0),
       scanning: retune.scanning,
       tuning: retune.phase === 'seeking',
-      hint: video && !error && muted && !soundUnlocked && savedVolume > 0 ? 'Click anywhere for sound' : null,
+      hint: (video || signOff) && !error && muted && !soundUnlocked && savedVolume > 0 ? 'Click anywhere for sound' : null,
     },
   };
 
@@ -470,7 +479,7 @@ function App() {
     onPauseToggle: togglePause,
     onMenuToggle: toggleMenu,
     menuOpen,
-    artistName: video?.artist ?? '',
+    artistName: artist,
     antenna,
     guideOpen,
     onGuideOpen: openGuide,
