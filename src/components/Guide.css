@@ -505,6 +505,57 @@
   color: var(--ink-soft);
 }
 
+/* ---- The colophon, behind the "0" tab ----------------------------------------- */
+
+.guide-colophon {
+  flex: 1;
+  min-height: var(--rows-h);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 24px 0;
+  text-align: center;
+}
+
+.guide-colophon-art {
+  margin: 0;
+  font: bold 13px/1.25 'Courier New', monospace;
+  text-align: left;
+  color: var(--ink);
+}
+
+.guide-colophon-note {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.guide-colophon-credit {
+  margin: 0;
+  font-size: 17px;
+}
+
+.guide-colophon-signature {
+  width: min(260px, 80%);
+}
+
+.guide-colophon-signature path {
+  fill: none;
+  stroke: var(--ink);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.guide-colophon-hint {
+  margin: 0;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
 /* ---- Folios and page-turn corners ----------------------------------------- */
 
 .guide-foot {

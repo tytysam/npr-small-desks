@@ -1,11 +1,28 @@
 import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } from 'react';
 import useDialog from '../hooks/useDialog';
+import Signature from './Signature';
 import { findAiring } from '../js/schedule';
-import { PER_PAGE, indexTabs, listingFor, searchChannels } from '../js/listings';
+import { PER_PAGE, indexTabs, listingFor, searchChannels, searchFindsSignOff } from '../js/listings';
+import { SIGN_OFF } from '../js/channels';
 import { clock } from '../js/clock';
 import './Guide.css';
 
 const NARROW = '(max-width: 680px)';
+
+// The set, drawn in type, for the colophon behind the "0" tab.
+const SET_ART = String.raw`
+        \       /
+         \     /
+   .------\---/-----------------.
+   |  .------------------.  (@) |
+   |  |                  |  (@) |
+   |  |      NP-R1       |      |
+   |  |   ~ on the air ~ |  ::: |
+   |  '------------------'  ::: |
+   '----------------------------'
+      /                      \
+`.slice(1);
+
 const REFRESH_MS = 30000;
 const SWIPE_PX = 50;
 const TURN_MS = 420; // keep in step with --turn-ms in Guide.css
@@ -131,8 +148,12 @@ const Cover = () => (
  * whose two sides are the pages it carries. Closing folds it shut and
  * shrinks it back to the set before `onClose`.
  *
+ * The "0" thumb tab, before channel 1, opens the colophon: the set drawn
+ * in type, who built it, and a hint at channel 000.
+ *
  * Picking a listing calls `onTune(station)`, or `onPlayVideo(index)` to play
- * a concert from the top when no station is showing it right now.
+ * a concert from the top when no station is showing it right now. Channel
+ * 000, the sign-off, isn't listed: `CH 0` or the right search finds it.
  */
 export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastChange, origin, onTune, onPlayVideo, onClose }) => {
   const bookRef = useRef(null);
@@ -147,8 +168,9 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
   const perSpread = narrow ? PER_PAGE : PER_PAGE * 2;
 
   const [query, setQuery] = useState('');
-  const [start, setStart] = useState(station ?? 0); // any entry on the spread to show
+  const [start, setStart] = useState(Math.max(0, station ?? 0)); // any entry on the spread to show
   const [marked, setMarked] = useState(null);
+  const [colophon, setColophon] = useState(false); // the "0" tab's page, in place of the listings
   const [jump, setJump] = useState('');
   const [now, setNow] = useState(Date.now);
   // 'closed' → 'open' → 'closing'; with reduced motion it's simply open.
@@ -212,6 +234,7 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
 
   // --- what's on which page ----------------------------------------------------
   const hits = useMemo(() => (query.trim() ? searchChannels(channels, query) : null), [channels, query]);
+  const signOffHit = Boolean(hits) && searchFindsSignOff(query);
   const total = hits ? hits.length : channels.length;
   const lastFirst = Math.max(0, Math.floor((total - 1) / perSpread) * perSpread);
   const first = Math.min(Math.floor(start / perSpread) * perSpread, lastFirst);
@@ -230,6 +253,14 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
 
   const turn = useCallback(
     (direction) => {
+      // The colophon comes before channel 1: forward leaves it for the first spread.
+      if (colophon) {
+        if (direction > 0) {
+          setColophon(false);
+          setStart(0);
+        }
+        return;
+      }
       const next = first + direction * perSpread;
       if (next < 0 || next > lastFirst) return;
       // Aim at the spread's last entry, so its thumb tab is the newest section
@@ -243,11 +274,12 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
       setTurning({ dir: direction, from: first });
       turnTimerRef.current = setTimeout(() => setTurning(null), TURN_MS);
     },
-    [first, perSpread, lastFirst, total]
+    [colophon, first, perSpread, lastFirst, total]
   );
 
   const search = (value) => {
     settle();
+    setColophon(false);
     setQuery(value);
     setStart(0);
     setMarked(null);
@@ -255,6 +287,7 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
 
   const goTo = (index) => {
     settle();
+    setColophon(false);
     setQuery('');
     setStart(index);
     setMarked(index);
@@ -263,7 +296,8 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
   const submitJump = (e) => {
     e.preventDefault();
     const n = Number.parseInt(jump, 10);
-    if (n >= 1 && n <= channels.length) goTo(n - 1);
+    if (n === 0) pick(() => onTune(SIGN_OFF))();
+    else if (n >= 1 && n <= channels.length) goTo(n - 1);
   };
 
   const onKeyDown = (e) => {
@@ -327,6 +361,17 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
       />
     );
   };
+
+  const signOffRow = () => (
+    <Row
+      key="sign-off"
+      ch="000"
+      current={station === SIGN_OFF}
+      title="Sign-off"
+      detail="Color bars and credits · nightly"
+      onClick={pick(() => onTune(SIGN_OFF))}
+    />
+  );
 
   const searchRow = (i) => {
     const video = channels[i];
@@ -457,13 +502,26 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
     if (spread === first) shown = start >= first && start < first + perSpread ? start : first;
     return (
       <nav className="guide-tabs" aria-label="Channels by hundred">
+        <button
+          type="button"
+          className={`guide-tab${colophon ? ' is-active' : ''}`}
+          onClick={() => {
+            settle();
+            setColophon(true);
+            setStart(0);
+            setMarked(null);
+          }}
+        >
+          0
+        </button>
         {tabs.map((tab, t) => (
           <button
             key={tab.label}
             type="button"
-            className={`guide-tab${t === Math.floor(shown / 100) ? ' is-active' : ''}`}
+            className={`guide-tab${!colophon && t === Math.floor(shown / 100) ? ' is-active' : ''}`}
             onClick={() => {
               settle();
+              setColophon(false);
               setStart(tab.index);
               setMarked(null);
             }}
@@ -502,15 +560,33 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
           {side !== 'left' && closeButton}
           {side === 'single' && tabStrip(number)}
         </header>
-        {total === 0 && number === 0 ? (
+        {colophon && live ? (
+          <div className="guide-colophon">
+            {side !== 'right' && (
+              <pre className="guide-colophon-art" role="img" aria-label="The NP-R1, drawn in type">
+                {SET_ART}
+              </pre>
+            )}
+            {side !== 'left' && (
+              <div className="guide-colophon-note">
+                <p className="guide-colophon-credit">NPR Small Desk · built by Tyler Samuelson</p>
+                <Signature className="guide-colophon-signature" />
+                <p className="guide-colophon-hint">Psst: every station signs off at channel 000.</p>
+              </div>
+            )}
+          </div>
+        ) : total === 0 && number === 0 && !signOffHit ? (
           <p className="guide-empty">No listings for “{query.trim()}”.</p>
         ) : (
-          <ol className="guide-rows">{entries.map((entry) => (hits ? searchRow(entry) : stationRow(entry, live)))}</ol>
+          <ol className="guide-rows">
+            {signOffHit && number === 0 && signOffRow()}
+            {entries.map((entry) => (hits ? searchRow(entry) : stationRow(entry, live)))}
+          </ol>
         )}
         <footer className="guide-foot">
           {side !== 'right' && prevButton(number)}
           <span className="guide-folio">
-            {side === 'left' ? `p. ${number + 1}` : `${summary(number)} · p. ${number + 1}`}
+            {colophon && live ? 'Colophon' : side === 'left' ? `p. ${number + 1}` : `${summary(number)} · p. ${number + 1}`}
           </span>
           {side !== 'left' && nextButton(number)}
         </footer>

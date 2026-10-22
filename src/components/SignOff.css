@@ -1,0 +1,172 @@
+/* Channel 000. Sized in container units, like the OSD, so it reads the same
+   in the 2D tube and the 3D surface. */
+.sign-off {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  color: #f2efe6;
+  font-family: Georgia, 'Times New Roman', serif;
+  text-align: center;
+  overflow: hidden;
+}
+
+.sign-off.is-paused,
+.sign-off.is-paused * {
+  animation-play-state: paused !important;
+}
+
+/* --- color bars ------------------------------------------------------------- */
+.sign-off-bars {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  animation: sign-off-hold 9s linear;
+}
+
+.sign-off-row {
+  display: flex;
+}
+
+.sign-off-row span {
+  flex: 1;
+}
+
+.sign-off-row-main {
+  flex: 67;
+}
+
+.sign-off-row-castellations {
+  flex: 8;
+}
+
+.sign-off-row-bottom {
+  flex: 25;
+}
+
+/* The station slate, centred over the bars. */
+.sign-off-slate {
+  position: absolute;
+  top: 26%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1.6cqh 4cqw;
+  background: #000;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  font-size: 5.4cqh;
+  letter-spacing: 0.3em;
+  white-space: nowrap;
+}
+
+/* --- the credits roll ----------------------------------------------------------- */
+.sign-off-credits {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  padding: 0 10cqw;
+  animation: sign-off-roll 20s linear both;
+}
+
+@keyframes sign-off-roll {
+  from {
+    top: 100%;
+    transform: translateY(0);
+  }
+  to {
+    top: 0;
+    transform: translateY(-100%);
+  }
+}
+
+.sign-off-credit {
+  margin: 0 0 9cqh;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2cqh;
+}
+
+.sign-off-role {
+  font-size: 4.2cqh;
+  font-variant: small-caps;
+  letter-spacing: 0.12em;
+  color: #b9b4a6;
+}
+
+.sign-off-name {
+  font-size: 6.4cqh;
+}
+
+/* --- signed ------------------------------------------------------------------------ */
+.sign-off-signed {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.4cqh;
+  animation: sign-off-signed 11s ease both;
+}
+
+@keyframes sign-off-signed {
+  0% { opacity: 0; }
+  6%, 88% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.sign-off-signature {
+  width: 64cqw;
+  margin-bottom: 2cqh;
+  overflow: visible;
+}
+
+/* Each stroke writes itself in turn, the way the pen went. */
+.sign-off-signature path {
+  fill: none;
+  stroke: #f2efe6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: sign-off-write 1.4s ease-in-out 0.8s both;
+}
+
+.sign-off-signature path:nth-child(2) {
+  animation-duration: 0.8s;
+  animation-delay: 2.2s;
+}
+
+.sign-off-signature path:nth-child(3) {
+  animation-duration: 1.8s;
+  animation-delay: 3s;
+}
+
+@keyframes sign-off-write {
+  to { stroke-dashoffset: 0; }
+}
+
+/* Holds a phase on screen for its animation's length. */
+@keyframes sign-off-hold {
+  from, to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The credits stand still, each phase simply held. */
+  .sign-off-credits {
+    top: 50%;
+    transform: translateY(-50%);
+    animation: sign-off-hold 12s linear;
+  }
+
+  .sign-off-credit {
+    margin-bottom: 3cqh;
+  }
+
+  .sign-off-signature path {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}

@@ -53,20 +53,20 @@ const BANNERS = {
  * Phosphor-green on-screen display drawn inside the tube: the mode bug
  * (LIVE or the VCR counter) in the corner, channel and artist on a change,
  * level bars for volume/brightness, and standing indicators (PAUSE, MUTE,
- * SCAN, TUNING). `flash` is the transient panel to show, if any; `banner`
+ * SCAN, TUNING). On channel 000 (`signOff`) there's no bug. `flash` is the transient panel to show, if any; `banner`
  * announces a switch between Live and VCR ('mode') or rejoining a live
  * station after a pause ('rejoin').
  */
-const Osd = ({ flash, banner, channelNumber, live, tapeSeconds = 0, artist, volume, brightness, paused, muted, scanning, tuning, hint }) => {
+const Osd = ({ flash, banner, channelNumber, live, signOff = false, tapeSeconds = 0, artist, volume, brightness, paused, muted, scanning, tuning, hint }) => {
   const [bannerTitle, bannerSub] = BANNERS[banner === 'mode' ? (live ? 'live' : 'vcr') : banner] ?? [];
   return (
     <div className="osd">
       <div className="osd-top">
-        {channelNumber !== null && <ModeBug live={live} paused={paused} tapeSeconds={tapeSeconds} />}
+        {channelNumber !== null && !signOff && <ModeBug live={live} paused={paused} tapeSeconds={tapeSeconds} />}
         <div className="osd-now" aria-live="polite">
           {flash === 'channel' && channelNumber !== null && (
             <>
-              <span className="osd-channel">CH {pad(channelNumber)}</span>
+              <span className="osd-channel">CH {signOff ? '000' : pad(channelNumber)}</span>
               <span className="osd-artist">{artist}</span>
             </>
           )}

@@ -1,16 +1,29 @@
 /**
- * Tuning hiss: filtered white noise synthesised with Web Audio, so there's
- * no audio file to load. One shared instance; the AudioContext is created
- * lazily on first use (always inside a user gesture here) because browsers
- * won't start audio before one.
+ * The set's synthesised sounds, so there's no audio file to load: the tuning
+ * hiss (filtered white noise) and the sign-off's 1 kHz test tone. They share
+ * one AudioContext, created lazily on first use (always inside a user
+ * gesture here) because browsers won't start audio before one.
  */
 let ctx = null;
-let gain = null;
+let hissGain = null;
+let toneGain = null;
 
-const start = () => {
+const audio = () => {
+  if (ctx) return ctx;
   const AudioContext = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContext) return false;
+  if (!AudioContext) return null;
   ctx = new AudioContext();
+  return ctx;
+};
+
+const silentGain = () => {
+  const gain = ctx.createGain();
+  gain.gain.value = 0;
+  gain.connect(ctx.destination);
+  return gain;
+};
+
+const startHiss = () => {
   const seconds = 2;
   const buffer = ctx.createBuffer(1, ctx.sampleRate * seconds, ctx.sampleRate);
   const data = buffer.getChannelData(0);
@@ -26,18 +39,40 @@ const start = () => {
   const lowpass = ctx.createBiquadFilter();
   lowpass.type = 'lowpass';
   lowpass.frequency.value = 7000;
-  gain = ctx.createGain();
-  gain.gain.value = 0;
-  noise.connect(highpass).connect(lowpass).connect(gain).connect(ctx.destination);
+  hissGain = silentGain();
+  noise.connect(highpass).connect(lowpass).connect(hissGain);
   noise.start();
-  return true;
 };
 
-/** Set the hiss loudness (0 = silent), smoothed to avoid clicks. */
-export const setHiss = (level) => {
-  if (!ctx) {
-    if (level <= 0 || !start()) return;
-  }
+const startTone = () => {
+  const oscillator = ctx.createOscillator();
+  oscillator.type = 'sine';
+  oscillator.frequency.value = 1000;
+  toneGain = silentGain();
+  oscillator.connect(toneGain);
+  oscillator.start();
+};
+
+// Smoothed, to avoid clicks.
+const fade = (gain, level) => {
   if (ctx.state === 'suspended') ctx.resume();
   gain.gain.setTargetAtTime(Math.max(0, level), ctx.currentTime, 0.05);
+};
+
+/** Set the hiss loudness (0 = silent). */
+export const setHiss = (level) => {
+  if (!hissGain) {
+    if (level <= 0 || !audio()) return;
+    startHiss();
+  }
+  fade(hissGain, level);
+};
+
+/** Set the test tone's loudness (0 = silent). */
+export const setTone = (level) => {
+  if (!toneGain) {
+    if (level <= 0 || !audio()) return;
+    startTone();
+  }
+  fade(toneGain, level);
 };

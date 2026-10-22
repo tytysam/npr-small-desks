@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { WOOD, getWood } from '../../js/woodGrain';
+import { SIGNATURE } from '../../js/signature';
 
 // Tuned against the tokens at the top of TV.css so both sets read as the same TV.
 export const PALETTE = {
@@ -493,4 +494,167 @@ export const makeGuideTextures = (issues) => {
   });
 
   return { cover, spines };
+};
+
+/**
+ * The set's back: a hardboard panel with vent slots, the printed caution, a
+ * rating plate, and the inspector's tag, signed. `width` × `height` in canvas
+ * pixels; keep the aspect equal to the plane's.
+ */
+export const makeBackPanelTexture = ({ width = 2048, height = 1454 } = {}) => {
+  const canvas = makeCanvas(width, height);
+  const ctx = canvas.getContext('2d');
+  const text = (str, x, y, font, color, align = 'center') => {
+    ctx.font = font;
+    ctx.fillStyle = color;
+    ctx.textAlign = align;
+    ctx.textBaseline = 'middle';
+    ctx.fillText(str, x, y);
+  };
+
+  // Hardboard: warm brown, flecked.
+  const board = ctx.createLinearGradient(0, 0, width, height);
+  board.addColorStop(0, '#8c6642');
+  board.addColorStop(1, '#6e4c2e');
+  ctx.fillStyle = board;
+  ctx.fillRect(0, 0, width, height);
+  for (let i = 0; i < 9000; i += 1) {
+    ctx.fillStyle = `rgba(${Math.random() < 0.5 ? '255,230,200' : '20,10,0'},${0.04 + Math.random() * 0.06})`;
+    ctx.fillRect(Math.random() * width, Math.random() * height, 2 + Math.random() * 3, 1 + Math.random() * 2);
+  }
+
+  // Screws, one per corner.
+  [
+    [70, 70],
+    [width - 70, 70],
+    [70, height - 70],
+    [width - 70, height - 70],
+  ].forEach(([x, y]) => {
+    const head = ctx.createRadialGradient(x - 8, y - 8, 2, x, y, 26);
+    head.addColorStop(0, '#e8e4dc');
+    head.addColorStop(1, '#6d6a64');
+    ctx.fillStyle = head;
+    ctx.beginPath();
+    ctx.arc(x, y, 24, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#3a3834';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(x - 15, y - 6);
+    ctx.lineTo(x + 15, y + 6);
+    ctx.stroke();
+  });
+
+  // Vent slots: three rows across the top, where the tube's heat gets out.
+  const slotW = 26;
+  const slotH = 150;
+  for (let row = 0; row < 3; row += 1) {
+    for (let col = 0; col < 26; col += 1) {
+      const x = 250 + col * 60;
+      const y = 150 + row * 190;
+      const path = new Path2D();
+      roundedRect(path, x, y, slotW, slotH, slotW / 2);
+      ctx.fillStyle = '#140b05';
+      ctx.fill(path);
+      ctx.strokeStyle = 'rgba(255, 220, 180, 0.12)';
+      ctx.lineWidth = 3;
+      ctx.stroke(path);
+    }
+  }
+
+  // The printed caution, centre bottom.
+  const ink = 'rgba(18, 10, 4, 0.82)';
+  const cx = width * 0.47;
+  text('CAUTION', cx, 750, 'bold 64px Georgia, serif', ink);
+  [
+    'TO REDUCE THE RISK OF ELECTRIC SHOCK, DO NOT',
+    'REMOVE BACK. NO USER-SERVICEABLE PARTS INSIDE.',
+    'REFER SERVICING TO QUALIFIED SERVICE PERSONNEL.',
+  ].forEach((line, i) => text(line, cx, 815 + i * 44, 'bold 34px "Courier New", monospace', ink));
+
+  // Rating plate, bottom left.
+  const plate = ctx.createLinearGradient(160, 1080, 760, 1320);
+  plate.addColorStop(0, '#d9d7d0');
+  plate.addColorStop(0.5, '#a9a69e');
+  plate.addColorStop(1, '#cfccc4');
+  ctx.fillStyle = plate;
+  ctx.fillRect(160, 1080, 600, 250);
+  ctx.strokeStyle = '#3d3b37';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(172, 1092, 576, 226);
+  const etch = '#24221e';
+  text('MODEL NP-R1', 460, 1140, 'bold 44px Georgia, serif', etch);
+  text('120 V ~ 60 Hz  145 W', 460, 1200, 'bold 30px "Courier New", monospace', etch);
+  text('SERIAL No. 000001', 460, 1248, 'bold 30px "Courier New", monospace', etch);
+  text('SMALL DESK ELECTRONICS', 460, 1292, '24px Georgia, serif', etch);
+
+  // The inspector's tag, bottom right: yellowed paper, a little askew.
+  ctx.save();
+  ctx.translate(1600, 1165);
+  ctx.rotate(-0.05);
+  const tagW = 560;
+  const tagH = 480;
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+  ctx.shadowBlur = 18;
+  ctx.shadowOffsetY = 6;
+  const paper = ctx.createLinearGradient(-tagW / 2, -tagH / 2, tagW / 2, tagH / 2);
+  paper.addColorStop(0, '#f1e6c8');
+  paper.addColorStop(1, '#d8c79e');
+  ctx.fillStyle = paper;
+  ctx.fillRect(-tagW / 2, -tagH / 2, tagW, tagH);
+  ctx.shadowColor = 'transparent';
+  const tagInk = '#2b2418';
+  ctx.fillStyle = tagInk;
+  ctx.fillRect(-tagW / 2, -tagH / 2, tagW, 70);
+  text('INSPECTED', 0, -tagH / 2 + 37, 'bold 44px Georgia, serif', '#f1e6c8');
+  const field = (label, value, y) => {
+    text(label, -tagW / 2 + 32, y, 'bold 24px "Courier New", monospace', tagInk, 'left');
+    text(value, tagW / 2 - 32, y, 'bold 30px "Courier New", monospace', tagInk, 'right');
+    ctx.fillStyle = 'rgba(43, 36, 24, 0.4)';
+    ctx.fillRect(-tagW / 2 + 32, y + 22, tagW - 64, 2);
+  };
+  field('MODEL', 'NP-R1', -135);
+  field('SERIAL', '000001', -75);
+  field('DATE', 'OCT 2026', -15);
+  text('INSPECTOR', -tagW / 2 + 32, 45, 'bold 24px "Courier New", monospace', tagInk, 'left');
+
+  // Signed in blue-black ink.
+  const [sx, sy, sw, sh] = SIGNATURE.viewBox;
+  const sigW = 240;
+  const scale = sigW / sw;
+  ctx.save();
+  ctx.translate(-tagW / 2 + 40, 122 - (sh * scale) / 2);
+  ctx.scale(scale, scale);
+  ctx.translate(-sx, -sy);
+  ctx.strokeStyle = '#1d2a5c';
+  ctx.lineWidth = SIGNATURE.strokeWidth * 0.9;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  SIGNATURE.paths.forEach((d) => ctx.stroke(new Path2D(d)));
+  ctx.restore();
+  // The signature line, with the name typed under it.
+  ctx.fillStyle = 'rgba(43, 36, 24, 0.55)';
+  ctx.fillRect(-tagW / 2 + 32, 186, 300, 2);
+  text('Tyler C. Samuelson', -tagW / 2 + 32, 210, 'bold 24px "Courier New", monospace', tagInk, 'left');
+
+  // A red rubber stamp beside it.
+  ctx.save();
+  ctx.translate(tagW / 2 - 95, 135);
+  ctx.rotate(0.3);
+  ctx.globalAlpha = 0.72;
+  ctx.strokeStyle = '#b3261e';
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.arc(0, 0, 62, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(0, 0, 52, 0, Math.PI * 2);
+  ctx.stroke();
+  text('QC', 0, -12, 'bold 38px Georgia, serif', '#b3261e');
+  text('No. 7', 0, 24, 'bold 22px "Courier New", monospace', '#b3261e');
+  ctx.restore();
+  ctx.restore();
+
+  return finishTexture(canvas);
 };

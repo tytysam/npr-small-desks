@@ -44,3 +44,12 @@ export const searchChannels = (channels, query) => {
   });
   return hits;
 };
+
+// What a search has to match to turn up channel 000, the sign-off.
+const SIGN_OFF_TEXT = 'sign-off sign off signoff credits np-r1 tyler samuelson';
+
+/** Whether `query` finds the sign-off: every word in its text, four letters at least. */
+export const searchFindsSignOff = (query) => {
+  const words = fold(query).split(/\s+/).filter(Boolean);
+  return words.join('').length >= 4 && words.every((w) => SIGN_OFF_TEXT.includes(w));
+};

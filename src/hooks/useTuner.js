@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import usePersistentState from './usePersistentState';
 import { makeSchedule, onAir } from '../js/schedule';
 import { makeShuffleBag } from '../js/shuffleBag';
-import { pickRandomIndex } from '../js/channels';
+import { pickRandomIndex, SIGN_OFF } from '../js/channels';
 
 const isStation = (v) => Number.isInteger(v) && v >= 0;
 
@@ -14,6 +14,7 @@ const isStation = (v) => Number.isInteger(v) && v >= 0;
  * - **VCR**: station k simply plays video k from the start.
  * - A `?v=` link plays that video once (`override`); changing channel
  *   returns to normal tuning from there.
+ * - `SIGN_OFF` (channel 000) shows the sign-off instead of a video.
  *
  * A "tune" is a moment the picture is (re)acquired: changing station,
  * rejoining live after a pause/power cycle, or a mode switch. Programmes are
@@ -35,10 +36,12 @@ const useTuner = ({ channels, broadcast }) => {
     if (channels.length === 0) return;
     const params = new URLSearchParams(window.location.search);
     const linkedChannel = Number(params.get('ch')) - 1;
+    const linkedSignOff = /^0+$/.test(params.get('ch') ?? '');
     const linkedVideo = channels.findIndex((c) => c.id === params.get('v'));
     let next = pickRandomIndex(channels.length);
     if (isStation(lastStationRef.current) && lastStationRef.current < channels.length) next = lastStationRef.current;
     if (isStation(linkedChannel) && linkedChannel < channels.length) next = linkedChannel;
+    if (linkedSignOff) next = SIGN_OFF;
     // Picking the first station reads the URL, storage and randomness, so it
     // happens here, once the lineup has loaded, not during render.
     /* eslint-disable react-hooks/set-state-in-effect */
@@ -55,6 +58,7 @@ const useTuner = ({ channels, broadcast }) => {
 
   const program = useMemo(() => {
     if (station === null || !schedule) return null;
+    if (station === SIGN_OFF) return { signOff: true, video: null, index: null, startAt: 0, live: false };
     if (override) {
       const video = channels.find((c) => c.id === override);
       if (video) return { video, index: channels.indexOf(video), startAt: tune.startAt, live: false };
@@ -77,10 +81,15 @@ const useTuner = ({ channels, broadcast }) => {
     [channels.length, station]
   );
 
+  // The dial goes round the whole band, and channel 000 (the sign-off) sits
+  // where it wraps: … → last channel → 000 → channel 1 → …
   const step = useCallback(
     (direction) => {
       if (channels.length === 0) return;
-      tuneTo((((station ?? 0) + direction) % channels.length + channels.length) % channels.length);
+      const positions = channels.length + 1; // 0 is the sign-off, k + 1 is station k
+      const at = station === SIGN_OFF ? 0 : (station ?? 0) + 1;
+      const next = (((at + direction) % positions) + positions) % positions;
+      tuneTo(next === 0 ? SIGN_OFF : next - 1);
     },
     [channels.length, station, tuneTo]
   );
@@ -119,16 +128,23 @@ const useTuner = ({ channels, broadcast }) => {
       const next = onAir(schedule, station, now);
       setTune({ at: next.index === program.index ? now + (next.remaining + 1) * 1000 : now, startAt: 0 });
     } else {
-      step(1);
+      // A tape that ends moves on to the next one, never into the sign-off.
+      tuneTo((station + 1) % channels.length);
     }
-  }, [program, schedule, station, step]);
+  }, [program, schedule, station, channels.length, tuneTo]);
 
-  // Remember where we were, and keep the address bar shareable.
-  const videoId = program?.video.id;
+  // Remember where we were (never the sign-off), and keep the address bar shareable.
+  const videoId = program?.video?.id;
   useEffect(() => {
-    if (station === null || !videoId) return;
-    setLastStation(station);
+    if (station === null || (!videoId && station !== SIGN_OFF)) return;
     const url = new URL(window.location.href);
+    if (station === SIGN_OFF) {
+      url.searchParams.set('ch', '0');
+      url.searchParams.delete('v');
+      window.history.replaceState(null, '', url);
+      return;
+    }
+    setLastStation(station);
     if (override || !broadcast) {
       url.searchParams.set('v', videoId);
       url.searchParams.delete('ch');

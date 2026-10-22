@@ -14,3 +14,10 @@ export const fetchChannelList = async () => {
 };
 
 export const pickRandomIndex = (length) => Math.floor(Math.random() * length);
+
+/**
+ * Channel 000, below channel 1: where the set signs off for the night (color
+ * bars, then the credits). The dial stops here between the last channel and
+ * the first; the guide's CH box, a search and `?ch=0` find it too.
+ */
+export const SIGN_OFF = -1;

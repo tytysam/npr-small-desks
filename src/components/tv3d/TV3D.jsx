@@ -24,8 +24,9 @@ const FitCamera = () => {
 };
 
 /**
- * The three.js set. Camera orbits within limits that keep the (flat, DOM)
- * screen facing the viewer; knob drags temporarily disable orbiting.
+ * The three.js set. The camera orbits all the way round (the back panel
+ * hides the DOM screen from behind) but only tilts a little; knob drags
+ * temporarily disable orbiting.
  *
  * Frames render on demand: the scene is static unless something changes, and
  * R3F redraws on prop changes while OrbitControls invalidates as it moves.
@@ -108,8 +109,6 @@ const TV3D = (props) => {
           maxDistance={20}
           minPolarAngle={Math.PI * 0.32}
           maxPolarAngle={Math.PI * 0.58}
-          minAzimuthAngle={-Math.PI / 3}
-          maxAzimuthAngle={Math.PI / 3}
         />
       </Canvas>
       <p className="tv3d-hint">Drag to look around · turn the knobs to tune</p>
