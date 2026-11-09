@@ -170,6 +170,11 @@
   background: #7dff9a;
 }
 
+.osd-heart {
+  font-size: 3.4cqw;
+  letter-spacing: 0.3cqw;
+}
+
 .osd-hint {
   font-size: 3.2cqw;
   letter-spacing: 0.3cqw;

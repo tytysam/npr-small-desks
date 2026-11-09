@@ -4,6 +4,7 @@ import Signature from './Signature';
 import { findAiring } from '../js/schedule';
 import { PER_PAGE, indexTabs, listingFor, searchChannels, searchFindsSignOff } from '../js/listings';
 import { SIGN_OFF } from '../js/channels';
+import { rankHearts } from '../js/hearts';
 import { clock } from '../js/clock';
 import './Guide.css';
 
@@ -45,6 +46,10 @@ const MODES = [
   [true, 'On Air'],
   [false, 'Tapes'],
 ];
+
+// The ♥ tab's first slot: a note on what the list is, in place of a listing,
+// so the page keeps its size and paging is unchanged.
+const LOVED_NOTE = 'loved-note';
 
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -93,8 +98,25 @@ const Marquee = ({ children }) => {
   );
 };
 
+/** A listing's heart: toggles the concert, with how many viewers love it. */
+const HeartToggle = ({ on, count, artist, onToggle }) => (
+  <button
+    type="button"
+    className={`guide-heart${on ? ' is-on' : ''}`}
+    aria-pressed={on}
+    aria-label={`Heart ${artist}${count ? ` (${count})` : ''}`}
+    onClick={onToggle}
+  >
+    {/* the thumb tab's ♥, filled once it's yours, outlined until then */}
+    <span className="heart-glyph" aria-hidden="true">
+      ♥
+    </span>
+    {count > 0 && <span className="guide-heart-count">{count}</span>}
+  </button>
+);
+
 /** One line of listings: the channel number in a block, then two lines of type. */
-const Row = ({ ch, titleTime, title, detailTime, detail, progress, current, marked, onClick, rowRef }) => (
+const Row = ({ ch, titleTime, title, detailTime, detail, progress, current, marked, onClick, rowRef, heart }) => (
   <li>
     <button
       ref={rowRef}
@@ -121,6 +143,7 @@ const Row = ({ ch, titleTime, title, detailTime, detail, progress, current, mark
       </span>
       {current && <span className="guide-here">You are here</span>}
     </button>
+    {heart && <HeartToggle {...heart} />}
   </li>
 );
 
@@ -149,13 +172,15 @@ const Cover = () => (
  * shrinks it back to the set before `onClose`.
  *
  * The "0" thumb tab, before channel 1, opens the colophon: the set drawn
- * in type, who built it, and a hint at channel 000.
+ * in type, who built it, and a hint at channel 000. The "♥" tab lists the
+ * concerts viewers love most (`hearts`, from useHearts), found like search
+ * results; every listing has a heart to toggle.
  *
  * Picking a listing calls `onTune(station)`, or `onPlayVideo(index)` to play
  * a concert from the top when no station is showing it right now. Channel
  * 000, the sign-off, isn't listed: `CH 0` or the right search finds it.
  */
-export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastChange, origin, onTune, onPlayVideo, onClose }) => {
+export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastChange, origin, onTune, onPlayVideo, onClose, hearts }) => {
   const bookRef = useRef(null);
   const spreadRef = useRef(null);
   const searchRef = useRef(null);
@@ -171,6 +196,7 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
   const [start, setStart] = useState(Math.max(0, station ?? 0)); // any entry on the spread to show
   const [marked, setMarked] = useState(null);
   const [colophon, setColophon] = useState(false); // the "0" tab's page, in place of the listings
+  const [loved, setLoved] = useState(false); // the "♥" tab: the most-loved concerts, in place of the listings
   const [jump, setJump] = useState('');
   const [now, setNow] = useState(Date.now);
   // 'closed' → 'open' → 'closing'; with reduced motion it's simply open.
@@ -231,10 +257,23 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
     markedRowRef.current?.scrollIntoView({ block: 'nearest' });
   }, [marked]);
 
+  // Everyone's hearts, fresh each time the book opens.
+  const refreshHearts = hearts?.refresh;
+  useEffect(() => {
+    refreshHearts?.();
+  }, [refreshHearts]);
+
 
   // --- what's on which page ----------------------------------------------------
-  const hits = useMemo(() => (query.trim() ? searchChannels(channels, query) : null), [channels, query]);
-  const signOffHit = Boolean(hits) && searchFindsSignOff(query);
+  const heartCounts = hearts?.counts;
+  const hits = useMemo(() => {
+    if (loved) {
+      const ranked = rankHearts(channels, heartCounts ?? {});
+      return ranked.length ? [LOVED_NOTE, ...ranked] : ranked;
+    }
+    return query.trim() ? searchChannels(channels, query) : null;
+  }, [channels, query, loved, heartCounts]);
+  const signOffHit = Boolean(hits) && !loved && searchFindsSignOff(query);
   const total = hits ? hits.length : channels.length;
   const lastFirst = Math.max(0, Math.floor((total - 1) / perSpread) * perSpread);
   const first = Math.min(Math.floor(start / perSpread) * perSpread, lastFirst);
@@ -280,6 +319,7 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
   const search = (value) => {
     settle();
     setColophon(false);
+    setLoved(false);
     setQuery(value);
     setStart(0);
     setMarked(null);
@@ -288,6 +328,7 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
   const goTo = (index) => {
     settle();
     setColophon(false);
+    setLoved(false);
     setQuery('');
     setStart(index);
     setMarked(index);
@@ -336,6 +377,14 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
   };
 
   // --- rows ------------------------------------------------------------------------
+  const heartFor = (video) =>
+    hearts && {
+      on: hearts.mine.has(video.id),
+      count: hearts.counts[video.id] ?? 0,
+      artist: video.artist,
+      onToggle: () => hearts.toggle(video.id),
+    };
+
   const stationRow = (s, live) => {
     const props = {
       current: s === station,
@@ -346,7 +395,16 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
     };
     if (!broadcast || !schedule) {
       const video = channels[s];
-      return <Row key={s} {...props} titleTime={minutes(video.duration)} title={video.artist} detail={`${billing(video)} · ${year(video)}`} />;
+      return (
+        <Row
+          key={s}
+          {...props}
+          titleTime={minutes(video.duration)}
+          title={video.artist}
+          detail={`${billing(video)} · ${year(video)}`}
+          heart={heartFor(video)}
+        />
+      );
     }
     const { now: on, next } = listingFor(schedule, s, now, true);
     return (
@@ -358,6 +416,7 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
         title={channels[on.index].artist}
         detailTime={clock(next.startMs)}
         detail={channels[next.index].artist}
+        heart={heartFor(channels[on.index])}
       />
     );
   };
@@ -386,6 +445,7 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
           title={title}
           detail={`${billing(video)} · ${year(video)}`}
           onClick={pick(() => onTune(i))}
+          heart={heartFor(video)}
         />
       );
     }
@@ -400,6 +460,7 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
           detail={`On now · ${minutes(airing.offset)} in · ${year(video)}`}
           progress={airing.offset / video.duration}
           onClick={pick(() => onTune(airing.station))}
+          heart={heartFor(video)}
         />
       );
     }
@@ -410,6 +471,7 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
         title={title}
         detail={`Airs ${clock(now + airing.startsIn * 1000)} on ch ${airing.station + 1} · play it now`}
         onClick={pick(() => onPlayVideo(i))}
+        heart={heartFor(video)}
       />
     );
   };
@@ -418,9 +480,13 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
   // `side` is 'left' / 'right' on a spread or 'single'. Live pages are
   // interactive; copies (the faces of a turning leaf) are print only.
   // For the spread the page belongs to, which isn't the current one on a page turning away.
+  const listed = loved ? Math.max(0, total - 1) : total; // the note isn't a concert
+  const concerts = `${listed} ${listed === 1 ? 'concert' : 'concerts'}`;
   const summary = (number) =>
-    hits
-      ? `${total} ${total === 1 ? 'concert' : 'concerts'}`
+    loved
+      ? `Most loved · ${concerts}`
+      : hits
+      ? concerts
       : `Channels ${spreadOf(number) + 1}–${Math.min(spreadOf(number) + perSpread, total)}`;
 
   const masthead = (live) => (
@@ -493,35 +559,38 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
   const spreadOf = (number) => Math.floor((number * PER_PAGE) / perSpread) * perSpread;
 
   const tabStrip = (number) => {
-    if (hits) return null;
+    if (hits && !loved) return null;
     const spread = spreadOf(number);
     // The tab for the channel asked for (paging asks for the spread's last
     // entry), or else for the top of the spread. A page from another spread
     // (one turning away) shows the tab that paging to it would.
     let shown = Math.min(spread + perSpread, total) - 1;
     if (spread === first) shown = start >= first && start < first + perSpread ? start : first;
+    const openPage = (page) => {
+      settle();
+      setColophon(page === 'colophon');
+      setLoved(page === 'loved');
+      setQuery('');
+      setStart(0);
+      setMarked(null);
+    };
     return (
       <nav className="guide-tabs" aria-label="Channels by hundred">
-        <button
-          type="button"
-          className={`guide-tab${colophon ? ' is-active' : ''}`}
-          onClick={() => {
-            settle();
-            setColophon(true);
-            setStart(0);
-            setMarked(null);
-          }}
-        >
+        <button type="button" className={`guide-tab guide-tab-heart${loved ? ' is-active' : ''}`} aria-label="Most loved" onClick={() => openPage('loved')}>
+          <span className="heart-glyph">♥</span>
+        </button>
+        <button type="button" className={`guide-tab${colophon ? ' is-active' : ''}`} onClick={() => openPage('colophon')}>
           0
         </button>
         {tabs.map((tab, t) => (
           <button
             key={tab.label}
             type="button"
-            className={`guide-tab${!colophon && t === Math.floor(shown / 100) ? ' is-active' : ''}`}
+            className={`guide-tab${!colophon && !loved && t === Math.floor(shown / 100) ? ' is-active' : ''}`}
             onClick={() => {
               settle();
               setColophon(false);
+              setLoved(false);
               setStart(tab.index);
               setMarked(null);
             }}
@@ -543,6 +612,13 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
       ›
     </button>
   );
+
+  const lovedEmpty =
+    hearts?.status === 'loading'
+      ? 'Gathering hearts…'
+      : hearts?.status === 'error' || !hearts
+        ? 'Hearts are temporarily unavailable.'
+        : 'No hearts yet. Press H on a concert you love.';
 
   const page = (side, number, live = true) => {
     const entries = entriesOn(number);
@@ -576,11 +652,21 @@ export const GuideBook = ({ channels, schedule, station, broadcast, onBroadcastC
             )}
           </div>
         ) : total === 0 && number === 0 && !signOffHit ? (
-          <p className="guide-empty">No listings for “{query.trim()}”.</p>
+          <p className="guide-empty">{loved ? lovedEmpty : <>No listings for “{query.trim()}”.</>}</p>
         ) : (
           <ol className="guide-rows">
             {signOffHit && number === 0 && signOffRow()}
-            {entries.map((entry) => (hits ? searchRow(entry) : stationRow(entry, live)))}
+            {entries.map((entry) =>
+              entry === LOVED_NOTE ? (
+                <li key={LOVED_NOTE} className="guide-note">
+                  Every concert any viewer has hearted, ranked by number of hearts.
+                </li>
+              ) : hits ? (
+                searchRow(entry)
+              ) : (
+                stationRow(entry, live)
+              )
+            )}
           </ol>
         )}
         <footer className="guide-foot">

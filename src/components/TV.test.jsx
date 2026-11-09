@@ -44,6 +44,12 @@ describe('TV/VCR switch', () => {
     expect(screen.getByText('On Air')).not.toHaveClass('is-on');
   });
 
+  test('ON AIR goes dark when the set is switched off, still on live', () => {
+    renderTV({ isOn: false });
+    expect(screen.getByRole('switch', { name: 'Live TV' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByText('On Air')).not.toHaveClass('is-on');
+  });
+
   test('flips the mode when clicked', async () => {
     const { onBroadcastToggle } = renderTV();
     await userEvent.click(screen.getByRole('switch', { name: 'Live TV' }));

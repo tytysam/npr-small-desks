@@ -579,6 +579,56 @@
 
 /* Bat-handle toggle: up plays, down pauses. The handle pivots on the nut and
    flips through a foreshortened scaleY, like a lever swinging toward you. */
+/* The heart: a red enamel push-button on the rail, with a ♥ inlay. Like
+   MENU, it latches in, here while the concert on screen is hearted. */
+.tv-heart {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  background: radial-gradient(circle at 35% 30%, #ff9a8a, #d2402f 35%, #8e1e14 78%, #4a0d07);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(0, 0, 0, 0.35);
+  /* springs back out with a little overshoot */
+  transition: transform 0.15s cubic-bezier(0.3, 1.6, 0.5, 1), box-shadow 0.15s, filter 0.15s;
+}
+
+.tv-heart-glyph {
+  font-size: 14px;
+  line-height: 1;
+  color: rgba(255, 236, 220, 0.85);
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.35);
+}
+
+.tv-heart:active:not(:disabled) {
+  transform: scale(0.94);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(0, 0, 0, 0.35);
+}
+
+.tv-heart.is-pressed {
+  transform: scale(0.86);
+  filter: brightness(0.9) saturate(1.2);
+  box-shadow:
+    inset 0 3px 4px rgba(0, 0, 0, 0.6),
+    0 0 0 3px rgba(0, 0, 0, 0.55),
+    0 0 6px rgba(255, 90, 70, 0.45);
+  transition-timing-function: ease-out;
+}
+
+.tv-heart:disabled {
+  cursor: default;
+  filter: saturate(0.5) brightness(0.75);
+}
+
+.tv-heart:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
 .tv-lever {
   position: relative;
   flex: none;

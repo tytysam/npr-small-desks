@@ -59,6 +59,9 @@ const TV = ({
   onGuideOpen,
   broadcast,
   onBroadcastToggle,
+  hearted = false,
+  canHeart = false,
+  onHeartToggle,
 }) => {
   const wood = useWoodImages();
   const woodStyle = wood
@@ -148,9 +151,9 @@ const TV = ({
               <span className="tv-tuning-text">{artistName || 'Tiny Desk'}</span>
             </div>
 
-            {/* input selector: left for the broadcast (ON AIR lit), right for the VCR */}
+            {/* input selector: left for the broadcast (ON AIR lit while the set is on), right for the VCR */}
             <div className="tv-input">
-              <span className={`tv-on-air ${broadcast ? 'is-on' : ''}`} aria-hidden="true">
+              <span className={`tv-on-air ${broadcast && isOn ? 'is-on' : ''}`} aria-hidden="true">
                 On Air
               </span>
               <button
@@ -175,6 +178,21 @@ const TV = ({
                 <span key={i} className="tv-louvre" />
               ))}
             </div>
+
+            {/* the heart: a red push-button that stays in while the concert is hearted */}
+            <button
+              type="button"
+              className={`tv-heart ${hearted ? 'is-pressed' : ''}`}
+              aria-pressed={hearted}
+              aria-label="Heart this concert"
+              title={hearted ? 'Hearted (press to un-heart)' : 'Heart this concert'}
+              disabled={!canHeart || !isOn}
+              onClick={onHeartToggle}
+            >
+              <span className="tv-heart-glyph heart-glyph" aria-hidden="true">
+                ♥
+              </span>
+            </button>
 
             <button
               type="button"

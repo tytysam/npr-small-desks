@@ -11,6 +11,42 @@ export const PALETTE = {
   glass: '#121412',
   amber: '#ffb347',
   cream: '#e8dfc8',
+  heart: '#c8372a',
+};
+
+/** The guide's ♥ (its thumb tab and listings): Courier New, bold. */
+export const HEART_FONT = 'bold 200px "Courier New", monospace';
+
+/**
+ * One glyph on a transparent texture, cropped to its ink and centred on it,
+ * so it can be laid on a plane the shape's size: `{ texture, aspect }`
+ * (the ink's width ÷ height). The rail's heart button uses this to show the
+ * same ♥ as the TV guide.
+ */
+export const makeGlyphTexture = (glyph, { font = HEART_FONT, color = '#ffffff', size = 256 } = {}) => {
+  const measure = makeCanvas(1, 1).getContext('2d');
+  measure.font = font;
+  const m = measure.measureText(glyph);
+  const inkW = m.actualBoundingBoxLeft + m.actualBoundingBoxRight;
+  const inkH = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
+  const aspect = inkW / inkH;
+  const pad = 2;
+  const width = aspect >= 1 ? size : Math.round(size * aspect);
+  const height = aspect >= 1 ? Math.round(size / aspect) : size;
+  const canvas = makeCanvas(width, height);
+  const ctx = canvas.getContext('2d');
+  const scale = Math.min((width - pad * 2) / inkW, (height - pad * 2) / inkH);
+  ctx.setTransform(scale, 0, 0, scale, width / 2, height / 2);
+  ctx.font = font;
+  ctx.fillStyle = color;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  // Put the ink's centre on the canvas's centre.
+  ctx.fillText(glyph, (m.actualBoundingBoxLeft - m.actualBoundingBoxRight) / 2, (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  return { texture, aspect };
 };
 
 
