@@ -13,6 +13,7 @@ import usePersistentState from './hooks/usePersistentState';
 import useOsd from './hooks/useOsd';
 import useShortcuts from './hooks/useShortcuts';
 import useLatest from './hooks/useLatest';
+import useHearts from './hooks/useHearts';
 import { BRIGHTNESS_MIN, BRIGHTNESS_MAX } from './js/picture';
 import { CRT_ITEMS } from './js/crtSettings';
 import { setHiss } from './js/hiss';
@@ -99,6 +100,18 @@ function App() {
   }, [crt.broadcast, station, tuneTo, flashBanner]);
 
   const toggleBroadcast = useCallback(() => adjustCrtSetting('broadcast', 1), [adjustCrtSetting]);
+
+  // Hearts: love the concert that's on (H, the heart button, or the guide).
+  // Shared with every viewer; the guide's ♥ tab ranks them.
+  const hearts = useHearts();
+  const canHeart = Boolean(videoId) && !signOff;
+  const hearted = canHeart && hearts.isHearted(videoId);
+  const { toggle: toggleHeartFor } = hearts;
+  const toggleHeart = useCallback(() => {
+    if (!canHeart || !isOn) return;
+    toggleHeartFor(videoId);
+    flashOsd('heart');
+  }, [canHeart, isOn, videoId, toggleHeartFor, flashOsd]);
 
   useEffect(() => {
     const timers = transitionTimersRef.current;
@@ -422,6 +435,7 @@ function App() {
       Escape: closeMenu,
       '?': openHelp,
       g: () => openGuide(),
+      h: toggleHeart,
     },
     { enabled: !helpOpen && !guideOpen }
   );
@@ -455,6 +469,7 @@ function App() {
       live: Boolean(program?.live),
       signOff,
       artist,
+      hearted,
       volume,
       brightness: (brightness - BRIGHTNESS_MIN) / (BRIGHTNESS_MAX - BRIGHTNESS_MIN),
       paused: isPaused,
@@ -485,6 +500,9 @@ function App() {
     onGuideOpen: openGuide,
     broadcast: crt.broadcast,
     onBroadcastToggle: toggleBroadcast,
+    hearted,
+    canHeart,
+    onHeartToggle: toggleHeart,
   };
 
   return (
@@ -516,6 +534,7 @@ function App() {
           origin={guideOrigin}
           onTune={tuneFromGuide}
           onPlayVideo={(index) => tuneFromGuide(index, { fromTheTop: true })}
+          hearts={hearts}
           onClose={closeGuide}
         />
       )}

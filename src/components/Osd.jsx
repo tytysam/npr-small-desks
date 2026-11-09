@@ -53,11 +53,13 @@ const BANNERS = {
  * Phosphor-green on-screen display drawn inside the tube: the mode bug
  * (LIVE or the VCR counter) in the corner, channel and artist on a change,
  * level bars for volume/brightness, and standing indicators (PAUSE, MUTE,
- * SCAN, TUNING). On channel 000 (`signOff`) there's no bug. `flash` is the transient panel to show, if any; `banner`
+ * SCAN, TUNING). On channel 000 (`signOff`) there's no bug. A hearted
+ * concert carries a ♥ beside its artist, and `flash` 'heart' confirms a
+ * heart or un-heart. `flash` is the transient panel to show, if any; `banner`
  * announces a switch between Live and VCR ('mode') or rejoining a live
  * station after a pause ('rejoin').
  */
-const Osd = ({ flash, banner, channelNumber, live, signOff = false, tapeSeconds = 0, artist, volume, brightness, paused, muted, scanning, tuning, hint }) => {
+const Osd = ({ flash, banner, channelNumber, live, signOff = false, tapeSeconds = 0, artist, hearted = false, volume, brightness, paused, muted, scanning, tuning, hint }) => {
   const [bannerTitle, bannerSub] = BANNERS[banner === 'mode' ? (live ? 'live' : 'vcr') : banner] ?? [];
   return (
     <div className="osd">
@@ -67,7 +69,14 @@ const Osd = ({ flash, banner, channelNumber, live, signOff = false, tapeSeconds 
           {flash === 'channel' && channelNumber !== null && (
             <>
               <span className="osd-channel">CH {signOff ? '000' : pad(channelNumber)}</span>
-              <span className="osd-artist">{artist}</span>
+              <span className="osd-artist">
+                {hearted && (
+                  <span className="osd-heart-mark" role="img" aria-label="Hearted">
+                    <span className="heart-glyph">♥</span>{' '}
+                  </span>
+                )}
+                {artist}
+              </span>
             </>
           )}
         </div>
@@ -94,6 +103,11 @@ const Osd = ({ flash, banner, channelNumber, live, signOff = false, tapeSeconds 
       <div className="osd-bottom">
         {flash === 'volume' && <Bar label="VOLUME" value={volume} />}
         {flash === 'brightness' && <Bar label="BRIGHT" value={brightness} />}
+        {flash === 'heart' && (
+          <span className="osd-heart">
+            <span className="heart-glyph">{hearted ? '♥' : '♡'}</span> {hearted ? 'LOVED' : 'UNLOVED'}
+          </span>
+        )}
         {!flash && hint && <span className="osd-hint">{hint}</span>}
       </div>
     </div>

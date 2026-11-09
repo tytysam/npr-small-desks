@@ -1,6 +1,6 @@
 # Roadmap
 
-What's worth doing next on the small-desk TV, in five groups. Items move from
+What's worth doing next on the small-desk TV, in six groups. Items move from
 **Planned** → **Done** as they land; each notes where the work lives.
 
 Order agreed: performance → functional additions → (after review) broadcast
@@ -300,6 +300,8 @@ unscheduled, roughly in order of size.
 - **4.6 Favourite channels.** Hold the dial (or a key) to store the current
   channel in one of the 12 dial positions; the dial then steps through
   favourites, and the guide marks them and gets a favourites page.
+  *Partly covered by hearts (6.1):* the guide's ♥ tab and the per-listing
+  hearts exist; what's left is the dial stepping through your own.
 - **4.7 Sleep timer.** A SETUP row (15 / 30 / 60 min) that powers the set
   down with the CRT collapse.
 - **4.8 Themed channel bands.** Map dial positions to slices of the lineup:
@@ -308,8 +310,9 @@ unscheduled, roughly in order of size.
 
 ### Bigger
 - **4.9 Watch-together.** Live viewer counts per channel and an optional
-  "follow my channel" link over a realtime service (PartyKit, Liveblocks,
-  Supabase Realtime). Broadcast mode already keeps everyone in sync, so it
+  "follow my channel" link over a realtime service. The hearts Worker and
+  Durable Object (6.1) are now the natural home for it (WebSockets on the
+  same object, hibernatable), rather than PartyKit, Liveblocks or Supabase. Broadcast mode already keeps everyone in sync, so it
   only carries presence and channel changes; autoplay policy is the catch.
 - **4.10 Phone as remote.** Open a link on a phone to control the set on a
   laptop. Needs the same realtime layer as 4.9.
@@ -468,3 +471,51 @@ chunks of their own, so a deploy that only touches app code invalidates
   only shrink the build directory.
 - **Tree-shaking three.js.** R3F registers the whole `THREE` namespace by
   default; opting out means `extend`-ing each object the scene uses.
+
+---
+
+## 6. Multiplayer
+
+Light shared state between viewers, on Cloudflare: the site's Worker gains
+a script, but only for `/api/*`; everything else is still static assets.
+
+### 6.1 Hearts — **Done**
+Viewers heart concerts they love, and the guide ranks what everyone loves
+most.
+
+- **Hearts, not thumbs.** One heart per viewer per concert, toggleable. A
+  thumbs-down mostly invites trolling, and a "most loved" list only needs
+  positives.
+- **Keyed by concert, not channel.** VCR channel numbers shift by one with
+  every new upload (the lineup is newest first), so hearts use the YouTube
+  video id. That makes them work in Live too, on whatever concert is airing.
+- **Ways to heart:** **H**; a red push-button on the rail of both sets
+  (latched in while the concert is hearted); the ♥ beside every guide
+  listing, with its count. The OSD flashes ♥ LOVED / ♡ UNLOVED and marks a
+  hearted concert in the channel panel.
+- **The ♥ tab.** A thumb tab before "0" lists hearted concerts by count
+  (ties to the newer one). Rows go through the search path, so a Live row
+  says where it's on now or plays it from the top.
+- **Server.** `worker/index.js`: `GET /api/hearts` (every count, cached at
+  the edge for 30 s and invalidated in the colo on a write), `PUT` / `DELETE
+  /api/hearts/:videoId` with an `X-Visitor` id. One global SQLite-backed
+  Durable Object (`Hearts`) stores one row per (visitor, concert), so writes
+  are idempotent. Only ids in the deployed `channels.json` are accepted, and
+  writes are rate-limited to 30 a minute per IP (`HEART_LIMIT`).
+- **Identity** is a random id in `localStorage`, so it's honour-system: a
+  determined person can clear storage and heart again. Turnstile is the
+  next step if that ever matters.
+- **Client.** `useHearts` keeps your own hearts in `localStorage` and
+  toggles optimistically (rolling back if the request fails; only the latest
+  request per concert counts). Counts load when the guide opens.
+- **Local dev.** `pnpm dev:api` runs `wrangler dev` on :8787; Vite proxies
+  `/api` to it. Without it the app still works; the ♥ tab says hearts are
+  unavailable and toggles roll back.
+- Checked in headless Chrome against `wrangler dev`: H and the 2D button
+  latch and persist, the OSD ♥ shows on a hearted concert and not on the next
+  channel, the ♥ tab ranks it with its count, a guide-row un-heart reaches
+  the server, the 3D button renders on the rail. With curl: a repeat PUT
+  counts once, two visitors count twice, unknown ids and a missing
+  `X-Visitor` are 400, and writes past 30 a minute get 429.
+- `worker/`, `src/js/hearts.js` (unit-tested), `src/hooks/useHearts.js`,
+  `src/components/Guide.jsx`, `Osd.jsx`, `TV.jsx`, `tv3d/TVModel.jsx`.

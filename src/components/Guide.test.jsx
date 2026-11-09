@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { useState } from 'react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { GuideBook } from './Guide';
@@ -157,6 +158,59 @@ describe('GuideBook', () => {
   test('tapes list their running time where live listings show the hour', () => {
     renderGuide();
     expect(within(row(3)).getByText('15 min')).toBeInTheDocument(); // 900 s
+  });
+
+  describe('hearts', () => {
+    const makeHearts = (overrides = {}) => ({
+      mine: new Set(['video-4']),
+      counts: { 'video-1': 3, 'video-4': 5, 'video-9': 1 },
+      status: 'ready',
+      toggle: vi.fn(),
+      refresh: vi.fn(),
+      ...overrides,
+    });
+    const rowNumbers = () =>
+      [...screen.getByRole('dialog').querySelectorAll('.guide-page:not([inert]) .guide-ch')].map((ch) => ch.textContent);
+
+    test('the ♥ tab lists the most-loved concerts, most hearts first', async () => {
+      const hearts = makeHearts();
+      const { onTune } = renderGuide({ hearts });
+      expect(hearts.refresh).toHaveBeenCalled(); // fresh counts on opening
+      await userEvent.click(screen.getByRole('button', { name: 'Most loved' }));
+      expect(screen.getByText(/ranked by number of hearts/)).toBeInTheDocument();
+      expect(rowNumbers()).toEqual(['5', '2', '10']);
+      expect(screen.getByText(/Most loved · 3 concerts/)).toBeInTheDocument();
+      await userEvent.click(row(2));
+      expect(onTune).toHaveBeenCalledWith(1);
+    });
+
+    test('with no hearts yet, it says how to add one', async () => {
+      renderGuide({ hearts: makeHearts({ mine: new Set(), counts: {} }) });
+      await userEvent.click(screen.getByRole('button', { name: 'Most loved' }));
+      expect(screen.getByText(/No hearts yet/)).toBeInTheDocument();
+    });
+
+    test('every listing has a heart with its count, which toggles', async () => {
+      const toggle = vi.fn();
+      const Book = () => {
+        const [mine, setMine] = useState(new Set(['video-4']));
+        const hearts = makeHearts({
+          mine,
+          toggle: (id) => {
+            toggle(id);
+            setMine((m) => new Set(m.has(id) ? [...m].filter((x) => x !== id) : [...m, id]));
+          },
+        });
+        return <GuideBook channels={channels} schedule={null} station={2} broadcast={false} origin={null} onTune={vi.fn()} onClose={vi.fn()} hearts={hearts} />;
+      };
+      render(<Book />);
+      expect(screen.getByRole('button', { name: 'Heart Esperanza Spalding (5)' })).toHaveAttribute('aria-pressed', 'true');
+      const billie = screen.getByRole('button', { name: 'Heart Billie Eilish (3)' });
+      expect(billie).toHaveAttribute('aria-pressed', 'false');
+      await userEvent.click(billie);
+      expect(toggle).toHaveBeenCalledWith('video-1');
+      expect(billie).toHaveAttribute('aria-pressed', 'true');
+    });
   });
 });
 

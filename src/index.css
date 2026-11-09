@@ -7,6 +7,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Hearts (♥) drawn in type: fonts draw them tall, so squash them a little.
+   The 3D set's heart button squashes its ♥ to match (HEART_SQUASH). */
+.heart-glyph {
+  display: inline-block;
+  transform: scaleY(0.8);
+}
+
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;

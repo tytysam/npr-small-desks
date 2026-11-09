@@ -20,6 +20,7 @@ Requires Node 20.19+ or 22.12+ (Vite 8) and pnpm.
 ```sh
 pnpm install
 pnpm start         # http://localhost:3000
+pnpm dev:api       # optional, in a second terminal: the hearts API (see below)
 ```
 
 The channel lineup (`public/channels.json`) is committed, so the app runs
@@ -28,7 +29,8 @@ without a YouTube API key. A key is only needed to refresh the lineup; see
 
 | Script | What it does |
 |---|---|
-| `pnpm start` | Development server |
+| `pnpm start` | Development server (proxies `/api` to `pnpm dev:api`) |
+| `pnpm dev:api` | The Worker and its Durable Object, locally via `wrangler dev` on :8787 (serves `build/`, so build once first) |
 | `pnpm test` | Unit tests (Vitest, watch mode; `pnpm test --run` runs once) |
 | `pnpm build` | Production build in `build/`; refreshes the lineup first if a key is set |
 | `pnpm preview` | Serve the production build locally |
@@ -49,6 +51,7 @@ without a YouTube API key. A key is only needed to refresh the lineup; see
 | Small black knob | Brightness |
 | Chrome button by the NP-R1 badge | MENU: opens the SETUP menu |
 | Book stack on top | The TV guide |
+| Red ♥ button on the rail | Heart the concert on screen (again to un-heart) |
 | "?" (top right) | A short owner's manual |
 | 2D / 3D switch (top right) | Swap sets. In 3D, drag to look around |
 
@@ -67,6 +70,7 @@ without a YouTube API key. A key is only needed to refresh the lineup; see
 | V | Switch between Live TV and VCR |
 | O / Esc | Open / close SETUP |
 | G | Open the TV guide |
+| H | Heart / un-heart the concert on screen |
 | ? | Owner's manual |
 
 Media keys and the lock screen work too: play/pause, and next/previous for
@@ -117,6 +121,18 @@ Turn pages with ← / →, the corner buttons or a swipe, jump with the thumb
 tabs or the `CH` box, or search by artist or title (press `/`). Each search
 result says which channel it's on right now, or plays it from the start if no
 channel is showing it. Pick any listing to tune in.
+
+### Hearts
+
+Heart a concert you love with **H**, the red ♥ button on the rail, or the ♥
+beside any listing in the guide. The OSD says ♥ LOVED and marks the concert
+with a ♥ whenever it comes on. Hearts belong to the concert, not the channel,
+so they work in both Live and VCR. They're shared: the guide's **♥** thumb
+tab ranks the concerts every viewer loves most, with counts, and tunes to
+them like search results do.
+
+Hearts are anonymous. Each browser gets a random visitor id in
+`localStorage`, and the Worker counts one heart per visitor per concert.
 
 ### Remembered between visits
 
@@ -173,15 +189,26 @@ src/
     Osd.jsx           on-screen display and the SETUP menu
     Guide.jsx         the TV guide
     Help.jsx          the owner's manual
-  hooks/              tuner, antenna gesture, retune, settings, shortcuts…
+  hooks/              tuner, antenna gesture, retune, settings, hearts, shortcuts…
   js/
     schedule.js       the broadcast schedule
     listings.js       the guide's pages and search
+    hearts.js         the hearts API client and ranking
     woodGrain.js      procedural wood, shared by both sets
     …
+worker/
+  index.js            the Worker (only /api/* runs it) and the Hearts Durable Object
+  hearts.js           request parsing for the hearts API
 scripts/
   fetch-channels.mjs  builds public/channels.json
 ```
+
+The site is static assets on Cloudflare Workers (`wrangler.jsonc`). The one
+piece of server is the hearts API: `GET /api/hearts` returns every concert's
+count (cached at the edge for 30 s), and `PUT` / `DELETE /api/hearts/:videoId`
+with an `X-Visitor` header hearts or un-hearts it. One global Durable Object
+keeps the hearts in SQLite. Writes are rate-limited per IP, and only video
+ids in the deployed `channels.json` are accepted.
 
 ### Notes
 

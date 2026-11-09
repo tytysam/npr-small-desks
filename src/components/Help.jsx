@@ -15,6 +15,7 @@ const CONTROLS = [
   ['Lever', 'Down to pause, up to play.'],
   ['Slide switch', 'Power. (Also the classic fix for no signal.)'],
   ['Black knob', 'Brightness.'],
+  ['Red ♥ button', 'Heart the currently-playing concert. The guide’s ♥ tab ranks all hearted concerts.'],
   ['Chrome knob by the badge', 'MENU: scanlines, Tape FX, captions and more.'],
   ['TV listings', "The guide on top of the set. Find an artist, tap to tune."],
   ['2D / 3D', 'Same set, in 3D. Drag to look around.'],
@@ -32,6 +33,7 @@ const KEYS = [
   ['V', 'TV/VCR'],
   ['O', 'menu'],
   ['G', 'guide'],
+  ['H', 'heart'],
 ];
 
 /** The "?" plaque beside the 2D/3D toggle. Glows until it's been opened once. */

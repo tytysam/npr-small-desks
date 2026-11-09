@@ -5,7 +5,9 @@ const pkg = (names) => new RegExp(`node_modules[\\\\/](${names.join('|')})[\\\\/
 
 export default defineConfig({
   plugins: [react()],
-  server: { port: 3000 },
+  // The hearts API is the Worker (worker/index.js), run by `pnpm dev:api`.
+  server: { port: 3000, proxy: { '/api': 'http://localhost:8787' } },
+  preview: { proxy: { '/api': 'http://localhost:8787' } },
   build: {
     outDir: 'build',
     // The big chunks are all lazy: three.js (~740 KB, with the 3D set) and

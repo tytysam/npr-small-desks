@@ -4,6 +4,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import Knob3D from './Knob3D';
 import useDisposable from './useDisposable';
+import useFade from './useFade';
 import useAntennaGesture from '../../hooks/useAntennaGesture';
 import useLatest from '../../hooks/useLatest';
 import { BRIGHTNESS_MIN, BRIGHTNESS_MAX } from '../../js/picture';
@@ -25,6 +26,7 @@ import {
   makeDomeGeometry,
   makeGuideTextures,
   makeBackPanelTexture,
+  makeGlyphTexture,
 } from './materials';
 
 // Layout (world units). The cabinet is centred on the origin; +Z faces the viewer.
@@ -170,17 +172,43 @@ const Silver = (props) => <meshStandardMaterial color="#d6d6d2" metalness={0.55}
 const MENU_RADIUS = 0.085;
 const MENU_HEIGHT = 0.08;
 const MENU_TRAVEL = MENU_HEIGHT / 3; // sinks a third of its height
+// The heart button is smaller than MENU, with a red rim round its heart.
+const HEART_RADIUS = MENU_RADIUS * 0.8;
+const HEART_INLAY = 1.15; // the heart's width, in button radii
+const HEART_SQUASH = 0.8; // as .heart-glyph squashes the guide's ♥
+
+// The set's lights, off → on. They fade between the two like the 2D set's
+// (a 0.3 s CSS transition), via useFade.
+const LAMP = {
+  heart: { off: new THREE.Color('#6e2a22'), on: new THREE.Color(PALETTE.heart), glow: 0.35, hover: 0.1 },
+  onAir: { off: new THREE.Color('#2a0d08'), on: new THREE.Color('#d8352a'), glow: 1.4, light: 0.25 },
+  pilot: { off: new THREE.Color('#5a3a12'), on: new THREE.Color('#ffd08a'), glow: [0.05, 2.2], light: 0.5 },
+};
 
 /**
- * The MENU push-button. It latches in (sinks into the cabinet) while the
- * SETUP menu is open and springs back out when it closes; frames only render
- * while it's moving.
+ * A push-button on the rail: MENU (silver, latched in while SETUP is open)
+ * and the heart (red, latched in while the concert is hearted). It sinks
+ * into the cabinet while `pressed` and springs back out; frames only render
+ * while it's moving. A `disabled` button ignores clicks.
  */
-const MenuButton = ({ position, pressed, onPress }) => {
+const PushButton = ({ position, pressed, onPress, disabled = false, finish = 'silver' }) => {
   const groupRef = useRef(null);
+  const radius = finish === 'heart' ? HEART_RADIUS : MENU_RADIUS;
+  // The same ♥ as the TV guide's: its glyph, drawn in its font.
+  const heart = useDisposable(() => (finish === 'heart' ? makeGlyphTexture('♥', { color: '#ffe6da' }) : null), [finish]);
   const motion = useRef({ z: 0, v: 0 });
   const [hovered, setHovered] = useState(false);
   const invalidate = useThree((state) => state.invalidate);
+
+  // The heart's enamel dims while the set is off (disabled), and glows while
+  // latched (and the set is on); both fade.
+  const capRef = useRef(null);
+  useFade(disabled ? 0 : 1, (k) => {
+    if (finish === 'heart' && capRef.current) capRef.current.color.lerpColors(LAMP.heart.off, LAMP.heart.on, k);
+  });
+  useFade((pressed && !disabled ? LAMP.heart.glow : 0) + (hovered && !disabled ? LAMP.heart.hover : 0), (glow) => {
+    if (finish === 'heart' && capRef.current) capRef.current.emissiveIntensity = glow;
+  });
 
   useEffect(() => invalidate(), [pressed, invalidate]);
 
@@ -205,10 +233,11 @@ const MenuButton = ({ position, pressed, onPress }) => {
       position={position}
       onClick={(e) => {
         e.stopPropagation();
-        onPress();
+        if (!disabled) onPress();
       }}
       onPointerOver={(e) => {
         e.stopPropagation();
+        if (disabled) return;
         setHovered(true);
         document.body.style.cursor = 'pointer';
       }}
@@ -219,13 +248,25 @@ const MenuButton = ({ position, pressed, onPress }) => {
     >
       <group ref={groupRef}>
         <mesh position={[0, 0, MENU_HEIGHT / 2]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-          <cylinderGeometry args={[MENU_RADIUS, MENU_RADIUS * 1.08, MENU_HEIGHT, 32]} />
-          <Silver emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
+          <cylinderGeometry args={[radius, radius * 1.08, MENU_HEIGHT, 32]} />
+          {finish === 'heart' ? (
+            // red enamel, glowing faintly while latched; colour and glow set by useFade
+            <meshStandardMaterial ref={capRef} roughness={0.35} metalness={0.1} emissive="#ff5a46" />
+          ) : (
+            <Silver emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
+          )}
         </mesh>
-        <mesh position={[0, 0, MENU_HEIGHT + 0.001]}>
-          <circleGeometry args={[MENU_RADIUS * 0.25, 20]} />
-          <meshStandardMaterial color="#2a2a2a" roughness={0.6} />
-        </mesh>
+        {finish === 'heart' ? (
+          <mesh position={[0, 0, MENU_HEIGHT + 0.001]}>
+            <planeGeometry args={[HEART_RADIUS * HEART_INLAY, ((HEART_RADIUS * HEART_INLAY) / heart.aspect) * HEART_SQUASH]} />
+            <meshStandardMaterial map={heart.texture} transparent alphaTest={0.05} roughness={0.5} />
+          </mesh>
+        ) : (
+          <mesh position={[0, 0, MENU_HEIGHT + 0.001]}>
+            <circleGeometry args={[MENU_RADIUS * 0.25, 20]} />
+            <meshStandardMaterial color="#2a2a2a" roughness={0.6} />
+          </mesh>
+        )}
       </group>
     </group>
   );
@@ -495,6 +536,9 @@ const TVModel = ({
   onGuideOpen,
   broadcast,
   onBroadcastToggle,
+  hearted = false,
+  canHeart = false,
+  onHeartToggle,
   onKnobDragging,
 }) => {
   // --- materials ---------------------------------------------------------
@@ -506,6 +550,29 @@ const TVModel = ({
   const parts = useDisposable(makeWoodParts, []);
 
   const sliderRibs = useDisposable(() => makeKnurlTexture(9), []);
+  // The TV/VCR slider is ~half the power slider's width: half the ribs, same pitch.
+  const inputRibs = useDisposable(() => makeKnurlTexture(5), []);
+  const onAir = broadcast && isOn; // the ON AIR lamp: live, and the set switched on
+
+  // --- lamps: ON AIR and the pilot lamp fade on and off ---------------------
+  const onAirLampRef = useRef(null);
+  const onAirLightRef = useRef(null);
+  useFade(onAir ? 1 : 0, (k) => {
+    if (onAirLampRef.current) {
+      onAirLampRef.current.color.lerpColors(LAMP.onAir.off, LAMP.onAir.on, k);
+      onAirLampRef.current.emissiveIntensity = LAMP.onAir.glow * k;
+    }
+    if (onAirLightRef.current) onAirLightRef.current.intensity = LAMP.onAir.light * k;
+  });
+  const pilotLampRef = useRef(null);
+  const pilotLightRef = useRef(null);
+  useFade(isOn ? 1 : 0, (k) => {
+    if (pilotLampRef.current) {
+      pilotLampRef.current.color.lerpColors(LAMP.pilot.off, LAMP.pilot.on, k);
+      pilotLampRef.current.emissiveIntensity = LAMP.pilot.glow[0] + (LAMP.pilot.glow[1] - LAMP.pilot.glow[0]) * k;
+    }
+    if (pilotLightRef.current) pilotLightRef.current.intensity = LAMP.pilot.light * k;
+  });
   const perforated = useDisposable(() => makePerforatedTexture({ repeat: [10, 8] }), []);
   const glareTexture = useDisposable(makeGlareTexture, []);
   const backPanelTexture = useDisposable(makeBackPanelTexture, []);
@@ -800,14 +867,14 @@ const TVModel = ({
         </group>
       </group>
 
-      {/* lower rail: groove, badge, tuning strip, TV/VCR selector, louvres, play lever, pilot lamp, brightness knob */}
+      {/* lower rail: groove, badge, tuning strip, TV/VCR selector, louvres, heart, play lever, pilot lamp, brightness knob */}
       <group position={[0, RAIL_Y, BOARD_Z]}>
         <mesh geometry={railGrooveGeometry} position={[0, 0, 0.001]}>
           <meshStandardMaterial color="#1a0e05" roughness={0.9} />
         </mesh>
 
         {/* MENU: a silver push-button that latches in while SETUP is open */}
-        <MenuButton position={[-2.75, 0, 0]} pressed={Boolean(menuOpen)} onPress={onMenuToggle} />
+        <PushButton position={[-2.75, 0, 0]} pressed={Boolean(menuOpen)} onPress={onMenuToggle} />
         <Plate texture={badgeTexture} position={[-2.3, 0, 0.003]} size={[0.567, 0.17]} />
 
         <mesh position={[-0.75, 0, -0.005]}>
@@ -820,42 +887,56 @@ const TVModel = ({
         </mesh>
 
         {/* TV/VCR input selector: a slide switch, left for the broadcast, with
-            the ON AIR lamp above it lit while live */}
+            the ON AIR lamp above it lit while live (and the set is on) */}
         <group position={[0.68, 0, 0]}>
           <mesh position={[0, 0.15, 0.008]}>
             <boxGeometry args={[0.24, 0.075, 0.012]} />
-            <meshStandardMaterial
-              color={broadcast ? '#d8352a' : '#2a0d08'}
-              emissive="#ff3a28"
-              emissiveIntensity={broadcast ? 1.4 : 0}
-              roughness={0.4}
-            />
+            {/* colour and glow set by useFade */}
+            <meshStandardMaterial ref={onAirLampRef} emissive="#ff3a28" roughness={0.4} />
           </mesh>
           <Plate texture={onAirTexture} position={[0, 0.15, 0.0145]} size={[0.2, 0.0625]} />
-          <pointLight position={[0, 0.15, 0.2]} color="#ff3a28" intensity={broadcast ? 0.25 : 0} distance={0.6} />
+          <pointLight ref={onAirLightRef} position={[0, 0.15, 0.2]} color="#ff3a28" distance={0.6} />
 
           <group onClick={handleInputClick} onPointerOver={handleInputOver} onPointerOut={handleInputOut}>
             <mesh position={[0, 0, 0.004]}>
               <boxGeometry args={[0.3, 0.09, 0.012]} />
               <meshStandardMaterial color="#0e0e0d" roughness={0.8} />
             </mesh>
+            {/* ribbed silver slider, like the power switch's */}
             <mesh position={[broadcast ? -0.07 : 0.07, 0, 0.02]} castShadow>
               <boxGeometry args={[0.13, 0.06, 0.03]} />
-              <Silver emissive="#ffffff" emissiveIntensity={inputHovered ? 0.08 : 0} />
+              <Silver
+                map={inputRibs}
+                bumpMap={inputRibs}
+                bumpScale={1.5}
+                emissive="#ffffff"
+                emissiveIntensity={inputHovered ? 0.08 : 0}
+              />
             </mesh>
           </group>
           <Plate texture={inputLabelTexture} position={[0, -0.12, 0.003]} size={[0.32, 0.072]} />
         </group>
 
         {Array.from({ length: 5 }, (_, i) => (
-          <mesh key={i} position={[1.28, 0.12 - i * 0.06, 0.004]}>
-            <boxGeometry args={[0.72, 0.026, 0.01]} />
+          <mesh key={i} position={[1.281, 0.12 - i * 0.06, 0.004]}>
+            <boxGeometry args={[0.722, 0.026, 0.01]} />
             <meshStandardMaterial color="#140b04" roughness={0.9} />
           </mesh>
         ))}
 
+        {/* right of the louvres, as on the 2D rail: heart, lever, lamp and brightness
+            knob sit an even ~0.155 apart, the knob ~1.4x the heart's width */}
+        {/* the heart: a red push-button, latched in while the concert is hearted */}
+        <PushButton
+          position={[1.865, 0, 0]}
+          finish="heart"
+          pressed={hearted}
+          disabled={!canHeart || !isOn}
+          onPress={onHeartToggle}
+        />
+
         {/* play/pause: a bat-handle toggle, up to play, down to pause */}
-        <group position={[1.9, 0, 0]} onClick={handleLeverClick} onPointerOver={handleLeverOver} onPointerOut={handleLeverOut}>
+        <group position={[2.163, 0, 0]} onClick={handleLeverClick} onPointerOver={handleLeverOver} onPointerOut={handleLeverOut}>
           <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.02]} castShadow>
             <cylinderGeometry args={[0.07, 0.075, 0.04, 6]} />
             <Chrome roughness={0.3} />
@@ -877,22 +958,18 @@ const TVModel = ({
           </group>
         </group>
 
-        <mesh position={[2.3, 0, 0.04]}>
+        <mesh position={[2.443, 0, 0.04]}>
           <sphereGeometry args={[0.05, 24, 24]} />
-          <meshStandardMaterial
-            color={isOn ? '#ffd08a' : '#5a3a12'}
-            emissive={PALETTE.amber}
-            emissiveIntensity={isOn ? 2.2 : 0.05}
-            roughness={0.3}
-          />
+          {/* the pilot lamp: colour and glow set by useFade */}
+          <meshStandardMaterial ref={pilotLampRef} emissive={PALETTE.amber} roughness={0.3} />
         </mesh>
-        <pointLight position={[2.3, 0, 0.25]} color={PALETTE.amber} intensity={isOn ? 0.5 : 0} distance={1} />
+        <pointLight ref={pilotLightRef} position={[2.443, 0, 0.25]} color={PALETTE.amber} distance={1} />
 
         {/* brightness */}
         <Knob3D
-          position={[2.72, 0, 0]}
-          radius={0.12}
-          height={0.1}
+          position={[2.744, 0, 0]}
+          radius={0.096}
+          height={0.08}
           finish="black"
           ridgeCount={30}
           angleDeg={((brightness - BRIGHTNESS_MIN) / (BRIGHTNESS_MAX - BRIGHTNESS_MIN)) * VOLUME_SWEEP - VOLUME_SWEEP / 2}

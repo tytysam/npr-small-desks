@@ -85,4 +85,13 @@ describe('Osd', () => {
     rerender(<Osd {...base} hint="Click anywhere for sound" flash="volume" />);
     expect(screen.queryByText('Click anywhere for sound')).not.toBeInTheDocument();
   });
+
+  test('a hearted concert carries a ♥ by its artist, and hearting says so', () => {
+    const { container, rerender } = render(<Osd {...base} flash="channel" hearted />);
+    expect(screen.getByRole('img', { name: 'Hearted' })).toBeInTheDocument();
+    rerender(<Osd {...base} flash="heart" hearted />);
+    expect(container.querySelector('.osd-heart')).toHaveTextContent('♥ LOVED');
+    rerender(<Osd {...base} flash="heart" />);
+    expect(container.querySelector('.osd-heart')).toHaveTextContent('♡ UNLOVED');
+  });
 });

@@ -1,12 +1,25 @@
-// Cloudflare Workers static-assets config. There's no Worker script: the
-// site is just the Vite build, served from Cloudflare's edge.
+// Cloudflare Workers config. The site is the Vite build, served from
+// Cloudflare's edge as static assets; the Worker script only runs for /api/*
+// (the hearts API, worker/index.js).
 {
   "name": "npr-small-desk",
+  "main": "worker/index.js",
   "compatibility_date": "2026-10-01",
   "assets": {
     "directory": "./build",
+    "binding": "ASSETS",
     // State lives in query params (?ch= / ?v=), so any unknown path just
     // loads the app.
-    "not_found_handling": "single-page-application"
-  }
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  // Hearts: one global Durable Object with SQLite storage.
+  "durable_objects": {
+    "bindings": [{ "name": "HEARTS", "class_name": "Hearts" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Hearts"] }],
+  // Heart writes per IP: 30 a minute.
+  "ratelimits": [
+    { "name": "HEART_LIMIT", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } }
+  ]
 }
