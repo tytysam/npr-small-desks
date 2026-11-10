@@ -109,6 +109,7 @@ control changes it, so it works the same with the knobs, keys, 2D or 3D.
 | Degauss | A colour shiver as each new picture locks in |
 | Tape FX | Tape jitter, colour bleed and a tracking band (just the look; see VCR above for tape playback) |
 | Hiss | Tuning hiss while the antenna moves |
+| Clicks | The controls' mechanical sounds: dial detents, the power switch, the lever, buttons, the TV/VCR slide, and soft knob ticks. They follow volume and mute, and click with the set off too |
 | Captions | The video's captions (English, including auto-generated, where the concert has any), off by default |
 
 ### The TV guide
@@ -172,8 +173,8 @@ Create React App (React 18), with
 [react-player](https://github.com/cookpete/react-player) for YouTube and
 [@react-three/fiber](https://github.com/pmndrs/react-three-fiber) /
 [drei](https://github.com/pmndrs/drei) for the 3D set. There are no image
-or audio files: the wood, labels, knurling, speaker grilles and tuning hiss
-are all generated in code. The one outside asset is the TV guide's channel
+or audio files: the wood, labels, knurling, speaker grilles, tuning hiss and
+control clicks are all generated in code. The one outside asset is the TV guide's channel
 numeral face, DM Serif Display, from Google Fonts (other type uses system
 fonts).
 

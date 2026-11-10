@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { setTone } from '../js/hiss';
+import { setTone } from '../js/sounds';
 import Signature from './Signature';
 import './SignOff.css';
 

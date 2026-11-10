@@ -10,6 +10,7 @@ export const CRT_ITEMS = [
   { key: 'degauss', label: 'Degauss', type: 'toggle' },
   { key: 'vhs', label: 'Tape FX', type: 'toggle' },
   { key: 'hiss', label: 'Hiss', type: 'toggle' },
+  { key: 'clicks', label: 'Clicks', type: 'toggle' },
   { key: 'captions', label: 'Captions', type: 'toggle' },
 ];
 
@@ -21,6 +22,7 @@ export const CRT_DEFAULTS = {
   degauss: true,
   vhs: false,
   hiss: true,
+  clicks: true,
   captions: false,
 };
 
