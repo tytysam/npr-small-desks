@@ -16,7 +16,7 @@ import useLatest from './hooks/useLatest';
 import useHearts from './hooks/useHearts';
 import { BRIGHTNESS_MIN, BRIGHTNESS_MAX } from './js/picture';
 import { CRT_ITEMS } from './js/crtSettings';
-import { setHiss } from './js/hiss';
+import { setHiss, playSound, crossedStep } from './js/sounds';
 import { mediaArtwork } from './js/thumbnails';
 import './App.css';
 
@@ -28,6 +28,8 @@ const TV3D = lazy(load3D);
 const VOLUME_STEP = 0.05;
 const DEFAULT_VOLUME = 0.5;
 const HISS_GAIN = 0.15; // a bed under the picture's sound, not a blast
+const CLICK_GAIN = 0.3; // the controls' clicks: heard, but under the music
+const BRIGHTNESS_STEP = (BRIGHTNESS_MAX - BRIGHTNESS_MIN) / 20; // one knob tick
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const isUnit = (v) => typeof v === 'number' && v >= 0 && v <= 1;
@@ -56,6 +58,12 @@ function App() {
   const [osdBanner, flashBanner] = useOsd(2600); // 'mode' | 'rejoin': announced mid-screen
   const [menuIndex, setMenuIndex] = useState(null); // SETUP menu row, or null when closed
   const menuAdjustRef = useRef(0);
+
+  // The controls click (Clicks in SETUP), at the set's volume, so muting
+  // silences them. They're mechanical, so they click with the set off too.
+  const clickLevelRef = useLatest(crt.clicks ? volume * CLICK_GAIN : 0);
+  const clicksOnRef = useLatest(crt.clicks);
+  const sound = useCallback((name) => playSound(name, clickLevelRef.current), [clickLevelRef]);
 
   const [antennaAngle, setAntennaAngle] = useState(0);
   const [antennaWobble, setAntennaWobble] = useState(0); // bumped to replay the wobble
@@ -99,7 +107,10 @@ function App() {
     flashBanner('mode');
   }, [crt.broadcast, station, tuneTo, flashBanner]);
 
-  const toggleBroadcast = useCallback(() => adjustCrtSetting('broadcast', 1), [adjustCrtSetting]);
+  const toggleBroadcast = useCallback(() => {
+    sound('slide');
+    adjustCrtSetting('broadcast', 1);
+  }, [adjustCrtSetting, sound]);
 
   // Hearts: love the concert that's on (H, the heart button, or the guide).
   // Shared with every viewer; the guide's ♥ tab ranks them.
@@ -109,9 +120,10 @@ function App() {
   const { toggle: toggleHeartFor } = hearts;
   const toggleHeart = useCallback(() => {
     if (!canHeart || !isOn) return;
+    sound(hearted ? 'release' : 'press');
     toggleHeartFor(videoId);
     flashOsd('heart');
-  }, [canHeart, isOn, videoId, toggleHeartFor, flashOsd]);
+  }, [canHeart, isOn, hearted, videoId, toggleHeartFor, flashOsd, sound]);
 
   useEffect(() => {
     const timers = transitionTimersRef.current;
@@ -149,15 +161,21 @@ function App() {
   const toggleMenu = useCallback(() => {
     if (!isOn) return;
     menuAdjustRef.current = 0;
+    sound(menuOpen ? 'release' : 'press');
     setMenuIndex((i) => (i === null ? 0 : null));
-  }, [isOn]);
+  }, [isOn, menuOpen, sound]);
 
-  const closeMenu = useCallback(() => setMenuIndex(null), []);
+  // Esc: the latched MENU button pops back out.
+  const closeMenu = useCallback(() => {
+    if (menuOpen) sound('release');
+    setMenuIndex(null);
+  }, [menuOpen, sound]);
 
   // --- channel -----------------------------------------------------------
   // While the menu is open the channel control selects rows (up = previous row).
   const changeChannel = useCallback(
     (direction) => {
+      sound('detent');
       if (menuOpen) {
         setMenuIndex((i) => (i - direction + CRT_ITEMS.length) % CRT_ITEMS.length);
         return;
@@ -168,7 +186,7 @@ function App() {
       tuner.step(direction);
       setDialPosition((p) => p + direction);
     },
-    [menuOpen, retune, tuner]
+    [menuOpen, retune, tuner, sound]
   );
 
   const recallChannel = useCallback(() => {
@@ -188,16 +206,19 @@ function App() {
           const direction = Math.sign(menuAdjustRef.current);
           menuAdjustRef.current -= direction * VOLUME_STEP;
           adjustCrtSetting(CRT_ITEMS[menuIndex].key, direction);
+          sound('tick');
         }
         return;
       }
       const v = clamp(next, 0, 1);
+      // Ticks at the new volume, so turning it up is heard getting louder.
+      if (clicksOnRef.current && crossedStep(volume, v, VOLUME_STEP)) playSound('tick', v * CLICK_GAIN);
       setVolume(v);
       setSavedVolume(v);
       setSoundUnlocked(true);
       flashOsd('volume');
     },
-    [menuOpen, menuIndex, volume, adjustCrtSetting, setSavedVolume, flashOsd]
+    [menuOpen, menuIndex, volume, adjustCrtSetting, setSavedVolume, flashOsd, sound, clicksOnRef]
   );
 
   const toggleMute = useCallback(() => {
@@ -209,10 +230,12 @@ function App() {
 
   const changeBrightness = useCallback(
     (next) => {
-      setBrightness(clamp(next, BRIGHTNESS_MIN, BRIGHTNESS_MAX));
+      const b = clamp(next, BRIGHTNESS_MIN, BRIGHTNESS_MAX);
+      if (crossedStep(brightness - BRIGHTNESS_MIN, b - BRIGHTNESS_MIN, BRIGHTNESS_STEP)) sound('tick');
+      setBrightness(b);
       flashOsd('brightness');
     },
-    [setBrightness, flashOsd]
+    [brightness, setBrightness, flashOsd, sound]
   );
 
   // --- power and pause ---------------------------------------------------
@@ -225,8 +248,9 @@ function App() {
       if (error) retry();
       if (program?.live) tuner.rejoin();
     }
+    sound(isOn ? 'powerOff' : 'powerOn');
     setIsOn(!isOn);
-  }, [isOn, error, retry, program, retune, tuner]);
+  }, [isOn, error, retry, program, retune, tuner, sound]);
 
   // Works while the set is off too: it decides whether it resumes on power-up.
   // Live TV doesn't wait for you, so resuming a live station rejoins it now.
@@ -235,8 +259,9 @@ function App() {
       tuner.rejoin();
       flashBanner('rejoin');
     }
+    sound('lever');
     setIsPaused(!isPaused);
-  }, [isPaused, program, tuner, flashBanner]);
+  }, [isPaused, program, tuner, flashBanner, sound]);
 
   // --- antenna -----------------------------------------------------------
   const retuneByHand = useCallback(() => {

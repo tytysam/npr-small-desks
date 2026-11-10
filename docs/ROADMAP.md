@@ -228,7 +228,7 @@ reception on an analog set.
 - **Built as:** `useRetune` (reception state machine), `useAntennaGesture`
   (drag / tap / hold, shared by the DOM and three.js antennas), the shuffle
   bag in `src/js/shuffleBag.js` (unit-tested) and the Web Audio hiss in
-  `src/js/hiss.js`. Keys: **R** retune, **S** scan, **L** / Backspace last.
+  `src/js/sounds.js` (was `hiss.js`). Keys: **R** retune, **S** scan, **L** / Backspace last.
 - Picture: static, a rolling picture with a blanking bar, and jitter.
   Ghosting (a doubled image) isn't possible on a cross-origin iframe.
 
@@ -270,7 +270,7 @@ drawn over either set (one page on phones).
 
 ## 4. Next
 
-Ideas agreed for after the TV guide. 4.1 and 4.3 are done, 4.2 was tried
+Ideas agreed for after the TV guide. 4.1, 4.3 and 4.4 are done, 4.2 was tried
 and dropped; the rest are
 unscheduled, roughly in order of size.
 
@@ -290,8 +290,20 @@ unscheduled, roughly in order of size.
   video's English track, including YouTube's auto-generated ones (else its
   first track). About a quarter of the lineup, mostly older concerts, has no
   captions at all, so nothing can show on those. `src/components/Screen.jsx`.
-- **4.4 Control sounds.** Synthesized like the hiss: dial detent clicks, the
-  power switch's clunk, the lever's snap. Follows volume and mute.
+- **4.4 Control sounds — Done.** Synthesized like the hiss, no audio files:
+  a dry detent click on the channel dial, a thump-and-click power switch
+  (on a touch brighter than off), the lever's snap, a muffled push and a
+  lighter pop for MENU and ♥, a scrape for the TV/VCR slide, and faint ticks
+  per step on the volume and brightness knobs (and SETUP adjustments).
+  - Fired from the app's handlers, so the 2D set, the 3D set, the keys and
+    media keys all sound alike. The antenna's retunes and tuning from the
+    guide stay silent: no dial turned.
+  - At the set's volume (×0.3), so mute silences them; volume ticks play at
+    the new level. They're mechanical, so they click with the set off too.
+  - Throttled to one of each per 30 ms, so a fast dial rattles rather than
+    buzzes. A **Clicks** row in SETUP (on by default) turns them off.
+  - `src/js/sounds.js` (the recipes are one table, `SOUNDS`, easy to tweak;
+    unit-tested with a fake AudioContext), wired in `src/App.jsx`.
 
 ### Medium
 - **4.5 Station IDs.** A 3–4 s NP-R1 ident (test card, channel number,
