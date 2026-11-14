@@ -695,3 +695,33 @@ export const makeBackPanelTexture = ({ width = 2048, height = 1454 } = {}) => {
 
   return finishTexture(canvas);
 };
+
+/**
+ * Speaker grille cloth, as on a 1960s console: an open weave of oatmeal and
+ * brown threads with the odd gold one, tiled across the grille.
+ */
+export const makeClothTexture = ({ repeat = [10, 7] } = {}) => {
+  const size = 256;
+  const canvas = makeCanvas(size, size);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#2a2119';
+  ctx.fillRect(0, 0, size, size);
+  const pitch = 8;
+  const threads = ['#8c7a5e', '#7a6a50', '#9a8766', '#6e5f47'];
+  for (let i = 0; i < size / pitch; i += 1) {
+    // warp (vertical) and weft (horizontal), each a little uneven
+    const gold = i % 11 === 5;
+    ctx.fillStyle = gold ? '#b8955a' : threads[i % threads.length];
+    ctx.fillRect(i * pitch + 1, 0, pitch - 3, size);
+    ctx.fillStyle = gold ? '#c4a265' : threads[(i + 2) % threads.length];
+    ctx.globalAlpha = 0.85;
+    ctx.fillRect(0, i * pitch + 1, size, pitch - 3);
+    ctx.globalAlpha = 1;
+  }
+  // over-under: shade alternate crossings so the weave reads
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.14)';
+  for (let y = 0; y < size / pitch; y += 1) {
+    for (let x = (y % 2); x < size / pitch; x += 2) ctx.fillRect(x * pitch, y * pitch, pitch, pitch);
+  }
+  return finishTexture(canvas, { repeat });
+};

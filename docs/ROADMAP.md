@@ -328,9 +328,10 @@ unscheduled, roughly in order of size.
   only carries presence and channel changes; autoplay policy is the catch.
 - **4.10 Phone as remote.** Open a link on a phone to control the set on a
   laptop. Needs the same realtime layer as 4.9.
-- **4.11 More cabinets.** 1950s Bakelite, 1980s silver portable, Trinitron.
-  The 2D tokens (`TV.css`), the 3D palette (`tv3d/materials.js`) and the
-  shared wood generator keep much of this declarative.
+- **4.11 More cabinets.** — **Started** (November 2026; see 7.3): the
+  cabinet is a setting, and the teak NP-D6 is the first new one. Next
+  candidates: a 1980s silver portable, a 1950s rounded plastic set, a
+  generic 1970s silver-and-black set (not branded).
 - **4.12 A "small desk" room.** The 3D set on a desk with a lamp. —
   **Shelved** (November 2026): the floors felt like too much around the
   set, and a desk would likely too. The thumbnail tint was tried (7.2).
@@ -602,7 +603,39 @@ closes it and focus returns to the button. Settings persist
   `src/components/ScenePane.jsx` (tested), `tv3d/SceneLights.jsx`,
   `tv3d/moods.js`.
 
-### 7.3 Next — Planned
-Phase 3: **4.11 More cabinets**. The extra woods and the shared layout
-(`tv3d/layout.js`) are the first steps. 4.12 is shelved.
+### 7.3 Cabinets (4.11) — **First cabinet done**
+Phase 3. Agreed: the teak console first, chosen from SETUP, and every
+cabinet carries exactly the same controls (only where they sit and how
+they look changes). 4.12 is shelved.
+- **The cabinet is a setting**: SETUP's last row, `Cabinet: Walnut · Teak`,
+  stored with the other SETUP settings (`npr-small-desk:crt`). It swaps the
+  set at once, in both sets; the tube, and the menu on it, stay put.
+- **Shared data** (`src/js/cabinets.js`, no three.js): each cabinet's
+  name, rail badge (NP-R1, NP-D6) and woods.
+- **3D**: each cabinet's measurements are in `tv3d/cabinets.js` (body,
+  bezel, top board, plinth, where the guide and antenna stand, the control
+  panel, the rail's control positions, the legs, the floor, the camera's
+  framing); `layout.js` derives the rest. The controls every cabinet shares
+  moved to `tv3d/controls.jsx`; `TVModel` builds the body from the
+  measurements and places the controls. Panel kinds: a chrome-trimmed
+  metal `column` (walnut) or a wooden `grille` panel (teak); rails: a
+  routed `groove` or a `brass` strip; legs: `slab` or `pencil`.
+  `SceneCamera` frames whichever cabinet is showing, and reframes on a
+  change.
+- **2D**: `.tv-set--<cabinet>` on the set; `TVTeak.css` restyles `TV.css`
+  (tokens, the panel as a grid, the cloth, the brass rail, pencil legs).
+  The wood images are painted per cabinet (`useWoodImages(woods)`).
+- **The NP-D6**: wider and lower (7.8 × 4.5 against 6.5 × 4.7), teak with a
+  blond bezel and panel, the knobs side by side on dark escutcheons ringed
+  in brass, a woven cloth grille, a brass rail, a thin overhanging top,
+  tall pencil legs with brass ferrules.
+- Checked: before and after the refactor, screenshots of the walnut set
+  with the power off (2D, and all five 3D views) match pixel for pixel,
+  bar the faint noise two baseline runs show between themselves. The teak
+  console in both sets and every view; switching from SETUP in both sets.
+
+### 7.4 Next — Planned
+More cabinets, one at a time: each is a `tv3d/cabinets.js` entry (plus a
+new panel, rail or leg kind if it needs one), a 2D stylesheet, and a
+`src/js/cabinets.js` entry.
 

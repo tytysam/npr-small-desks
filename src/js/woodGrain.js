@@ -10,7 +10,7 @@
 export const WOOD = {
   walnut: { early: '#7e4b26', late: '#56301a' },
   honey: { early: '#c0843f', late: '#985c2b' },
-  teak: { early: '#9c5f2e', late: '#6c3818' },
+  teak: { early: '#8f6236', late: '#5f3b1d' },
   blond: { early: '#d9b27c', late: '#b88a53' },
   oak: { early: '#b48654', late: '#8a6035' },
   ebony: { early: '#4b3427', late: '#2a1b13' },

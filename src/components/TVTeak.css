@@ -1,0 +1,163 @@
+/* The NP-D6: a Danish-modern teak console, restyling the walnut NP-R1
+   (TV.css) as the 3D set's teak cabinet (tv3d/cabinets.js) is built: wider
+   and lower, a blond bezel, the knobs side by side on a blond panel above a
+   cloth grille, a brass rail, and tall pencil legs with brass ferrules. The
+   wood images are teak and blond (src/js/cabinets.js); the tokens below are
+   the CSS wood shown until they're painted. */
+
+.tv-set--teak {
+  --walnut-light: #8f6236;
+  --walnut-mid: #6e4626;
+  --walnut-dark: #4a2c14;
+  --honey-light: #e2c08c;
+  --honey-mid: #c9a06a;
+  --honey-dark: #a07a48;
+  --bezel-glaze: rgba(255, 200, 130, 0.22);
+  --brass: linear-gradient(180deg, #e2c48a, #c8a463 35%, #a8874e 70%, #c09a5a);
+  width: min(94vw, 1040px);
+}
+
+/* Teak is browner than walnut under the same warm light: a deeper wash. */
+.tv-set--teak .tv-top-board,
+.tv-set--teak .tv-console,
+.tv-set--teak .tv-board,
+.tv-set--teak .tv-leg {
+  --wood-warmth: linear-gradient(rgba(110, 60, 25, 0.5), rgba(110, 60, 25, 0.5));
+}
+
+/* A thin slab top, overhanging the sides more than the walnut set's. */
+.tv-set--teak .tv-top-board {
+  width: calc(100% + 44px);
+  height: 11px;
+  border-radius: 3px;
+}
+
+/* ---- The control panel: blond wood, knobs side by side over a cloth grille ---- */
+
+.tv-set--teak .tv-column {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-content: space-between;
+  justify-items: center;
+  gap: 10px 6px;
+  width: 300px;
+  padding: 14px 12px 12px;
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(255, 245, 220, 0.14), transparent 18%, transparent 80%, rgba(60, 30, 5, 0.18)),
+    linear-gradient(var(--bezel-glaze), var(--bezel-glaze)),
+    var(--wood-honey, linear-gradient(transparent, transparent)) 50% 50% / cover,
+    repeating-linear-gradient(176deg, var(--honey-mid) 0px, var(--honey-light) 9px, var(--honey-mid) 18px, var(--honey-dark) 30px);
+  background-blend-mode: normal, soft-light, normal, normal;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 240, 210, 0.65),
+    inset 0 -2px 0 rgba(70, 35, 8, 0.4),
+    0 3px 6px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(40, 20, 5, 0.65);
+}
+
+/* The knobs' numbers sit on dark escutcheons ringed in brass. */
+.tv-set--teak .dial {
+  border-radius: 50%;
+  background: radial-gradient(closest-side, #1c140c 93%, #c8a463 94% 99%, transparent 100%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
+}
+
+.tv-set--teak .knob-label {
+  margin-top: 4px;
+  color: #3a2410;
+  opacity: 0.85;
+  text-shadow: 0 1px 0 rgba(255, 240, 210, 0.5);
+}
+
+/* Grille cloth: an open weave of oatmeal and brown, with the odd gold thread. */
+.tv-set--teak .tv-speaker {
+  grid-column: 1 / -1;
+  min-height: 150px;
+  border-radius: 2px;
+  background:
+    repeating-linear-gradient(90deg, rgba(196, 162, 101, 0.55) 0 1px, transparent 1px 44px),
+    repeating-linear-gradient(0deg, rgba(150, 132, 102, 0.55) 0 2px, rgba(30, 22, 15, 0.35) 2px 4px),
+    repeating-linear-gradient(90deg, #8c7a5e 0 2px, #3a2e22 2px 4px);
+  box-shadow: 0 0 0 3px #1e150c, inset 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+.tv-set--teak .tv-switch {
+  grid-column: 1 / -1;
+}
+
+/* ---- A brass rail ------------------------------------------------------- */
+
+.tv-set--teak .tv-rail {
+  border: none;
+  border-radius: 3px;
+  background: var(--brass);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 245, 215, 0.6),
+    inset 0 -1px 0 rgba(80, 55, 20, 0.6),
+    0 2px 4px rgba(0, 0, 0, 0.45);
+}
+
+.tv-set--teak .tv-input-labels {
+  color: #2a1d10;
+  text-shadow: 0 1px 0 rgba(255, 240, 210, 0.4);
+}
+
+.tv-set--teak .tv-louvres {
+  width: 170px;
+}
+
+.tv-set--teak .tv-louvre {
+  box-shadow: 0 1px 0 rgba(255, 245, 215, 0.45);
+}
+
+/* ---- No base: pencil legs straight from the body ------------------------ */
+
+.tv-set--teak .tv-plinth {
+  display: none;
+}
+
+.tv-set--teak .tv-legs {
+  width: 90%;
+  margin-top: 0;
+}
+
+/* Tapered round legs, splayed outward, with brass ferrules at the feet. */
+.tv-set--teak .tv-leg {
+  width: 16px;
+  height: 150px;
+  background:
+    linear-gradient(180deg, transparent calc(100% - 18px), #c8a463 calc(100% - 18px), #8a6a34),
+    linear-gradient(90deg, rgba(255, 225, 185, 0.3), transparent 40%, rgba(0, 0, 0, 0.5)),
+    var(--wood-warmth),
+    var(--wood) 30% 40% / 600px auto,
+    var(--wood-fallback);
+  background-blend-mode: normal, normal, soft-light, normal, normal;
+  clip-path: polygon(0 0, 100% 0, 72% 100%, 28% 100%);
+  transform-origin: 50% 0;
+}
+
+.tv-set--teak .tv-leg-left {
+  transform: rotate(8deg);
+}
+
+.tv-set--teak .tv-leg-right {
+  transform: rotate(-8deg);
+}
+
+@media (max-width: 680px) {
+  .tv-set--teak .tv-column {
+    width: 100%;
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items: center;
+  }
+
+  .tv-set--teak .tv-switch {
+    grid-column: auto;
+  }
+
+  .tv-set--teak .tv-leg {
+    width: 11px;
+    height: 96px;
+  }
+}

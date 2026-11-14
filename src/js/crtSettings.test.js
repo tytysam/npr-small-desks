@@ -29,3 +29,12 @@ test('the VHS look is labelled Tape FX, so it reads apart from VCR playback', ()
   expect(vhs.label).toBe('Tape FX');
   expect(normalizeCrt({ vhs: true }).vhs).toBe(true); // saved settings keep the old key
 });
+
+test('the cabinet is a choice of the cabinets, walnut by default', () => {
+  const byKey = Object.fromEntries(CRT_ITEMS.map((i) => [i.key, i]));
+  expect(CRT_DEFAULTS.cabinet).toBe('walnut');
+  expect(describeCrt(CRT_DEFAULTS, byKey.cabinet)).toBe('Walnut');
+  expect(adjustCrt(CRT_DEFAULTS, 'cabinet', 1).cabinet).toBe('teak');
+  expect(normalizeCrt({ cabinet: 'teak' }).cabinet).toBe('teak');
+  expect(normalizeCrt({ cabinet: 'bakelite' }).cabinet).toBe('walnut');
+});

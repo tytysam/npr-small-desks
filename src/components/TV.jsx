@@ -4,7 +4,9 @@ import ChannelKnob from './ChannelKnob';
 import BrightnessKnob from './BrightnessKnob';
 import Antenna from './Antenna';
 import useWoodImages from '../hooks/useWoodImages';
+import { cabinetFor } from '../js/cabinets';
 import './TV.css';
+import './TVTeak.css';
 
 // The CSS wood shown until the shared grain (useWoodImages) is painted:
 // feTurbulence has no source image, so these filters paint organic grain onto
@@ -62,14 +64,18 @@ const TV = ({
   hearted = false,
   canHeart = false,
   onHeartToggle,
+  cabinet = 'walnut',
 }) => {
-  const wood = useWoodImages();
+  // The cabinet (SETUP's Cabinet row): TV.css is the walnut NP-R1, and each
+  // other cabinet restyles it from its own stylesheet (TVTeak.css).
+  const { key, model, woods } = cabinetFor(cabinet);
+  const wood = useWoodImages(woods);
   const woodStyle = wood
     ? { '--wood-walnut': `url(${wood.body})`, '--wood-honey': `url(${wood.bezel})`, '--wood-ready': 1 }
     : undefined;
 
   return (
-    <div className="tv-set" style={woodStyle}>
+    <div className={`tv-set tv-set--${key}`} style={woodStyle}>
       <WoodGrainFilters />
 
       <Antenna {...antenna} />
@@ -144,7 +150,9 @@ const TV = ({
                 title="Menu"
                 onClick={onMenuToggle}
               />
-              <span className="tv-badge-text" aria-hidden="true">NP-R1</span>
+              <span className="tv-badge-text" aria-hidden="true">
+                {model}
+              </span>
             </div>
 
             <div className="tv-tuning-strip">

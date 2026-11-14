@@ -1,9 +1,10 @@
 import { useMemo, useEffect } from 'react';
 
 // Frees a three.js resource, or every resource in a (shallowly nested) bundle
-// of them such as { map, bumpMap } or { body: { geometry, position } }.
+// of them such as { map, bumpMap }, { body: { geometry, position } } or
+// { legs: [{ geometry, position }] }.
 const dispose = (value, depth = 0) => {
-  if (!value || typeof value !== 'object' || depth > 2) return;
+  if (!value || typeof value !== 'object' || depth > 3) return;
   if (typeof value.dispose === 'function') {
     value.dispose();
     return;

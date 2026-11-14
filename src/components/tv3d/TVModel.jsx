@@ -1,15 +1,16 @@
-import { useMemo, useRef, useCallback, useState, useEffect } from 'react';
-import * as THREE from 'three';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useRef, useCallback, useState, useEffect } from 'react';
+import { useThree } from '@react-three/fiber';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import Knob3D from './Knob3D';
 import useDisposable from './useDisposable';
 import useFade from './useFade';
-import useAntennaGesture from '../../hooks/useAntennaGesture';
 import useLatest from '../../hooks/useLatest';
 import { BRIGHTNESS_MIN, BRIGHTNESS_MAX } from '../../js/picture';
+import { cabinetFor } from '../../js/cabinets';
 import ScreenSurface, { SCREEN_W, SCREEN_H } from './ScreenSurface';
-import { CABINET, FRONT_Z, BODY_FRONT_Z, BOARD, BOARD_Z, BODY, TOP_Y, BOTTOM_Y, BEZEL, OPENING, OPENING_Z, TUBE_Z, GUIDE } from './layout';
+import { cabinetLayout } from './cabinets';
+import { Plate, Chrome, Silver, PushButton, GuideStack, Antenna } from './controls';
+import { LAMP } from './lamps';
 import {
   PALETTE,
   makeWoodTexture,
@@ -18,6 +19,7 @@ import {
   makeLoftGeometry,
   makeTaperedLegGeometry,
   makePerforatedTexture,
+  makeClothTexture,
   makeKnurlTexture,
   makeGlareTexture,
   makeLabelTexture,
@@ -25,20 +27,12 @@ import {
   makeVolumeTicksTexture,
   makeFrameGeometry,
   makeDomeGeometry,
-  makeGuideTextures,
   makeBackPanelTexture,
-  makeGlyphTexture,
 } from './materials';
 
-// Layout (world units). The cabinet is centred on the origin; +Z faces the
-// viewer. The cabinet, bezel and guide are in layout.js; the rest is here.
-const COLUMN = { x: 2.29, y: BEZEL.y, w: 1.32, h: BEZEL.h };
-const PANEL_Z = BOARD_Z + 0.02; // face of the column's inset panel
-const RAIL_Y = -1.77;
+// Layout (world units) comes from the cabinet: its measurements are in
+// cabinets.js, the positions derived from them in layout.js.
 
-// The tops sit 0.03 up inside the 0.14-thick base, so no seam shows; the feet
-// lean outward by the splay angles (radians) and land on the floor shadow.
-const LEG = { width: 0.46, depth: 0.22, length: 0.83, spreadX: 2.7, spreadZ: 1.2, splayX: 0.3, splayZ: 0.12, topY: BOTTOM_Y - 0.1 };
 const LEG_CORNERS = [
   [-1, -1],
   [1, -1],
@@ -53,8 +47,13 @@ const VOLUME_SWEEP = 270;
 const CHANNEL_DETENT = 30;
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 
+// The tube's glow in the dark lighting moods.
+const GLOW = { color: '#a9c2ff', intensity: 7, flicker: 0.12 };
+
+const BRASS = { color: '#c8a463', metalness: 0.6, roughness: 0.42 };
+
 /** Bezel profile, outer edge first. z is relative to the board's face. */
-const bezelRings = () => {
+const bezelRings = ({ BEZEL, OPENING, OPENING_Z }) => {
   const { w, h } = BEZEL;
   const faceW = w - 0.16;
   const faceH = h - 0.16;
@@ -83,13 +82,16 @@ const bezelRings = () => {
 };
 
 /**
- * Every wooden part, with UVs box-projected in world space (`at` is where the
- * mesh sits) so the grain runs continuously from one part to the next.
+ * Every wooden part of a cabinet, with UVs box-projected in world space
+ * (`at` is where the mesh sits) so the grain runs continuously from one part
+ * to the next.
  */
-const makeWoodParts = () => {
+const makeWoodParts = (layout) => {
+  const { spec, CABINET, BOARD, BOARD_Z, FRONT_Z, BODY_FRONT_Z, BODY, TOP_Y, BOTTOM_Y, BEZEL } = layout;
   const wood = (geometry, at, span = 7) => ({ geometry: boxProjectUVs(geometry, { span, offset: at }), position: at });
-  return {
-    body: wood(new RoundedBoxGeometry(CABINET.w, CABINET.h, BODY.d, 4, 0.06), [0, 0, BODY.z]),
+  const { top, plinth, panel, legs } = spec;
+  const parts = {
+    body: wood(new RoundedBoxGeometry(CABINET.w, CABINET.h, BODY.d, 4, spec.bodyRadius), [0, 0, BODY.z]),
     rim: wood(
       makeFrameGeometry({
         outerW: CABINET.w - 0.04,
@@ -119,385 +121,67 @@ const makeWoodParts = () => {
       }),
       [0, 0, BOARD_Z - 0.04]
     ),
-    top: wood(new RoundedBoxGeometry(CABINET.w + 0.16, 0.12, CABINET.d + 0.12, 3, 0.04), [0, TOP_Y + 0.04, 0]),
-    plinth: wood(new RoundedBoxGeometry(CABINET.w - 0.3, 0.14, CABINET.d - 0.4, 2, 0.03), [0, BOTTOM_Y - 0.06, 0]),
-    bezel: wood(makeLoftGeometry(bezelRings(), 12), [BEZEL.x, BEZEL.y, BOARD_Z], 5),
+    top: wood(new RoundedBoxGeometry(CABINET.w + top.w, top.thickness, CABINET.d + top.d, 3, top.radius), [0, TOP_Y + top.y, 0]),
+    bezel: wood(makeLoftGeometry(bezelRings(layout), 12), [BEZEL.x, BEZEL.y, BOARD_Z], 5),
+  };
+  if (plinth) {
+    parts.plinth = wood(
+      new RoundedBoxGeometry(CABINET.w + plinth.w, plinth.height, CABINET.d + plinth.d, 2, 0.03),
+      [0, BOTTOM_Y + plinth.y, 0]
+    );
+  }
+  // A grille panel is a board of the bezel's wood, standing proud of the front board.
+  if (panel.kind === 'grille') {
+    parts.panel = wood(new RoundedBoxGeometry(panel.w, BEZEL.h, 0.06, 2, 0.02), [panel.x, BEZEL.y, BOARD_Z + 0.01], 5);
+  }
+  if (legs.kind === 'slab') {
     // one per corner: each leans out toward its own corner
-    legs: LEG_CORNERS.map(([sx, sz]) =>
+    parts.legs = LEG_CORNERS.map(([sx, sz]) =>
       wood(
         makeTaperedLegGeometry({
-          ...LEG,
-          splay: [sx * LEG.length * Math.tan(LEG.splayX), sz * LEG.length * Math.tan(LEG.splayZ)],
+          ...legs,
+          splay: [sx * legs.length * Math.tan(legs.splayX), sz * legs.length * Math.tan(legs.splayZ)],
         }),
-        [sx * LEG.spreadX, LEG.topY, sz * LEG.spreadZ],
+        [sx * legs.spreadX, BOTTOM_Y + legs.top, sz * legs.spreadZ],
         2
       )
-    ),
-  };
+    );
+  }
+  return parts;
 };
 
-const Plate = ({ texture, position, size, rotation }) => (
-  <mesh position={position} rotation={rotation}>
-    <planeGeometry args={size} />
-    <meshBasicMaterial map={texture} transparent depthWrite={false} />
-  </mesh>
-);
-
-const Chrome = (props) => <meshStandardMaterial color={PALETTE.chrome} metalness={1} roughness={0.2} {...props} />;
-
-// Brushed silver for faces that look straight at the viewer: a pure mirror
-// there reflects the empty space behind the camera and reads as dark grey, so
-// mix in diffuse shading (as the knobs do) to match the 2D set's silver.
-const Silver = (props) => <meshStandardMaterial color="#d6d6d2" metalness={0.55} roughness={0.3} {...props} />;
-
-const MENU_RADIUS = 0.085;
-const MENU_HEIGHT = 0.08;
-const MENU_TRAVEL = MENU_HEIGHT / 3; // sinks a third of its height
-// The heart button is smaller than MENU, with a red rim round its heart.
-const HEART_RADIUS = MENU_RADIUS * 0.8;
-const HEART_INLAY = 1.15; // the heart's width, in button radii
-const HEART_SQUASH = 0.8; // as .heart-glyph squashes the guide's ♥
-
-// The set's lights, off → on. They fade between the two like the 2D set's
-// (a 0.3 s CSS transition), via useFade.
-const GLOW = { color: '#a9c2ff', intensity: 7, flicker: 0.12 };
-
-const LAMP = {
-  heart: { off: new THREE.Color('#6e2a22'), on: new THREE.Color(PALETTE.heart), glow: 0.35, hover: 0.1 },
-  onAir: { off: new THREE.Color('#2a0d08'), on: new THREE.Color('#d8352a'), glow: 1.4, light: 0.25 },
-  pilot: { off: new THREE.Color('#5a3a12'), on: new THREE.Color('#ffd08a'), glow: [0.05, 2.2], light: 0.5 },
-};
-
-/**
- * A push-button on the rail: MENU (silver, latched in while SETUP is open)
- * and the heart (red, latched in while the concert is hearted). It sinks
- * into the cabinet while `pressed` and springs back out; frames only render
- * while it's moving. A `disabled` button ignores clicks.
- */
-const PushButton = ({ position, pressed, onPress, disabled = false, finish = 'silver' }) => {
-  const groupRef = useRef(null);
-  const radius = finish === 'heart' ? HEART_RADIUS : MENU_RADIUS;
-  // The same ♥ as the TV guide's: its glyph, drawn in its font.
-  const heart = useDisposable(() => (finish === 'heart' ? makeGlyphTexture('♥', { color: '#ffe6da' }) : null), [finish]);
-  const motion = useRef({ z: 0, v: 0 });
-  const [hovered, setHovered] = useState(false);
-  const invalidate = useThree((state) => state.invalidate);
-
-  // The heart's enamel dims while the set is off (disabled), and glows while
-  // latched (and the set is on); both fade.
-  const capRef = useRef(null);
-  useFade(disabled ? 0 : 1, (k) => {
-    if (finish === 'heart' && capRef.current) capRef.current.color.lerpColors(LAMP.heart.off, LAMP.heart.on, k);
-  });
-  useFade((pressed && !disabled ? LAMP.heart.glow : 0) + (hovered && !disabled ? LAMP.heart.hover : 0), (glow) => {
-    if (finish === 'heart' && capRef.current) capRef.current.emissiveIntensity = glow;
-  });
-
-  useEffect(() => invalidate(), [pressed, invalidate]);
-
-  useFrame((_, delta) => {
-    const m = motion.current;
-    const target = pressed ? -MENU_TRAVEL : 0;
-    // Slightly underdamped spring: ~150 ms, with a small overshoot.
-    const dt = Math.min(delta, 1 / 30);
-    m.v += (900 * (target - m.z) - 40 * m.v) * dt;
-    m.z += m.v * dt;
-    if (Math.abs(target - m.z) < 1e-4 && Math.abs(m.v) < 1e-3) {
-      m.z = target;
-      m.v = 0;
-    } else {
-      invalidate();
-    }
-    if (groupRef.current) groupRef.current.position.z = m.z;
-  });
-
-  return (
-    <group
-      position={position}
-      onClick={(e) => {
-        e.stopPropagation();
-        if (!disabled) onPress();
-      }}
-      onPointerOver={(e) => {
-        e.stopPropagation();
-        if (disabled) return;
-        setHovered(true);
-        document.body.style.cursor = 'pointer';
-      }}
-      onPointerOut={() => {
-        setHovered(false);
-        document.body.style.cursor = '';
-      }}
-    >
-      <group ref={groupRef}>
-        <mesh position={[0, 0, MENU_HEIGHT / 2]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-          <cylinderGeometry args={[radius, radius * 1.08, MENU_HEIGHT, 32]} />
-          {finish === 'heart' ? (
-            // red enamel, glowing faintly while latched; colour and glow set by useFade
-            <meshStandardMaterial ref={capRef} roughness={0.35} metalness={0.1} emissive="#ff5a46" />
-          ) : (
-            <Silver emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
-          )}
-        </mesh>
-        {finish === 'heart' ? (
-          <mesh position={[0, 0, MENU_HEIGHT + 0.001]}>
-            <planeGeometry args={[HEART_RADIUS * HEART_INLAY, ((HEART_RADIUS * HEART_INLAY) / heart.aspect) * HEART_SQUASH]} />
-            <meshStandardMaterial map={heart.texture} transparent alphaTest={0.05} roughness={0.5} />
-          </mesh>
-        ) : (
-          <mesh position={[0, 0, MENU_HEIGHT + 0.001]}>
-            <circleGeometry args={[MENU_RADIUS * 0.25, 20]} />
-            <meshStandardMaterial color="#2a2a2a" roughness={0.6} />
-          </mesh>
-        )}
-      </group>
-    </group>
-  );
-};
-
-// The TV guide (GUIDE, in layout.js) lies on two older issues near the front
-// of the top board.
-const GUIDE_ISSUES = [
-  { color: '#c4372b', ink: '#fff8ec', text: 'NP-R1 LISTINGS · TINY DESK WEEKLY', thickness: 0.09, yaw: -0.07, dx: 0 },
-  { color: '#2f5d7c', ink: '#e8dfc8', text: 'NP-R1 LISTINGS · NO. 38', thickness: 0.075, yaw: 0.05, dx: 0.06 },
-  { color: '#d9a43a', ink: '#3a2a12', text: 'NP-R1 LISTINGS · NO. 37', thickness: 0.075, yaw: -0.02, dx: -0.04 },
-];
-
-// Stacked bottom-up: the last issue lies on the board, the guide on top.
-const GUIDE_LAYERS = (() => {
-  let y = 0;
-  return GUIDE_ISSUES.map((issue, i) => ({ ...issue, i }))
-    .reverse()
-    .map((issue) => {
-      const centre = y + issue.thickness / 2;
-      y += issue.thickness;
-      return { ...issue, centre };
-    });
-})();
-
-/**
- * The stack of guides on top of the set. Clicking any of them opens the
- * guide; the top one lifts a little on hover and while it's open.
- */
-const GuideStack = ({ position, open, onOpen }) => {
-  const textures = useDisposable(() => makeGuideTextures(GUIDE_ISSUES), []);
-  const pages = useDisposable(() => new THREE.MeshStandardMaterial({ color: '#e8dfc6', roughness: 0.95 }), []);
-  const covers = useDisposable(
-    () =>
-      GUIDE_ISSUES.map(
-        ({ color }, i) =>
-          new THREE.MeshStandardMaterial(i === 0 ? { map: textures.cover, roughness: 0.6 } : { color, roughness: 0.7 })
-      ),
-    [textures]
-  );
-  const spines = useDisposable(
-    () => textures.spines.map((map) => new THREE.MeshStandardMaterial({ map, roughness: 0.6 })),
-    [textures]
-  );
-  const topRef = useRef(null);
-  const motion = useRef({ y: 0, v: 0 });
-  const [hovered, setHovered] = useState(false);
-  const invalidate = useThree((state) => state.invalidate);
-  const lifted = hovered || open;
-
-  useEffect(() => invalidate(), [lifted, invalidate]);
-
-  useFrame((_, delta) => {
-    const m = motion.current;
-    const target = lifted ? GUIDE.lift : 0;
-    const dt = Math.min(delta, 1 / 30);
-    m.v += (600 * (target - m.y) - 38 * m.v) * dt;
-    m.y += m.v * dt;
-    if (Math.abs(target - m.y) < 1e-4 && Math.abs(m.v) < 1e-3) {
-      m.y = target;
-      m.v = 0;
-    } else {
-      invalidate();
-    }
-    if (topRef.current) topRef.current.position.y = topRef.current.userData.restY + m.y;
-  });
-
-  return (
-    <group
-      position={position}
-      onClick={(e) => {
-        e.stopPropagation();
-        // The book grows out of the stack: about its on-screen width at the default framing.
-        onOpen({ x: e.nativeEvent.clientX, y: e.nativeEvent.clientY, width: 160 });
-      }}
-      onPointerDown={(e) => {
-        // Keep the camera from starting an orbit on a click here.
-        e.nativeEvent?.stopImmediatePropagation?.();
-      }}
-      onPointerOver={(e) => {
-        e.stopPropagation();
-        setHovered(true);
-        document.body.style.cursor = 'pointer';
-      }}
-      onPointerOut={() => {
-        setHovered(false);
-        document.body.style.cursor = '';
-      }}
-    >
-      {GUIDE_LAYERS.map(({ i, thickness, yaw, dx, centre }) => (
-        <mesh
-          key={i}
-          ref={i === 0 ? topRef : undefined}
-          userData={{ restY: centre }}
-          position={[dx, centre, 0]}
-          rotation={[0, yaw, 0]}
-          // box faces: +x, −x, +y (cover), −y, +z (spine), −z
-          material={[pages, pages, covers[i], pages, spines[i], pages]}
-          castShadow
-          receiveShadow
-        >
-          <boxGeometry args={[GUIDE.length, thickness, GUIDE.width]} />
-        </mesh>
-      ))}
-    </group>
-  );
-};
-
-const DEG = Math.PI / 180;
-const ANTENNA_SECTIONS = [
-  { r: 0.03, len: 0.62 },
-  { r: 0.023, len: 0.58 },
-  { r: 0.016, len: 0.52 },
-];
-const ANTENNA_LENGTH = ANTENNA_SECTIONS.reduce((sum, { len }) => sum + len - 0.04, 0.05);
-// Each section's centre height: they telescope, overlapping by 0.04.
-const ANTENNA_LAYOUT = (() => {
-  let y = 0.05;
-  return ANTENNA_SECTIONS.map((section) => {
-    const cy = y + section.len / 2;
-    y += section.len - 0.04;
-    return { ...section, cy };
-  });
-})();
-
-/**
- * Three-section telescoping rod on a ball mount, leaning back slightly.
- * Swing it to hunt for a new station, tap to retune, press and hold to SCAN
- * (see useAntennaGesture). `wobble` is bumped by the app to replay a
- * springy flick; frames only render while it's moving.
- */
-const Antenna = ({ position, angle, wobble, onBusy, onDragStart, onAim, onRelease, onTap, onHoldStart, onHoldEnd }) => {
-  const mountRef = useRef(null);
-  const swingRef = useRef(null);
-  const wobbleStartRef = useRef(null);
-  const [hovered, setHovered] = useState(false);
-  const invalidate = useThree((state) => state.invalidate);
-  const scratch = useMemo(
-    () => ({ plane: new THREE.Plane(), point: new THREE.Vector3(), origin: new THREE.Vector3(), normal: new THREE.Vector3(0, 0, 1) }),
-    []
-  );
-
-  // Pointer ray against the plane facing the viewer through the mount:
-  // 0° = straight up, clockwise positive, like the 2D set.
-  const angleFromEvent = useCallback(
-    (e) => {
-      if (!mountRef.current || !e.ray) return null;
-      mountRef.current.getWorldPosition(scratch.origin);
-      scratch.plane.setFromNormalAndCoplanarPoint(scratch.normal, scratch.origin);
-      if (!e.ray.intersectPlane(scratch.plane, scratch.point)) return null;
-      return Math.atan2(scratch.point.x - scratch.origin.x, scratch.point.y - scratch.origin.y) / DEG;
-    },
-    [scratch]
-  );
-
-  const gesture = useAntennaGesture({ angleFromEvent, onDragStart, onAim, onRelease, onTap, onHoldStart, onHoldEnd });
-  // Hold the camera still from the moment the antenna is grabbed, as the knobs do.
-  const handlers = {
-    ...gesture,
-    onPointerDown: (e) => {
-      // R3F's listener runs before OrbitControls' on the same element, so this
-      // keeps the camera from ever starting a rotate on an antenna grab.
-      e.nativeEvent?.stopImmediatePropagation?.();
-      onBusy(true);
-      gesture.onPointerDown(e);
-    },
-    onPointerUp: (e) => {
-      gesture.onPointerUp(e);
-      onBusy(false);
-    },
-    onPointerCancel: (e) => {
-      gesture.onPointerCancel(e);
-      onBusy(false);
-    },
-  };
-
-  useEffect(() => {
-    if (!wobble) return;
-    wobbleStartRef.current = performance.now();
-    invalidate();
-  }, [wobble, invalidate]);
-
-  useFrame(() => {
-    let flick = 0;
-    if (wobbleStartRef.current !== null) {
-      const t = (performance.now() - wobbleStartRef.current) / 1000;
-      if (t < 1.2) {
-        flick = 14 * Math.exp(-4 * t) * Math.sin(14 * t);
-        invalidate();
-      } else {
-        wobbleStartRef.current = null;
-      }
-    }
-    if (swingRef.current) swingRef.current.rotation.z = -(angle + flick) * DEG;
-  });
-
-  return (
-    <group
-      ref={mountRef}
-      position={position}
-      rotation={[-0.18, 0, -0.04]}
-      {...handlers}
-      onPointerOver={(e) => {
-        e.stopPropagation();
-        setHovered(true);
-        document.body.style.cursor = 'grab';
-      }}
-      onPointerOut={() => {
-        setHovered(false);
-        document.body.style.cursor = '';
-      }}
-    >
-      <mesh castShadow>
-        <sphereGeometry args={[0.11, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <Chrome emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
+/** Thin round legs, splayed out toward their corners, with brass ferrules. */
+const PencilLegs = ({ layout, material }) => {
+  const { legs, floorY } = layout.spec;
+  const topY = layout.BOTTOM_Y + legs.top;
+  // Long enough, once splayed, for the ferrule to stand on the floor.
+  const length = (topY - floorY) / (Math.cos(legs.splayX) * Math.cos(legs.splayZ));
+  const [rTop, rFoot] = legs.radius;
+  return LEG_CORNERS.map(([sx, sz]) => (
+    <group key={`${sx}${sz}`} position={[sx * legs.spreadX, topY, sz * legs.spreadZ]} rotation={[-sz * legs.splayZ, 0, sx * legs.splayX]}>
+      {/* the mounting plate under the body */}
+      <mesh position={[0, -0.012, 0]} material={material} castShadow>
+        <cylinderGeometry args={[rTop * 1.5, rTop * 1.5, 0.024, 20]} />
       </mesh>
-      <group ref={swingRef} rotation={[0, 0, -angle * DEG]}>
-        {ANTENNA_LAYOUT.map(({ r, len, cy }, i) => (
-          <group key={i}>
-            <mesh position={[0, cy, 0]} castShadow>
-              <cylinderGeometry args={[r, r, len, 16]} />
-              <Chrome roughness={0.15} emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
-            </mesh>
-            <mesh position={[0, cy + len / 2 - 0.02, 0]}>
-              <cylinderGeometry args={[r * 1.35, r * 1.35, 0.04, 16]} />
-              <Chrome roughness={0.3} />
-            </mesh>
-          </group>
-        ))}
-        <mesh position={[0, ANTENNA_LENGTH + 0.04, 0]}>
-          <sphereGeometry args={[0.028, 16, 12]} />
-          <Chrome />
-        </mesh>
-        {/* the rod is only a few pixels wide on screen, so grab a wider sleeve around it */}
-        <mesh position={[0, ANTENNA_LENGTH / 2, 0]}>
-          <cylinderGeometry args={[0.14, 0.14, ANTENNA_LENGTH, 8]} />
-          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-        </mesh>
-      </group>
+      <mesh position={[0, -length / 2, 0]} material={material} castShadow receiveShadow>
+        <cylinderGeometry args={[rTop, rFoot, length, 20]} />
+      </mesh>
+      <mesh position={[0, -length + legs.ferrule / 2, 0]} castShadow>
+        <cylinderGeometry args={[rFoot * 1.08, rFoot * 1.02, legs.ferrule, 20]} />
+        <meshStandardMaterial {...BRASS} roughness={0.3} />
+      </mesh>
     </group>
-  );
+  ));
 };
 
 /**
  * The console itself. Receives the same props as the 2D <TV/> plus
- * `onKnobDragging`, which the scene uses to pause orbiting mid-drag.
+ * `onKnobDragging`, which the scene uses to pause orbiting mid-drag, and
+ * `glow`, the lighting mood's tube glow. `cabinet` picks the cabinet
+ * (src/js/cabinets.js); the controls are the same in every one.
  */
 const TVModel = ({
+  cabinet = 'walnut',
   screen,
   volume,
   onVolumeChange,
@@ -523,13 +207,20 @@ const TVModel = ({
   onKnobDragging,
   glow = 0,
 }) => {
+  const layout = cabinetLayout(cabinet);
+  const { spec, CABINET, BOARD, BOARD_Z, FRONT_Z, TOP_FACE, BEZEL, OPENING, OPENING_Z, TUBE_Z, GUIDE } = layout;
+  const { panel, rail } = spec;
+  const { model, woods } = cabinetFor(layout.key);
+
   // --- materials ---------------------------------------------------------
-  const walnutWood = useDisposable(() => makeWoodTexture('walnut', 'body'), []);
-  const honeyWood = useDisposable(() => makeWoodTexture('honey', 'bezel'), []);
-  const walnut = useDisposable(() => makeWoodMaterial(walnutWood), [walnutWood]);
-  const walnutShade = useDisposable(() => makeWoodMaterial(walnutWood, { tint: '#bfae9c', clearcoat: 0.35 }), [walnutWood]);
-  const honey = useDisposable(() => makeWoodMaterial(honeyWood, { clearcoat: 0.7 }), [honeyWood]);
-  const parts = useDisposable(makeWoodParts, []);
+  // "body" is the cabinet's wood (walnut on the NP-R1), "bezel" the bezel's
+  // (honey); a grille panel is the bezel's wood too.
+  const bodyWood = useDisposable(() => makeWoodTexture(woods.body, 'body'), [woods.body]);
+  const bezelWood = useDisposable(() => makeWoodTexture(woods.bezel, 'bezel'), [woods.bezel]);
+  const body = useDisposable(() => makeWoodMaterial(bodyWood), [bodyWood]);
+  const bodyShade = useDisposable(() => makeWoodMaterial(bodyWood, { tint: '#bfae9c', clearcoat: 0.35 }), [bodyWood]);
+  const bezel = useDisposable(() => makeWoodMaterial(bezelWood, { clearcoat: 0.7 }), [bezelWood]);
+  const parts = useDisposable(() => makeWoodParts(layout), [layout]);
 
   const sliderRibs = useDisposable(() => makeKnurlTexture(9), []);
   // The TV/VCR slider is ~half the power slider's width: half the ribs, same pitch.
@@ -584,29 +275,39 @@ const TVModel = ({
     };
   }, [flickering, invalidate]);
 
-  const perforated = useDisposable(() => makePerforatedTexture({ repeat: [10, 8] }), []);
+  const speakerTexture = useDisposable(
+    () => (panel.kind === 'grille' ? makeClothTexture() : makePerforatedTexture({ repeat: [10, 8] })),
+    [panel.kind]
+  );
   const glareTexture = useDisposable(makeGlareTexture, []);
   const backPanelTexture = useDisposable(makeBackPanelTexture, []);
   const channelRingTexture = useDisposable(makeChannelRingTexture, []);
   const volumeTicksTexture = useDisposable(makeVolumeTicksTexture, []);
   const badgeTexture = useDisposable(
     () =>
-      makeLabelTexture('NP-R1', {
+      makeLabelTexture(model, {
         width: 320,
         height: 96,
         font: 'bold 60px Georgia, serif',
         color: '#24130a',
         letterSpacing: 10,
       }),
-    []
+    [model]
   );
   const onAirTexture = useDisposable(
     () => makeLabelTexture('ON AIR', { width: 256, height: 80, font: 'bold 52px "Courier New", monospace', color: '#ffe9e0', letterSpacing: 6 }),
     []
   );
   const inputLabelTexture = useDisposable(
-    () => makeLabelTexture('TV    VCR', { width: 320, height: 72, font: 'bold 46px "Courier New", monospace', color: '#e8dfc8' }),
-    []
+    () =>
+      makeLabelTexture('TV    VCR', {
+        width: 320,
+        height: 72,
+        font: 'bold 46px "Courier New", monospace',
+        // cream on the walnut, dark on the brass rail
+        color: rail.kind === 'brass' ? '#2a1d10' : '#e8dfc8',
+      }),
+    [rail.kind]
   );
   const tuningTexture = useDisposable(
     () =>
@@ -635,37 +336,41 @@ const TVModel = ({
         innerRadius: OPENING.r - 0.04,
         bevelSize: 0,
       }),
-    []
+    [OPENING]
   );
   const columnTrimGeometry = useDisposable(
     () =>
-      makeFrameGeometry({
-        outerW: COLUMN.w,
-        outerH: COLUMN.h,
-        // a slim band: ~0.025 visible per side, bevels included
-        innerW: COLUMN.w - 0.03,
-        innerH: COLUMN.h - 0.03,
-        depth: 0.05,
-        radius: 0.04,
-        innerRadius: 0.02,
-        bevelSize: 0.005,
-        bevelSegments: 2,
-      }),
-    []
+      panel.kind === 'column'
+        ? makeFrameGeometry({
+            outerW: panel.w,
+            outerH: BEZEL.h,
+            // a slim band: ~0.025 visible per side, bevels included
+            innerW: panel.w - 0.03,
+            innerH: BEZEL.h - 0.03,
+            depth: 0.05,
+            radius: 0.04,
+            innerRadius: 0.02,
+            bevelSize: 0.005,
+            bevelSegments: 2,
+          })
+        : null,
+    [panel, BEZEL]
   );
   const railGrooveGeometry = useDisposable(
     () =>
-      makeFrameGeometry({
-        outerW: BOARD.w - 0.2,
-        outerH: 0.6,
-        innerW: BOARD.w - 0.24,
-        innerH: 0.56,
-        depth: 0.004,
-        radius: 0.04,
-        innerRadius: 0.03,
-        bevelSize: 0,
-      }),
-    []
+      rail.kind === 'groove'
+        ? makeFrameGeometry({
+            outerW: BOARD.w - 0.2,
+            outerH: 0.6,
+            innerW: BOARD.w - 0.24,
+            innerH: 0.56,
+            depth: 0.004,
+            radius: 0.04,
+            innerRadius: 0.03,
+            bevelSize: 0,
+          })
+        : null,
+    [rail, BOARD]
   );
   const domeGeometry = useDisposable(() => makeDomeGeometry(SCREEN_W, SCREEN_H, 0.09), []);
 
@@ -769,14 +474,18 @@ const TVModel = ({
     <mesh geometry={part.geometry} position={part.position} material={material} castShadow={shadows} receiveShadow />
   );
 
+  // The knobs' and the power switch's faces: inset in the metal column, or
+  // on the face of the wooden grille panel.
+  const PANEL_Z = panel.kind === 'column' ? BOARD_Z + 0.02 : BOARD_Z + 0.04;
+
   return (
     <group>
       {/* cabinet: body, raised front rim, recessed front board, top board, plinth */}
-      {woodMesh(parts.body, walnut)}
-      {woodMesh(parts.rim, walnut)}
-      {woodMesh(parts.board, walnut, false)}
-      {woodMesh(parts.top, walnut)}
-      {woodMesh(parts.plinth, walnutShade)}
+      {woodMesh(parts.body, body)}
+      {woodMesh(parts.rim, body)}
+      {woodMesh(parts.board, body, false)}
+      {woodMesh(parts.top, body)}
+      {parts.plinth && woodMesh(parts.plinth, bodyShade)}
       {/* the hardboard back, with the inspector's tag */}
       <mesh position={[0, 0, -CABINET.d / 2 - 0.003]} rotation={[0, Math.PI, 0]} receiveShadow>
         <planeGeometry args={[CABINET.w - 0.3, CABINET.h - 0.3]} />
@@ -784,8 +493,8 @@ const TVModel = ({
         <meshStandardMaterial map={backPanelTexture} emissiveMap={backPanelTexture} emissive="#ffffff" emissiveIntensity={0.22} roughness={0.85} />
       </mesh>
 
-      {/* honey-wood bezel, rolling down into the cabinet toward the tube */}
-      {woodMesh(parts.bezel, honey)}
+      {/* the bezel, rolling down into the cabinet toward the tube */}
+      {woodMesh(parts.bezel, bezel)}
       <mesh geometry={throatGeometry} position={[BEZEL.x, BEZEL.y, BOARD_Z + OPENING_Z - 0.025]}>
         <meshStandardMaterial color="#1a1108" roughness={0.8} />
       </mesh>
@@ -815,19 +524,44 @@ const TVModel = ({
         </mesh>
       </group>
 
-      {/* control column: chrome trim around an inset metal panel, as on the 2D set */}
-      <group position={[COLUMN.x, COLUMN.y, 0]}>
-        <mesh geometry={columnTrimGeometry} position={[0, 0, BOARD_Z - 0.01]} castShadow>
-          <Silver color="#c6c6c1" roughness={0.28} />
-        </mesh>
-        <mesh position={[0, 0, PANEL_Z - 0.02]} receiveShadow>
-          {/* runs just under the trim's inner edge, so no gap shows */}
-          <boxGeometry args={[COLUMN.w - 0.03, COLUMN.h - 0.03, 0.04]} />
-          <meshStandardMaterial color={PALETTE.panel.light} roughness={0.45} metalness={0.6} />
-        </mesh>
+      {/* the control panel right of the bezel: a chrome-trimmed metal column, or a
+          wooden panel over a cloth grille */}
+      {parts.panel && woodMesh(parts.panel, bezel)}
+      <group position={[panel.x, BEZEL.y, 0]}>
+        {panel.kind === 'column' && (
+          <>
+            <mesh geometry={columnTrimGeometry} position={[0, 0, BOARD_Z - 0.01]} castShadow>
+              <Silver color="#c6c6c1" roughness={0.28} />
+            </mesh>
+            <mesh position={[0, 0, PANEL_Z - 0.02]} receiveShadow>
+              {/* runs just under the trim's inner edge, so no gap shows */}
+              <boxGeometry args={[panel.w - 0.03, BEZEL.h - 0.03, 0.04]} />
+              <meshStandardMaterial color={PALETTE.panel.light} roughness={0.45} metalness={0.6} />
+            </mesh>
+          </>
+        )}
+
+        {/* on a wooden panel, the knobs' numbers are printed on dark escutcheons
+            ringed in brass */}
+        {panel.kind === 'grille' &&
+          [
+            [panel.channel, 0.6],
+            [panel.volume, 0.5],
+          ].map(([[x, y], r]) => (
+            <group key={x} position={[x, y, PANEL_Z]}>
+              <mesh position={[0, 0, 0.001]} receiveShadow>
+                <circleGeometry args={[r, 64]} />
+                <meshStandardMaterial color="#1c140c" roughness={0.5} metalness={0.3} />
+              </mesh>
+              <mesh position={[0, 0, 0.0015]}>
+                <ringGeometry args={[r, r + 0.025, 64]} />
+                <meshStandardMaterial {...BRASS} />
+              </mesh>
+            </group>
+          ))}
 
         <Knob3D
-          position={[0, 1.12, PANEL_Z]}
+          position={[...panel.channel, PANEL_Z]}
           radius={0.32}
           height={0.2}
           angleDeg={dialPosition * CHANNEL_DETENT}
@@ -838,7 +572,7 @@ const TVModel = ({
         />
 
         <Knob3D
-          position={[0, 0, PANEL_Z]}
+          position={[...panel.volume, PANEL_Z]}
           radius={0.3}
           height={0.19}
           angleDeg={volume * VOLUME_SWEEP - VOLUME_SWEEP / 2}
@@ -849,15 +583,25 @@ const TVModel = ({
           label={<Plate texture={volumeTicksTexture} position={[0, 0, 0.004]} size={[0.92, 0.92]} />}
         />
 
-        {/* perforated speaker */}
-        <mesh position={[0, -0.9, PANEL_Z + 0.002]} receiveShadow>
-          <planeGeometry args={[1.02, 0.78]} />
-          <meshStandardMaterial map={perforated} roughness={0.55} metalness={0.5} />
+        {/* the speaker: perforated metal, or grille cloth in a dark surround */}
+        {panel.kind === 'grille' && (
+          <mesh position={[0, panel.speaker.y, PANEL_Z + 0.001]}>
+            <planeGeometry args={[panel.speaker.w + 0.06, panel.speaker.h + 0.06]} />
+            <meshStandardMaterial color="#1e150c" roughness={0.9} />
+          </mesh>
+        )}
+        <mesh position={[0, panel.speaker.y, PANEL_Z + 0.002]} receiveShadow>
+          <planeGeometry args={[panel.speaker.w, panel.speaker.h]} />
+          {panel.kind === 'grille' ? (
+            <meshStandardMaterial map={speakerTexture} roughness={0.95} />
+          ) : (
+            <meshStandardMaterial map={speakerTexture} roughness={0.55} metalness={0.5} />
+          )}
         </mesh>
 
         {/* power: slide right for on */}
         <group
-          position={[0, -1.47, PANEL_Z]}
+          position={[...panel.power, PANEL_Z]}
           onClick={handlePowerClick}
           onPointerOver={handleSwitchOver}
           onPointerOut={handleSwitchOut}
@@ -880,28 +624,37 @@ const TVModel = ({
         </group>
       </group>
 
-      {/* lower rail: groove, badge, tuning strip, TV/VCR selector, louvres, heart, play lever, pilot lamp, brightness knob */}
-      <group position={[0, RAIL_Y, BOARD_Z]}>
-        <mesh geometry={railGrooveGeometry} position={[0, 0, 0.001]}>
-          <meshStandardMaterial color="#1a0e05" roughness={0.9} />
-        </mesh>
+      {/* lower rail: badge, tuning strip, TV/VCR selector, louvres, heart, play lever,
+          pilot lamp, brightness knob; in a groove routed into the board, or on a
+          brass strip */}
+      <group position={[0, rail.y, BOARD_Z]}>
+        {rail.kind === 'groove' ? (
+          <mesh geometry={railGrooveGeometry} position={[0, 0, 0.001]}>
+            <meshStandardMaterial color="#1a0e05" roughness={0.9} />
+          </mesh>
+        ) : (
+          <mesh position={[0, 0, -0.008]} receiveShadow>
+            <boxGeometry args={[BOARD.w - 0.2, 0.42, 0.02]} />
+            <meshStandardMaterial {...BRASS} />
+          </mesh>
+        )}
 
         {/* MENU: a silver push-button that latches in while SETUP is open */}
-        <PushButton position={[-2.75, 0, 0]} pressed={Boolean(menuOpen)} onPress={onMenuToggle} />
-        <Plate texture={badgeTexture} position={[-2.3, 0, 0.003]} size={[0.567, 0.17]} />
+        <PushButton position={[rail.menu, 0, 0]} pressed={Boolean(menuOpen)} onPress={onMenuToggle} />
+        <Plate texture={badgeTexture} position={[rail.badge, 0, 0.003]} size={[0.567, 0.17]} />
 
-        <mesh position={[-0.75, 0, -0.005]}>
+        <mesh position={[rail.tuning, 0, -0.005]}>
           <boxGeometry args={[2.4, 0.28, 0.02]} />
           <meshStandardMaterial color="#0d0804" roughness={0.9} />
         </mesh>
-        <mesh position={[-0.75, 0, 0.008]}>
+        <mesh position={[rail.tuning, 0, 0.008]}>
           <planeGeometry args={[2.3, 0.2]} />
           <meshBasicMaterial map={tuningTexture} toneMapped={false} />
         </mesh>
 
         {/* TV/VCR input selector: a slide switch, left for the broadcast, with
             the ON AIR lamp above it lit while live (and the set is on) */}
-        <group position={[0.68, 0, 0]}>
+        <group position={[rail.input, 0, 0]}>
           <mesh position={[0, 0.15, 0.008]}>
             <boxGeometry args={[0.24, 0.075, 0.012]} />
             {/* colour and glow set by useFade */}
@@ -931,17 +684,15 @@ const TVModel = ({
         </group>
 
         {Array.from({ length: 5 }, (_, i) => (
-          <mesh key={i} position={[1.281, 0.12 - i * 0.06, 0.004]}>
-            <boxGeometry args={[0.722, 0.026, 0.01]} />
+          <mesh key={i} position={[rail.louvres.x, 0.12 - i * 0.06, 0.004]}>
+            <boxGeometry args={[rail.louvres.w, 0.026, 0.01]} />
             <meshStandardMaterial color="#140b04" roughness={0.9} />
           </mesh>
         ))}
 
-        {/* right of the louvres, as on the 2D rail: heart, lever, lamp and brightness
-            knob sit an even ~0.155 apart, the knob ~1.4x the heart's width */}
         {/* the heart: a red push-button, latched in while the concert is hearted */}
         <PushButton
-          position={[1.865, 0, 0]}
+          position={[rail.heart, 0, 0]}
           finish="heart"
           pressed={hearted}
           disabled={!canHeart || !isOn}
@@ -949,7 +700,7 @@ const TVModel = ({
         />
 
         {/* play/pause: a bat-handle toggle, up to play, down to pause */}
-        <group position={[2.163, 0, 0]} onClick={handleLeverClick} onPointerOver={handleLeverOver} onPointerOut={handleLeverOut}>
+        <group position={[rail.lever, 0, 0]} onClick={handleLeverClick} onPointerOver={handleLeverOver} onPointerOut={handleLeverOut}>
           <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.02]} castShadow>
             <cylinderGeometry args={[0.07, 0.075, 0.04, 6]} />
             <Chrome roughness={0.3} />
@@ -971,16 +722,16 @@ const TVModel = ({
           </group>
         </group>
 
-        <mesh position={[2.443, 0, 0.04]}>
+        <mesh position={[rail.lamp, 0, 0.04]}>
           <sphereGeometry args={[0.05, 24, 24]} />
           {/* the pilot lamp: colour and glow set by useFade */}
           <meshStandardMaterial ref={pilotLampRef} emissive={PALETTE.amber} roughness={0.3} />
         </mesh>
-        <pointLight ref={pilotLightRef} position={[2.443, 0, 0.25]} color={PALETTE.amber} distance={1} />
+        <pointLight ref={pilotLightRef} position={[rail.lamp, 0, 0.25]} color={PALETTE.amber} distance={1} />
 
         {/* brightness */}
         <Knob3D
-          position={[2.744, 0, 0]}
+          position={[rail.brightness, 0, 0]}
           radius={0.096}
           height={0.08}
           finish="black"
@@ -992,14 +743,15 @@ const TVModel = ({
         />
       </group>
 
-      <Antenna position={[1.9, TOP_Y + 0.1, -0.5]} onBusy={onKnobDragging} {...antenna} />
+      <Antenna position={[spec.antenna.x, TOP_FACE, spec.antenna.z]} onBusy={onKnobDragging} {...antenna} />
 
-      <GuideStack position={[GUIDE.x, TOP_Y + 0.1, GUIDE.z]} open={guideOpen} onOpen={onGuideOpen} />
+      <GuideStack position={[GUIDE.x, TOP_FACE, GUIDE.z]} open={guideOpen} onOpen={onGuideOpen} />
 
-      {/* splayed slab legs */}
-      {parts.legs.map((leg, i) => (
-        <mesh key={i} geometry={leg.geometry} position={leg.position} material={walnutShade} castShadow receiveShadow />
+      {/* legs: splayed slabs, or pencil legs */}
+      {parts.legs?.map((leg, i) => (
+        <mesh key={i} geometry={leg.geometry} position={leg.position} material={bodyShade} castShadow receiveShadow />
       ))}
+      {spec.legs.kind === 'pencil' && <PencilLegs layout={layout} material={bodyShade} />}
     </group>
   );
 };

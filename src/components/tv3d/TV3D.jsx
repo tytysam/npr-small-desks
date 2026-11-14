@@ -6,6 +6,7 @@ import SceneCamera from './SceneCamera';
 import SceneLights from './SceneLights';
 import { MOOD_LIGHTS } from './moods';
 import { FOV } from './layout';
+import { cabinetLayout } from './cabinets';
 import './TV3D.css';
 
 const CLOSE_VIEWS = ['top', 'watch'];
@@ -30,6 +31,7 @@ const TV3D = ({ scene, view, onView, ...props }) => {
   const wrapperRef = useRef(null);
   const contactRef = useRef(null);
   const [knobBusy, setKnobBusy] = useState(false);
+  const layout = cabinetLayout(props.cabinet);
 
   // Chrome mis-composites drei's CSS-3D tube layer — it drifts tens of px off
   // the bezel — unless the canvas sits on whole pixels. TV3D.css rounds the
@@ -73,13 +75,13 @@ const TV3D = ({ scene, view, onView, ...props }) => {
         frameloop="demand"
         camera={{ fov: FOV }}
       >
-        <SceneCamera request={view} enabled={!knobBusy} />
+        <SceneCamera request={view} enabled={!knobBusy} layout={layout} />
         <SceneLights mood={scene.mood} contactRef={contactRef} />
 
         <Suspense fallback={null}>
           <TVModel {...props} glow={MOOD_LIGHTS[scene.mood].glow} onKnobDragging={setKnobBusy} />
           {/* opacity: the mood's, from the start (SceneLights eases it between moods) */}
-          <ContactShadows ref={contactRef} position={[0, -3.28, 0]} opacity={MOOD_LIGHTS[scene.mood].contact} blur={2.6} scale={16} far={4} frames={1} />
+          <ContactShadows ref={contactRef} position={[0, layout.spec.floorY, 0]} opacity={MOOD_LIGHTS[scene.mood].contact} blur={2.6} scale={16} far={4} frames={1} />
         </Suspense>
       </Canvas>
       <p className="tv3d-hint">Drag to look around · double-click to reset · turn the knobs to tune</p>

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { getWood } from '../js/woodGrain';
 
-let images = null; // { body, bezel } image URLs, once painted
-let pending = null;
+const images = new Map(); // `${body}/${bezel}` → { body, bezel } image URLs, once painted
+const pending = new Map(); // the same key → the promise of them
 
 const whenIdle = () =>
   new Promise((resolve) => {
@@ -15,33 +15,38 @@ const toUrl = (canvas) =>
 
 // One wood per idle slot, so no paint blocks the first frames. The bezel
 // first: it's smaller, so the set changes sooner.
-const paintAll = async () => {
+const paintPair = async (woods, key) => {
   await whenIdle();
-  const bezel = await toUrl(getWood('honey', 'bezel').color);
+  const bezel = await toUrl(getWood(woods.bezel, 'bezel').color);
   await whenIdle();
-  const body = await toUrl(getWood('walnut', 'body').color);
-  images = body && bezel ? { body, bezel } : null;
-  return images;
+  const body = await toUrl(getWood(woods.body, 'body').color);
+  const result = body && bezel ? { body, bezel } : null;
+  images.set(key, result);
+  return result;
 };
 
 /**
- * The shared wood grain (src/js/woodGrain.js) as image URLs for the 2D set's
- * CSS: `{ body, bezel }` (walnut and honey). Null until painted; the set
- * shows its CSS wood until then.
+ * The shared wood grain (src/js/woodGrain.js) for a cabinet's woods
+ * (`{ body, bezel }`, src/js/cabinets.js), as image URLs for the 2D set's
+ * CSS: `{ body, bezel }`. Null until painted; the set shows its CSS wood
+ * until then.
  */
-const useWoodImages = () => {
-  const [ready, setReady] = useState(images);
+const useWoodImages = (woods) => {
+  const key = `${woods.body}/${woods.bezel}`;
+  const [ready, setReady] = useState(() => ({ key, urls: images.get(key) ?? null }));
   useEffect(() => {
-    if (images) return undefined;
+    if (images.get(key)) return undefined;
     let live = true;
     // If painting fails, the set just keeps its CSS wood.
-    pending = pending || paintAll().catch(() => null);
-    pending.then((result) => live && setReady(result));
+    if (!pending.has(key)) pending.set(key, paintPair(woods, key).catch(() => null));
+    pending.get(key).then((urls) => live && setReady({ key, urls }));
     return () => {
       live = false;
     };
-  }, []);
-  return ready;
+    // `key` stands for `woods`
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  return images.get(key) ?? (ready.key === key ? ready.urls : null);
 };
 
 export default useWoodImages;

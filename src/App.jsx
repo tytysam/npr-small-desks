@@ -556,6 +556,7 @@ function App() {
     hearted,
     canHeart,
     onHeartToggle: toggleHeart,
+    cabinet: crt.cabinet,
   };
 
   return (

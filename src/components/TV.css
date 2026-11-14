@@ -235,7 +235,8 @@
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(255, 245, 220, 0.14), transparent 18%, transparent 80%, rgba(60, 30, 5, 0.22)),
-    linear-gradient(rgba(255, 175, 60, 0.55), rgba(255, 175, 60, 0.55)),
+    /* the warm glaze (lighter on a pale bezel: TVTeak.css) */
+    linear-gradient(var(--bezel-glaze, rgba(255, 175, 60, 0.55)), var(--bezel-glaze, rgba(255, 175, 60, 0.55))),
     var(--wood-honey, linear-gradient(transparent, transparent)) 50% 50% / cover,
     repeating-linear-gradient(
       176deg,
