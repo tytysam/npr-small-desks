@@ -58,6 +58,10 @@ const BRASS = { color: '#c8a463', metalness: 0.6, roughness: 0.42 };
 /** A rail or panel position: `x`, or `[x, y]` for one off the centre line. */
 const at = (v) => (Array.isArray(v) ? v : [v, 0]);
 
+// The TV/VCR selector's rows (y within it), the ON AIR lamp's width, its
+// colour unlit and its lettering, unless a cabinet's rail says otherwise.
+const INPUT_STYLE = { onAir: 0.15, toggle: 0, labels: -0.12, onAirW: 0.24, unlit: null, ink: '#ffe9e0' };
+
 // The walnut set's knobs, unless a cabinet's panel says otherwise.
 const VOLUME_KNOB = { radius: 0.3, height: 0.19, ticks: 0.92, ridges: 52 };
 
@@ -147,8 +151,17 @@ const shellRings = ({ BEZEL }, shell) =>
 const makeWoodParts = (layout) => {
   const { spec, CABINET, CABINET_Y, BOARD, BOARD_Z, FRONT_Z, BODY_FRONT_Z, BODY, TOP_Y, BOTTOM_Y, BEZEL } = layout;
   const pod = spec.body === 'pod'; // the tube stands on the cabinet, in its own shell
-  const wood = (geometry, at, span = 7) => ({ geometry: boxProjectUVs(geometry, { span, offset: at }), position: at });
   const { top, plinth, panel, legs } = spec;
+  // The cabinet's boards share one grain, projected from the room's centre so
+  // the body, rim, front board and top line up as if cut from one plank. Its
+  // tile is at least as wide as the widest board (the top), so the grain never
+  // repeats across a board and leaves a seam.
+  const bodySpan = Math.max(7, CABINET.w + top.w + 0.3);
+  const wood = (geometry, at, span = bodySpan) => ({ geometry: boxProjectUVs(geometry, { span, offset: at }), position: at });
+  // Pieces cut separately (the bezel, a grille panel, runners, legs) are each
+  // centred on their own tile, so a piece off to one side doesn't run past
+  // the tile's edge.
+  const piece = (geometry, at, span) => ({ geometry: boxProjectUVs(geometry, { span }), position: at });
   const parts = {
     body: wood(new RoundedBoxGeometry(CABINET.w, CABINET.h, BODY.d, 4, spec.bodyRadius), [0, CABINET_Y, BODY.z]),
     rim: wood(
@@ -185,7 +198,7 @@ const makeWoodParts = (layout) => {
           [0, 0, BOARD_Z - 0.04]
         ),
     top: wood(new RoundedBoxGeometry(CABINET.w + top.w, top.thickness, CABINET.d + top.d, 3, top.radius), [0, TOP_Y + top.y, 0]),
-    bezel: wood(
+    bezel: piece(
       BEZEL.pillow ? makePillowLoftGeometry(lipRings(layout)) : makeLoftGeometry(bezelRings(layout), 12),
       [BEZEL.x, BEZEL.y, BOARD_Z],
       5
@@ -199,12 +212,12 @@ const makeWoodParts = (layout) => {
   }
   // A grille panel is a board of the bezel's wood, standing proud of the front board.
   if (panel.kind === 'grille') {
-    parts.panel = wood(new RoundedBoxGeometry(panel.w, BEZEL.h, 0.06, 2, 0.02), [panel.x, BEZEL.y, BOARD_Z + 0.01], 5);
+    parts.panel = piece(new RoundedBoxGeometry(panel.w, BEZEL.h, 0.06, 2, 0.02), [panel.x, BEZEL.y, BOARD_Z + 0.01], 5);
   }
   // Runners: the side panels carried on past the body, standing on the floor.
   if (legs.kind === 'runners') {
     parts.legs = [-1, 1].map((sx) =>
-      wood(
+      piece(
         new RoundedBoxGeometry(0.1, CABINET.h + 0.1, CABINET.d + 0.03, 2, 0.02),
         [sx * (CABINET.w / 2 - 0.04), CABINET_Y - 0.05, 0.015],
         5
@@ -214,7 +227,7 @@ const makeWoodParts = (layout) => {
   if (legs.kind === 'slab') {
     // one per corner: each leans out toward its own corner
     parts.legs = LEG_CORNERS.map(([sx, sz]) =>
-      wood(
+      piece(
         makeTaperedLegGeometry({
           ...legs,
           splay: [sx * legs.length * Math.tan(legs.splayX), sz * legs.length * Math.tan(legs.splayZ)],
@@ -227,26 +240,40 @@ const makeWoodParts = (layout) => {
   return parts;
 };
 
-/** Thin round legs, splayed out toward their corners, with brass ferrules. */
+/**
+ * Thin round legs, splayed out toward their corners, with brass ferrules.
+ * Each is screwed into a teak mounting block fixed flush under the body: the
+ * leg's top is buried in the block, so it never shows a gap however it's
+ * splayed, and a brass collar finishes it where it leaves the block.
+ */
 const PencilLegs = ({ layout, material }) => {
   const { legs, floorY } = layout.spec;
-  const topY = layout.BOTTOM_Y + legs.top;
+  const { block } = legs;
+  const blockGeo = useDisposable(() => new RoundedBoxGeometry(block.w, block.h, block.d, 2, 0.02), [block]);
+  // the leg pivots from the middle of its block
+  const topY = layout.BOTTOM_Y - block.h / 2;
   // Long enough, once splayed, for the ferrule to stand on the floor.
   const length = (topY - floorY) / (Math.cos(legs.splayX) * Math.cos(legs.splayZ));
   const [rTop, rFoot] = legs.radius;
+  // where the leg leaves the block (a little past its bottom face, as splayed)
+  const collarAt = block.h / 2 + 0.03;
+  const rCollar = rTop - (rTop - rFoot) * (collarAt / length);
   return LEG_CORNERS.map(([sx, sz]) => (
-    <group key={`${sx}${sz}`} position={[sx * legs.spreadX, topY, sz * legs.spreadZ]} rotation={[-sz * legs.splayZ, 0, sx * legs.splayX]}>
-      {/* the mounting plate under the body */}
-      <mesh position={[0, -0.012, 0]} material={material} castShadow>
-        <cylinderGeometry args={[rTop * 1.5, rTop * 1.5, 0.024, 20]} />
-      </mesh>
-      <mesh position={[0, -length / 2, 0]} material={material} castShadow receiveShadow>
-        <cylinderGeometry args={[rTop, rFoot, length, 20]} />
-      </mesh>
-      <mesh position={[0, -length + legs.ferrule / 2, 0]} castShadow>
-        <cylinderGeometry args={[rFoot * 1.08, rFoot * 1.02, legs.ferrule, 20]} />
-        <meshStandardMaterial {...BRASS} roughness={0.3} />
-      </mesh>
+    <group key={`${sx}${sz}`} position={[sx * legs.spreadX, topY, sz * legs.spreadZ]}>
+      <mesh geometry={blockGeo} material={material} castShadow receiveShadow />
+      <group rotation={[-sz * legs.splayZ, 0, sx * legs.splayX]}>
+        <mesh position={[0, -collarAt, 0]} castShadow>
+          <cylinderGeometry args={[rCollar * 1.18, rCollar * 1.18, 0.05, 20]} />
+          <meshStandardMaterial {...BRASS} roughness={0.3} />
+        </mesh>
+        <mesh position={[0, -length / 2, 0]} material={material} castShadow receiveShadow>
+          <cylinderGeometry args={[rTop, rFoot, length, 20]} />
+        </mesh>
+        <mesh position={[0, -length + legs.ferrule / 2, 0]} castShadow>
+          <cylinderGeometry args={[rFoot * 1.08, rFoot * 1.02, legs.ferrule, 20]} />
+          <meshStandardMaterial {...BRASS} roughness={0.3} />
+        </mesh>
+      </group>
     </group>
   ));
 };
@@ -290,6 +317,7 @@ const TVModel = ({
   const knobFinish = panel.knobs?.finish;
   const volumeKnob = panel.knobs?.volume ?? VOLUME_KNOB;
   const tuningW = rail.tuningW ?? 2.4;
+  const inputStyle = { ...INPUT_STYLE, ...rail.inputStyle };
   const louvres = { n: 5, pitch: 0.06, y: 0, ...rail.louvres };
   const powerAt = Array.isArray(panel.power) ? panel.power : panel.power.at;
   const screenScale = BEZEL.pillow?.screen ?? 1;
@@ -325,9 +353,10 @@ const TVModel = ({
   // --- lamps: ON AIR and the pilot lamp fade on and off ---------------------
   const onAirLampRef = useRef(null);
   const onAirLightRef = useRef(null);
+  const onAirUnlit = useDisposable(() => (inputStyle.unlit ? new THREE.Color(inputStyle.unlit) : LAMP.onAir.off), [inputStyle.unlit]);
   useFade(onAir ? 1 : 0, (k) => {
     if (onAirLampRef.current) {
-      onAirLampRef.current.color.lerpColors(LAMP.onAir.off, LAMP.onAir.on, k);
+      onAirLampRef.current.color.lerpColors(onAirUnlit, LAMP.onAir.on, k);
       onAirLampRef.current.emissiveIntensity = LAMP.onAir.glow * k;
     }
     if (onAirLightRef.current) onAirLightRef.current.intensity = LAMP.onAir.light * k;
@@ -395,8 +424,8 @@ const TVModel = ({
     [model]
   );
   const onAirTexture = useDisposable(
-    () => makeLabelTexture('ON AIR', { width: 256, height: 80, font: 'bold 52px "Courier New", monospace', color: '#ffe9e0', letterSpacing: 6 }),
-    []
+    () => makeLabelTexture('ON AIR', { width: 256, height: 80, font: 'bold 52px "Courier New", monospace', color: inputStyle.ink, letterSpacing: 6 }),
+    [inputStyle.ink]
   );
   const inputLabelTexture = useDisposable(
     () =>
@@ -805,15 +834,15 @@ const TVModel = ({
         {/* TV/VCR input selector: a slide switch, left for the broadcast, with
             the ON AIR lamp above it lit while live (and the set is on) */}
         <group position={[...at(rail.input), 0]}>
-          <mesh position={[0, 0.15, 0.008]}>
-            <boxGeometry args={[0.24, 0.075, 0.012]} />
+          <mesh position={[0, inputStyle.onAir, 0.008]}>
+            <boxGeometry args={[inputStyle.onAirW, 0.075, 0.012]} />
             {/* colour and glow set by useFade */}
             <meshStandardMaterial ref={onAirLampRef} emissive="#ff3a28" roughness={0.4} />
           </mesh>
-          <Plate texture={onAirTexture} position={[0, 0.15, 0.0145]} size={[0.2, 0.0625]} />
-          <pointLight ref={onAirLightRef} position={[0, 0.15, 0.2]} color="#ff3a28" distance={0.6} />
+          <Plate texture={onAirTexture} position={[0, inputStyle.onAir, 0.0145]} size={[0.2, 0.0625]} />
+          <pointLight ref={onAirLightRef} position={[0, inputStyle.onAir, 0.2]} color="#ff3a28" distance={0.6} />
 
-          <group onClick={handleInputClick} onPointerOver={handleInputOver} onPointerOut={handleInputOut}>
+          <group position={[0, inputStyle.toggle, 0]} onClick={handleInputClick} onPointerOver={handleInputOver} onPointerOut={handleInputOut}>
             <mesh position={[0, 0, 0.004]}>
               <boxGeometry args={[0.3, 0.09, 0.012]} />
               <meshStandardMaterial color="#0e0e0d" roughness={0.8} />
@@ -830,7 +859,7 @@ const TVModel = ({
               />
             </mesh>
           </group>
-          <Plate texture={inputLabelTexture} position={[0, -0.12, 0.003]} size={[0.32, 0.072]} />
+          <Plate texture={inputLabelTexture} position={[0, inputStyle.labels, 0.003]} size={[0.32, 0.072]} />
         </group>
 
         {Array.from({ length: louvres.n }, (_, i) => (

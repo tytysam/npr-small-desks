@@ -123,6 +123,7 @@
 .tv-console,
 .tv-board,
 .tv-plinth,
+.tv-legs,
 .tv-leg {
   --wood: var(--wood-walnut, linear-gradient(transparent, transparent));
   /* soft-light warmth, standing in for the 3D set's warm key light on varnish */

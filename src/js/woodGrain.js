@@ -10,7 +10,13 @@
 export const WOOD = {
   walnut: { early: '#7e4b26', late: '#56301a' },
   honey: { early: '#c0843f', late: '#985c2b' },
-  teak: { early: '#8f6236', late: '#5f3b1d' },
+  // Teak's grain is finer and straighter than walnut's: close, straight
+  // growth lines.
+  teak: {
+    early: '#8f6236',
+    late: '#5f3b1d',
+    grain: { body: { straight: true, straightPx: 10 } },
+  },
   blond: { early: '#d9b27c', late: '#b88a53' },
   oak: { early: '#b48654', late: '#8a6035' },
   ebony: { early: '#4b3427', late: '#2a1b13' },
@@ -88,6 +94,9 @@ const makeCanvas = (w, h) => {
  * darkens gradually through the earlywood into a latewood band and snaps back,
  * and stretched noise adds fibres and pore flecks.
  *
+ * `straight` swaps the arches for straight, close grain (lines about
+ * `straightPx` apart, unevenly spaced and meandering gently).
+ *
  * Returns colour, bump (latewood and pores sit lower under the varnish) and
  * roughness canvases sharing the same layout.
  */
@@ -99,6 +108,8 @@ const paintWood = ({
   pithDepth = 0.26,
   taper = 0.24,
   warp = 1.3,
+  straight = false,
+  straightPx = 10,
 } = {}) => {
   const w = size;
   const h = size;
@@ -118,13 +129,27 @@ const paintWood = ({
     for (let x = 0; x < w; x += 1) {
       const u = x / w;
 
-      // distance from the pith, in rings
-      const dy = (v - 0.5) * h;
-      const d = (pithDepth + taper * (u - 0.5) + (fbm(u * 1.5, v * 1.5, 2) - 0.5) * 0.1) * h;
-      const r = Math.sqrt(dy * dy + d * d);
-      const ring = r / ringPx + (fbm(u * 2.5, v * 5, 3) - 0.5) * warp;
-      const f = ring - Math.floor(ring);
-      const lateMix = Math.pow(smoothstep(0.35, 0.97, f), 1.6);
+      // how far into a ring's latewood band: 0 (light) to 1 (dark)
+      let lateMix;
+      if (straight) {
+        // close, nearly parallel lines, unevenly spaced, wandering a little
+        // along the board
+        const line =
+          (v * h) / straightPx +
+          (fbm(u * 1.4 + 11, v * 2, 3) - 0.5) * 9 +
+          (fbm(u * 0.6 + 4, v * 7, 2) - 0.5) * 5 +
+          (noise(u * 6, v * 40) - 0.5) * 0.4;
+        const f = line - Math.floor(line);
+        lateMix = Math.pow(smoothstep(0.5, 0.95, f), 1.3) * (0.45 + 0.55 * noise(u * 3 + 5, Math.floor(line) * 0.37));
+      } else {
+        // distance from the pith, in rings
+        const dy = (v - 0.5) * h;
+        const d = (pithDepth + taper * (u - 0.5) + (fbm(u * 1.5, v * 1.5, 2) - 0.5) * 0.1) * h;
+        const r = Math.sqrt(dy * dy + d * d);
+        const ring = r / ringPx + (fbm(u * 2.5, v * 5, 3) - 0.5) * warp;
+        const f = ring - Math.floor(ring);
+        lateMix = Math.pow(smoothstep(0.35, 0.97, f), 1.6);
+      }
 
       // fibres: streaks stretched hard along the grain
       const fibre = noise(u * 24, (v * h) / 1.3) - 0.5;
@@ -164,6 +189,6 @@ const cache = new Map();
  */
 export const getWood = (wood, cut = 'body') => {
   const key = `${wood}:${cut}`;
-  if (!cache.has(key)) cache.set(key, paintWood({ palette: WOOD[wood], ...CUTS[cut] }));
+  if (!cache.has(key)) cache.set(key, paintWood({ palette: WOOD[wood], ...CUTS[cut], ...WOOD[wood]?.grain?.[cut] }));
   return cache.get(key);
 };

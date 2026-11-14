@@ -21,6 +21,7 @@
 .tv-set--teak .tv-top-board,
 .tv-set--teak .tv-console,
 .tv-set--teak .tv-board,
+.tv-set--teak .tv-legs,
 .tv-set--teak .tv-leg {
   --wood-warmth: linear-gradient(rgba(110, 60, 25, 0.5), rgba(110, 60, 25, 0.5));
 }
@@ -32,16 +33,18 @@
   border-radius: 3px;
 }
 
-/* ---- The control panel: blond wood, knobs side by side over a cloth grille ---- */
+/* ---- The control panel: blond wood, knobs side by side over a cloth grille ----
+   As on the 3D set: the dials across the top, the grille filling everything
+   between them and the power switch. */
 
 .tv-set--teak .tv-column {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  align-content: space-between;
+  grid-template-rows: auto 1fr auto;
   justify-items: center;
-  gap: 10px 6px;
-  width: 300px;
-  padding: 14px 12px 12px;
+  gap: 14px 6px;
+  width: 316px;
+  padding: 18px 12px 12px;
   border-radius: 6px;
   background:
     linear-gradient(180deg, rgba(255, 245, 220, 0.14), transparent 18%, transparent 80%, rgba(60, 30, 5, 0.18)),
@@ -56,15 +59,21 @@
     0 0 0 1px rgba(40, 20, 5, 0.65);
 }
 
-/* The knobs' numbers sit on dark escutcheons ringed in brass. */
+/* The knobs' numbers sit on dark escutcheons ringed in brass. The ring is
+   drawn just outside the dial (shadows don't take up room), so the numbers
+   have space inside it. */
 .tv-set--teak .dial {
   border-radius: 50%;
-  background: radial-gradient(closest-side, #1c140c 93%, #c8a463 94% 99%, transparent 100%);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
+  background: #1c140c;
+  box-shadow:
+    0 0 0 6px #1c140c,
+    0 0 0 9px #c8a463,
+    0 0 0 10px rgba(70, 45, 15, 0.5),
+    0 3px 6px 9px rgba(0, 0, 0, 0.35);
 }
 
 .tv-set--teak .knob-label {
-  margin-top: 4px;
+  margin-top: 14px;
   color: #3a2410;
   opacity: 0.85;
   text-shadow: 0 1px 0 rgba(255, 240, 210, 0.5);
@@ -73,6 +82,8 @@
 /* Grille cloth: an open weave of oatmeal and brown, with the odd gold thread. */
 .tv-set--teak .tv-speaker {
   grid-column: 1 / -1;
+  align-self: stretch;
+  width: 100%;
   min-height: 150px;
   border-radius: 2px;
   background:
@@ -118,21 +129,54 @@
 }
 
 .tv-set--teak .tv-legs {
+  position: relative;
   width: 90%;
   margin-top: 0;
 }
 
-/* Tapered round legs, splayed outward, with brass ferrules at the feet. */
+/* Each leg screws into a teak block fixed flush under the corner: the
+   blocks cover the legs' tops, so the splay never opens a gap under the
+   body. */
+.tv-set--teak .tv-legs::before,
+.tv-set--teak .tv-legs::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  width: 46px;
+  height: 13px;
+  border-radius: 0 0 3px 3px;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent 45%, rgba(0, 0, 0, 0.25)),
+    var(--wood-warmth),
+    var(--wood) 60% 30% / 600px auto,
+    var(--wood-fallback);
+  background-blend-mode: normal, soft-light, normal, normal;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
+}
+
+.tv-set--teak .tv-legs::before {
+  left: -15px;
+}
+
+.tv-set--teak .tv-legs::after {
+  right: -15px;
+}
+
+/* Tapered round legs, splayed outward from inside their blocks, a brass
+   collar where each leaves its block and a brass ferrule at the foot. */
 .tv-set--teak .tv-leg {
   width: 16px;
-  height: 150px;
+  height: 134px;
+  margin-top: 6px;
   background:
+    linear-gradient(180deg, transparent 7px, #e2c48a 7px, #a8874e 11px, transparent 11px),
     linear-gradient(180deg, transparent calc(100% - 18px), #c8a463 calc(100% - 18px), #8a6a34),
     linear-gradient(90deg, rgba(255, 225, 185, 0.3), transparent 40%, rgba(0, 0, 0, 0.5)),
     var(--wood-warmth),
     var(--wood) 30% 40% / 600px auto,
     var(--wood-fallback);
-  background-blend-mode: normal, normal, soft-light, normal, normal;
+  background-blend-mode: normal, normal, normal, soft-light, normal, normal;
   clip-path: polygon(0 0, 100% 0, 72% 100%, 28% 100%);
   transform-origin: 50% 0;
 }
@@ -149,6 +193,7 @@
   .tv-set--teak .tv-column {
     width: 100%;
     grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: auto;
     align-items: center;
   }
 
@@ -158,6 +203,20 @@
 
   .tv-set--teak .tv-leg {
     width: 11px;
-    height: 96px;
+    height: 90px;
+  }
+
+  .tv-set--teak .tv-legs::before,
+  .tv-set--teak .tv-legs::after {
+    width: 34px;
+    height: 10px;
+  }
+
+  .tv-set--teak .tv-legs::before {
+    left: -11px;
+  }
+
+  .tv-set--teak .tv-legs::after {
+    right: -11px;
   }
 }

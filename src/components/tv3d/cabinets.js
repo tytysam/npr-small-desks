@@ -25,9 +25,11 @@ import { makeLayout } from './layout';
  *   volume knob size, dark `escutcheons` behind knobs, power as a `button`.
  * - rail: the lower rail, `groove` (routed into the board), `brass` (a
  *   brushed strip) or `none`; its controls' positions, as x or [x, y]; the
- *   tuning strip's width, the louvres' count and pitch, the buttons' finish
+ *   tuning strip's width, the louvres' count and pitch, the buttons' finish;
+ *   `inputStyle` spaces and colours the TV/VCR selector
  * - legs: `slab` (tapered, splayed slabs), `pencil` (thin round legs with
- *   brass ferrules) or `runners` (the side panels, run down to the floor)
+ *   brass ferrules, each in a mounting `block` under the body) or
+ *   `runners` (the side panels, run down to the floor)
  * - back: the hardboard back's layout (makeBackPanelTexture), in pixels at
  *   the same scale on every set (2048 px across the walnut set's 6.2-unit
  *   back), so each is drawn at its own proportions rather than stretched
@@ -102,6 +104,9 @@ export const CABINET_SPECS = {
       badge: -2.95,
       tuning: -1.35,
       input: 0.25,
+      // the TV/VCR selector as on the 2D set: ON AIR as wide as the switch and
+      // just above it, the labels tucked under, the group centred on the strip
+      inputStyle: { onAir: 0.098, toggle: -0.012, labels: -0.094, onAirW: 0.3, unlit: '#4a1610', ink: '#e39486' },
       louvres: { x: 1.45, w: 1.5 },
       heart: 2.45,
       lever: 2.75,
@@ -117,7 +122,8 @@ export const CABINET_SPECS = {
       plate: { x: 160, y: 1013 },
       tag: { x: 2029, y: 1098 },
     },
-    legs: { kind: 'pencil', radius: [0.085, 0.045], spreadX: 3.35, spreadZ: 1.0, splayX: 0.14, splayZ: 0.12, top: -0.02, ferrule: 0.13 },
+    // each leg screwed into a teak block under the corner
+    legs: { kind: 'pencil', radius: [0.085, 0.045], spreadX: 3.45, spreadZ: 1.05, splayX: 0.14, splayZ: 0.12, block: { w: 0.5, h: 0.14, d: 0.42 }, ferrule: 0.13 },
     floorY: -3.28,
     framing: { distance: 12.4, cameraY: 0.7, targetY: 0.2, comfortAspect: 1.4, watch: [0, -0.1] },
   },
