@@ -1,43 +1,34 @@
-import { Suspense, useRef, useState, useCallback, useEffect, useLayoutEffect } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls, ContactShadows, Environment, Lightformer } from '@react-three/drei';
+import { Suspense, useRef, useState, useCallback, useLayoutEffect } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { ContactShadows } from '@react-three/drei';
 import TVModel from './TVModel';
+import SceneCamera from './SceneCamera';
+import SceneLights from './SceneLights';
+import { MOOD_LIGHTS } from './moods';
+import { FOV } from './layout';
 import './TV3D.css';
 
-// Frames the cabinet plus the antenna above it and the legs below.
-const BASE_DISTANCE = 12.4;
-const CAMERA_Y = 0.8;
-const TARGET_Y = 0.35;
-const COMFORT_ASPECT = 1.15;
-
-// Backs the camera off on narrow viewports so the whole cabinet stays in frame.
-const FitCamera = () => {
-  const { camera, size, invalidate } = useThree();
-  useEffect(() => {
-    const aspect = size.width / size.height;
-    const distance = aspect >= COMFORT_ASPECT ? BASE_DISTANCE : BASE_DISTANCE * (COMFORT_ASPECT / aspect);
-    camera.position.set(0, CAMERA_Y, Math.min(distance, 20));
-    camera.updateProjectionMatrix();
-    invalidate();
-  }, [camera, size, invalidate]);
-  return null;
-};
+const CLOSE_VIEWS = ['top', 'watch'];
 
 /**
  * The three.js set. The camera orbits all the way round (the back panel
- * hides the DOM screen from behind) but only tilts a little; knob drags
- * temporarily disable orbiting.
+ * hides the DOM screen from behind) but only tilts so far; knob drags
+ * temporarily disable orbiting. The Scene pane (`scene`) picks the lighting
+ * mood; `view` ({ view, n }) moves the
+ * camera to one of its views, and double-clicking anything but a control
+ * asks for the front view again (`onView`).
  *
  * Frames render on demand: the scene is static unless something changes, and
- * R3F redraws on prop changes while OrbitControls invalidates as it moves.
+ * R3F redraws on prop changes while the camera invalidates as it moves.
  *
  * Pointer events are sourced from the wrapper div because drei's blending
  * occlusion turns pointer events off on the canvas itself. The raycaster is
  * fed coordinates relative to that wrapper (R3F's defaults assume the event
  * target is the canvas, which it no longer is).
  */
-const TV3D = (props) => {
+const TV3D = ({ scene, view, onView, ...props }) => {
   const wrapperRef = useRef(null);
+  const contactRef = useRef(null);
   const [knobBusy, setKnobBusy] = useState(false);
 
   // Chrome mis-composites drei's CSS-3D tube layer — it drifts tens of px off
@@ -69,49 +60,29 @@ const TV3D = (props) => {
   }, []);
 
   return (
-    <div ref={wrapperRef} className="tv3d-wrapper">
+    // Close views fade out at the top and bottom of the canvas too (TV3D.css).
+    <div ref={wrapperRef} className={`tv3d-wrapper ${CLOSE_VIEWS.includes(view.view) ? 'is-close' : ''}`}>
       <Canvas
         eventSource={wrapperRef}
         onCreated={(state) => state.setEvents({ compute: computePointer })}
+        // R3F's click-miss callback also fires for double-clicks that miss every control.
+        onPointerMissed={(e) => e.type === 'dblclick' && onView('front')}
         shadows="percentage" /* PCFShadowMap: three removed the soft variant R3F defaults to */
         gl={{ alpha: true, antialias: true }}
         dpr={[1, 2]}
         frameloop="demand"
-        camera={{ position: [0, CAMERA_Y, BASE_DISTANCE], fov: 38 }}
+        camera={{ fov: FOV }}
       >
-        <FitCamera />
-        <ambientLight intensity={0.4} />
-        <directionalLight position={[4, 7, 6]} intensity={2.4} color="#fff1dc" castShadow shadow-mapSize={[1024, 1024]} />
-        <directionalLight position={[-6, 2, 4]} intensity={0.8} />
-        <spotLight position={[0, 6, -5]} intensity={0.8} angle={0.6} penumbra={0.6} />
+        <SceneCamera request={view} enabled={!knobBusy} />
+        <SceneLights mood={scene.mood} contactRef={contactRef} />
 
         <Suspense fallback={null}>
-          {/* Locally-rendered environment (no HDR download) so chrome and brass have something to reflect. */}
-          <Environment resolution={256} frames={1}>
-            <Lightformer intensity={1.6} position={[0, 6, 4]} scale={[12, 4, 1]} color="#fff3dd" />
-            <Lightformer intensity={0.8} position={[-8, 2, 2]} rotation={[0, Math.PI / 2, 0]} scale={[6, 3, 1]} color="#dfe6ff" />
-            <Lightformer intensity={0.5} position={[8, 1, 2]} rotation={[0, -Math.PI / 2, 0]} scale={[6, 3, 1]} color="#ffe2c4" />
-            {/* tall strip on the left: the window streak in the glass and a crisp edge on the chrome */}
-            <Lightformer form="rect" intensity={2} position={[-5, 1.5, 6]} scale={[1.2, 6, 1]} color="#ffffff" />
-          </Environment>
-          <TVModel {...props} onKnobDragging={setKnobBusy} />
-          <ContactShadows position={[0, -3.28, 0]} opacity={0.65} blur={2.6} scale={16} far={4} frames={1} />
+          <TVModel {...props} glow={MOOD_LIGHTS[scene.mood].glow} onKnobDragging={setKnobBusy} />
+          {/* opacity: the mood's, from the start (SceneLights eases it between moods) */}
+          <ContactShadows ref={contactRef} position={[0, -3.28, 0]} opacity={MOOD_LIGHTS[scene.mood].contact} blur={2.6} scale={16} far={4} frames={1} />
         </Suspense>
-
-        <OrbitControls
-          makeDefault
-          enabled={!knobBusy}
-          enablePan={false}
-          enableDamping
-          dampingFactor={0.08}
-          target={[0, TARGET_Y, 0]}
-          minDistance={6.5}
-          maxDistance={20}
-          minPolarAngle={Math.PI * 0.32}
-          maxPolarAngle={Math.PI * 0.58}
-        />
       </Canvas>
-      <p className="tv3d-hint">Drag to look around · turn the knobs to tune</p>
+      <p className="tv3d-hint">Drag to look around · double-click to reset · turn the knobs to tune</p>
     </div>
   );
 };

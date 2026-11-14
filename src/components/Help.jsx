@@ -18,7 +18,8 @@ const CONTROLS = [
   ['Red ♥ button', 'Heart the currently-playing concert. The guide’s ♥ tab ranks all hearted concerts.'],
   ['Chrome knob by the badge', 'MENU: scanlines, Tape FX, captions and more.'],
   ['TV listings', "The guide on top of the set. Find an artist, tap to tune."],
-  ['2D / 3D', 'Same set, in 3D. Drag to look around.'],
+  ['2D / 3D', 'Same set, in 3D. Drag to look around; double-click to reset.'],
+  ['Camera button', 'In 3D, the room: camera views and lighting.'],
 ];
 
 const KEYS = [
@@ -34,6 +35,7 @@ const KEYS = [
   ['O', 'menu'],
   ['G', 'guide'],
   ['H', 'heart'],
+  ['C', 'views (3D)'],
 ];
 
 /** The "?" plaque beside the 2D/3D toggle. Glows until it's been opened once. */

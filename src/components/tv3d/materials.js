@@ -71,11 +71,12 @@ const makeCanvas = (w, h) => {
 };
 
 /**
- * Wood textures for a preset ('walnut' | 'honey') from the shared grain
- * generator (src/js/woodGrain.js): colour, bump and roughness maps.
+ * Wood textures for a wood (a WOOD key) cut for a part ('body' | 'bezel'),
+ * from the shared grain generator (src/js/woodGrain.js): colour, bump and
+ * roughness maps.
  */
-export const makeWoodTexture = (name) => {
-  const wood = getWood(name);
+export const makeWoodTexture = (name, cut) => {
+  const wood = getWood(name, cut);
   return {
     map: finishTexture(wood.color),
     bumpMap: finishTexture(wood.bump, { srgb: false }),

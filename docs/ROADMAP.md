@@ -1,6 +1,6 @@
 # Roadmap
 
-What's worth doing next on the small-desk TV, in six groups. Items move from
+What's worth doing next on the small-desk TV, in seven groups. Items move from
 **Planned** → **Done** as they land; each notes where the work lives.
 
 Order agreed: performance → functional additions → (after review) broadcast
@@ -531,3 +531,79 @@ most.
   `X-Visitor` are 400, and writes past 30 a minute get 429.
 - `worker/`, `src/js/hearts.js` (unit-tested), `src/hooks/useHearts.js`,
   `src/components/Guide.jsx`, `Osd.jsx`, `TV.jsx`, `tv3d/TVModel.jsx`.
+
+---
+
+## 7. Scene
+
+The room around the set: how the 3D set is framed and lit, and what it
+stands against. Agreed November 2026 as two phases built together, with a
+third to follow.
+
+### 7.1 Camera views — **Done**
+- **Views.** Front, ¾, Back (the inspection sticker), Top (down onto the
+  guide) and Watch (the bezel up close), eased into over about half a
+  second (instant under reduced motion). **C** steps through them; the
+  Scene pane has a button for each; double-clicking anywhere but a control
+  goes back to the front.
+- **Controls.** drei's `CameraControls` replaced `OrbitControls` for the
+  eased moves. Same feel: drag to orbit, wheel or pinch to zoom, no panning,
+  knob drags still hold the camera. It can now tilt further over the top
+  (for the Top view) and zoom closer (for Watch). A resize refits the view
+  unless you've orbited away from it.
+- **Soft edges.** The canvas fades into the wall at its sides, and at top
+  and bottom in the close views, so close-ups don't end in a
+  hard line. Only the canvas is masked: the tube's DOM layer is its sibling
+  (masking an ancestor would flatten its CSS-3D transform).
+- `tv3d/SceneCamera.jsx`; the cabinet layout it aims at moved into
+  `tv3d/layout.js`, shared with `TVModel.jsx`.
+
+### 7.2 Scene pane — **Done**
+In 3D, a camera button beside "?" opens a card styled like the owner's manual. It
+isn't modal: the set keeps playing and reacting while it's open; ✕ or Esc
+closes it and focus returns to the button. Settings persist
+(`npr-small-desk:scene`).
+
+| Row | Choices |
+|---|---|
+| View | the views above |
+| Lighting | Morning · Afternoon (as before; was Daylight) · Evening · Lights out |
+
+- **Lighting moods** are one table (`tv3d/moods.js`): ambient, key, fill and
+  rim lights, environment reflections, the contact shadow and the tube's
+  glow. Moods ease into each other over 0.9 s, written straight onto the
+  lights like the lamp fades (`SceneLights.jsx`).
+- **Lights out.** The room goes dark and a cool light in front of the tube,
+  following power and brightness, lights the bezel and rail, with a faint
+  flicker (redrawn ~9 times a second, only in the dark moods). The picture
+  itself can't be sampled (a cross-origin iframe), so the glow is a neutral
+  TV blue rather than the picture's colour.
+- **The wall** (the page background) dims to match the mood in 3D: CSS
+  colour properties registered with `@property`, so it fades.
+- **Woods.** `woodGrain.js` now has woods and cuts (body, bezel):
+  `getWood(wood, cut)`. The set stays walnut and honey; teak, blond, oak and
+  ebony are kept for 4.11.
+- **Trimmed after a first pass:** a wall-colour choice, a cabinet-finish
+  choice (both sets), a slow idle spin and the Quality switches (shadows,
+  sharp rendering) were built and taken out again; the pane is 3D-only.
+  Later, a Floor row (a braided rug, oak boards) and a Showroom mood went
+  too; Morning replaced Showroom.
+- **Fixed along the way.** drei's `Environment` re-applied its settings and
+  re-rendered its cube map every time the 3D set re-rendered (it compares
+  children by identity, and inline JSX is new each render), which happens
+  on most app updates. Memoised, it now renders once, and the moods can
+  dim its reflections.
+- Checked in headless Chrome: each mood and view, the pane's focus,
+  persistence and Esc, double-click reset, and knob drags not orbiting. Unit tests for the
+  settings module and the pane.
+- `src/js/sceneSettings.js` (unit-tested), `src/hooks/useSceneSettings.js`,
+  `src/components/ScenePane.jsx` (tested), `tv3d/SceneLights.jsx`,
+  `tv3d/moods.js`.
+
+### 7.3 Next — Planned
+Phase 3, linking the scene to the roadmap's bigger items:
+- **4.12 A "small desk" room**: a desk and a lamp as another backdrop; the
+  Evening mood's lamp could become a real one.
+- **4.11 More cabinets**: the extra woods and the shared layout
+  (`tv3d/layout.js`) are the first steps.
+

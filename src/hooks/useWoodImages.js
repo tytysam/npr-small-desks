@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getWood } from '../js/woodGrain';
 
-let images = null; // { walnut, honey } image URLs, made once per visit
+let images = null; // { body, bezel } image URLs, once painted
 let pending = null;
 
 const whenIdle = () =>
@@ -13,19 +13,21 @@ const whenIdle = () =>
 const toUrl = (canvas) =>
   new Promise((resolve) => canvas.toBlob((blob) => resolve(blob ? URL.createObjectURL(blob) : null), 'image/jpeg', 0.92));
 
-// One wood per idle slot, so neither paint blocks the first frames.
+// One wood per idle slot, so no paint blocks the first frames. The bezel
+// first: it's smaller, so the set changes sooner.
 const paintAll = async () => {
   await whenIdle();
-  const honey = await toUrl(getWood('honey').color);
+  const bezel = await toUrl(getWood('honey', 'bezel').color);
   await whenIdle();
-  const walnut = await toUrl(getWood('walnut').color);
-  images = honey && walnut ? { walnut, honey } : null;
+  const body = await toUrl(getWood('walnut', 'body').color);
+  images = body && bezel ? { body, bezel } : null;
   return images;
 };
 
 /**
  * The shared wood grain (src/js/woodGrain.js) as image URLs for the 2D set's
- * CSS. Null until painted; the set shows its CSS wood until then.
+ * CSS: `{ body, bezel }` (walnut and honey). Null until painted; the set
+ * shows its CSS wood until then.
  */
 const useWoodImages = () => {
   const [ready, setReady] = useState(images);

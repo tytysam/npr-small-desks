@@ -13,6 +13,23 @@
   -webkit-user-select: none;
 }
 
+/* The canvas fades into the wall at its sides (where close-ups would
+   otherwise end in a hard edge), and at top and bottom too in the
+   close views. Only the canvas: the tube's DOM layer is a sibling, and
+   masking an ancestor would flatten its CSS-3D transform. */
+.tv3d-wrapper canvas {
+  --fade: 48px;
+  --fade-y: 0px;
+  mask-image:
+    linear-gradient(to right, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent),
+    linear-gradient(to bottom, transparent, #000 var(--fade-y), #000 calc(100% - var(--fade-y)), transparent);
+  mask-composite: intersect;
+}
+
+.tv3d-wrapper.is-close canvas {
+  --fade-y: 40px;
+}
+
 .tv3d-hint {
   position: absolute;
   left: 50%;
