@@ -3,10 +3,11 @@ import useKnobDrag from '../hooks/useKnobDrag';
 import './Knob.css';
 
 const DETENT_DEG = 30;
-const CHANNEL_NUMBERS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+const CHANNEL_NUMBERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
 /**
- * Twelve-position VHF channel selector. Every 30° of rotation clicks to the
+ * Twelve-position channel selector, printed 1–12 (only printing: the dial
+ * steps through the lineup whatever the numbers say). Every 30° of rotation clicks to the
  * next detent and changes the channel in that direction. `dialPosition` is
  * the app's cumulative detent count, so the dial also turns when the channel
  * changes some other way (keyboard, the other set).
@@ -32,6 +33,9 @@ const ChannelKnob = ({ dialPosition = 0, onChannelChange }) => {
 
   const { ref, isDragging, handlers } = useKnobDrag({ onDelta, onEnd, keyStep: DETENT_DEG });
 
+  const count = CHANNEL_NUMBERS.length;
+  const detent = ((dialPosition % count) + count) % count;
+
   return (
     <div className="dial dial-channel">
       <div className="dial-ring" aria-hidden="true">
@@ -52,8 +56,9 @@ const ChannelKnob = ({ dialPosition = 0, onChannelChange }) => {
         role="slider"
         aria-label="Channel"
         aria-valuemin={0}
-        aria-valuemax={CHANNEL_NUMBERS.length - 1}
-        aria-valuenow={((dialPosition % CHANNEL_NUMBERS.length) + CHANNEL_NUMBERS.length) % CHANNEL_NUMBERS.length}
+        aria-valuemax={count - 1}
+        aria-valuenow={detent}
+        aria-valuetext={String(CHANNEL_NUMBERS[detent])}
         tabIndex={0}
         style={{ transform: `rotate(${dialPosition * DETENT_DEG}deg)` }}
         {...handlers}

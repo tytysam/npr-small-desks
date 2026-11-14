@@ -35,6 +35,8 @@ test('the cabinet is a choice of the cabinets, walnut by default', () => {
   expect(CRT_DEFAULTS.cabinet).toBe('walnut');
   expect(describeCrt(CRT_DEFAULTS, byKey.cabinet)).toBe('Walnut');
   expect(adjustCrt(CRT_DEFAULTS, 'cabinet', 1).cabinet).toBe('teak');
+  expect(adjustCrt({ ...CRT_DEFAULTS, cabinet: 'teak' }, 'cabinet', 1).cabinet).toBe('cream');
+  expect(adjustCrt(CRT_DEFAULTS, 'cabinet', -1).cabinet).toBe('cream'); // wraps
   expect(normalizeCrt({ cabinet: 'teak' }).cabinet).toBe('teak');
   expect(normalizeCrt({ cabinet: 'bakelite' }).cabinet).toBe('walnut');
 });

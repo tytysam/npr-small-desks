@@ -10,6 +10,7 @@
 export const CABINETS = [
   { key: 'walnut', label: 'Walnut', model: 'NP-R1', woods: { body: 'walnut', bezel: 'honey' } },
   { key: 'teak', label: 'Teak', model: 'NP-D6', woods: { body: 'teak', bezel: 'blond' } },
+  { key: 'cream', label: 'Cream', model: 'NP-S9', woods: { body: 'teak', bezel: 'blond' } },
 ];
 
 export const DEFAULT_CABINET = 'walnut';

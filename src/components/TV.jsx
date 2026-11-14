@@ -7,6 +7,7 @@ import useWoodImages from '../hooks/useWoodImages';
 import { cabinetFor } from '../js/cabinets';
 import './TV.css';
 import './TVTeak.css';
+import './TVCream.css';
 
 // The CSS wood shown until the shared grain (useWoodImages) is painted:
 // feTurbulence has no source image, so these filters paint organic grain onto
@@ -67,7 +68,7 @@ const TV = ({
   cabinet = 'walnut',
 }) => {
   // The cabinet (SETUP's Cabinet row): TV.css is the walnut NP-R1, and each
-  // other cabinet restyles it from its own stylesheet (TVTeak.css).
+  // other cabinet restyles it from its own stylesheet (TVTeak.css, TVCream.css).
   const { key, model, woods } = cabinetFor(cabinet);
   const wood = useWoodImages(woods);
   const woodStyle = wood

@@ -9,6 +9,7 @@ const RAD_TO_DEG = 180 / Math.PI;
 const FINISHES = {
   chrome: { rim: PALETTE.chrome, face: '#d6d6d6', bar: '#1a1a1a', metalness: 0.75 },
   black: { rim: '#1e1e1e', face: '#262626', bar: '#6a665c', metalness: 0.25 },
+  grey: { rim: '#8e8e8a', face: '#bdbdb8', bar: '#4a4a47', metalness: 0.1 },
 };
 const DEG_TO_RAD = Math.PI / 180;
 

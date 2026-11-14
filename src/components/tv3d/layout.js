@@ -23,10 +23,13 @@ export const makeLayout = (spec) => {
   const BOARD_Z = FRONT_Z - 0.12;
   const BODY_FRONT_Z = FRONT_Z - 0.5;
   const BODY = { d: BODY_FRONT_Z + CABINET.d / 2, z: (BODY_FRONT_Z - CABINET.d / 2) / 2 };
-  const TOP_Y = CABINET.h / 2;
-  const BOTTOM_Y = -CABINET.h / 2;
-  // The top board's upper face, where the guide and the antenna stand.
-  const TOP_FACE = TOP_Y + spec.top.y + spec.top.thickness / 2;
+  // The body's centre height: 0, unless it's a base under the tube (cream).
+  const CABINET_Y = CABINET.y ?? 0;
+  const TOP_Y = CABINET_Y + CABINET.h / 2;
+  const BOTTOM_Y = CABINET_Y - CABINET.h / 2;
+  // Where the guide and the antenna stand: the top board's upper face, or
+  // the cabinet's own `topFace` (the cream set's shell).
+  const TOP_FACE = spec.topFace ?? TOP_Y + spec.top.y + spec.top.thickness / 2;
 
   // The bezel: a narrow flat face that rolls over into a cove and sinks to a
   // pillow-shaped opening just inside the tube's edge. The tube is the same
@@ -43,6 +46,7 @@ export const makeLayout = (spec) => {
 
   return {
     CABINET,
+    CABINET_Y,
     FRONT_Z,
     BOARD,
     BOARD_Z,

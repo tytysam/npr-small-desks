@@ -39,7 +39,8 @@ const HEART_SQUASH = 0.8; // as .heart-glyph squashes the guide's ♥
 
 /**
  * A push-button on the rail: MENU (silver, latched in while SETUP is open)
- * and the heart (red, latched in while the concert is hearted). It sinks
+ * and the heart (red, latched in while the concert is hearted); on the
+ * cream set, MENU and power are grey plastic (`finish="grey"`). It sinks
  * into the cabinet while `pressed` and springs back out; frames only render
  * while it's moving. A `disabled` button ignores clicks.
  */
@@ -104,6 +105,9 @@ export const PushButton = ({ position, pressed, onPress, disabled = false, finis
           {finish === 'heart' ? (
             // red enamel, glowing faintly while latched; colour and glow set by useFade
             <meshStandardMaterial ref={capRef} roughness={0.35} metalness={0.1} emissive="#ff5a46" />
+          ) : finish === 'grey' ? (
+            // grey plastic, as on the cream set's base
+            <meshStandardMaterial color="#bdbdb8" roughness={0.5} metalness={0.1} emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
           ) : (
             <Silver emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
           )}

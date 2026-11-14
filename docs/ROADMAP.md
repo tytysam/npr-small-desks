@@ -329,7 +329,8 @@ unscheduled, roughly in order of size.
 - **4.10 Phone as remote.** Open a link on a phone to control the set on a
   laptop. Needs the same realtime layer as 4.9.
 - **4.11 More cabinets.** — **Started** (November 2026; see 7.3): the
-  cabinet is a setting, and the teak NP-D6 is the first new one. Next
+  cabinet is a setting; the teak NP-D6 and the cream NP-S9 are the first
+  new ones. A possible follow-up: let the NP-S9's screen swivel. Next
   candidates: a 1980s silver portable, a 1950s rounded plastic set, a
   generic 1970s silver-and-black set (not branded).
 - **4.12 A "small desk" room.** The 3D set on a desk with a lamp. —
@@ -633,6 +634,39 @@ they look changes). 4.12 is shelved.
   with the power off (2D, and all five 3D views) match pixel for pixel,
   bar the faint noise two baseline runs show between themselves. The teak
   console in both sets and every view; switching from SETUP in both sets.
+
+- **The NP-S9** ("Cream"), after Stig Lindberg's late-1950s Swedish design
+  (unbranded): the tube in its own cream plastic shell on a short neck and
+  swivel plate (fixed, for now) over a low teak base. Refined against the
+  reference photos: the front is a "pillow" outline (a superellipse, a
+  little wider at the top; `makePillowLoftGeometry`) with a slim rolled lip
+  around glass that fills nearly all of it; behind, the shell runs straight
+  back before rounding into a puffy back with a large round boss. The
+  picture is drawn at 96% on this set, so the rectangle the 3D screen layer
+  cuts through the scene stays inside the outline (its corners had punched
+  through the shell's wall). In 2D: rounder corners, a thin lip shaded as a
+  roll, and a slight backward tilt for the taper. Its guide lies centred on
+  the shell's top, and its antenna stands
+  on the shell's curved top wherever it's placed (`shellTopAt`) rather than
+  at one height, which left it floating toward the back.
+- **The backs**: each set's hardboard back is drawn for it
+  (`makeBackPanelTexture`, laid out by its cabinet's `back`), at the same
+  scale on every set rather than the walnut back stretched over it: the
+  teak's wider, with more vent slots; the cream base's a long low strip, one
+  row of vents and the plate, caution and tag side by side, smaller. Each
+  carries its own model and serial.
+- **Channel dials** on every set are printed 1–12 (they were the US VHF
+  2–13). Only printing: the dial steps through the lineup either way.
+- **The NP-D6's brass rail** in 3D is brushed brass (`makeBrushedTextures`:
+  streaks in colour and roughness), only partly metallic, with a clear coat,
+  stretched highlights and eased edges. A full mirror facing the camera
+  reflected the empty room and read as dull and dark against the wood. Every control is on the base front: speaker slots,
+  the tuning strip, grey plastic knobs and buttons (power is a push-button
+  that latches in while on), the channel dial on a dark escutcheon. The
+  guide and the antenna stand on the shell's top. It added the `pod` body,
+  the `base` panel, the `none` rail and `runners` legs, and rail positions
+  as [x, y]. In 2D, `TVCream.css` lays the same markup out as a grid, the
+  board's `::before` becoming the base.
 
 ### 7.4 Next — Planned
 More cabinets, one at a time: each is a `tv3d/cabinets.js` entry (plus a

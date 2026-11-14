@@ -124,7 +124,7 @@ control changes it, so it works the same with the knobs, keys, 2D or 3D.
 | Hiss | Tuning hiss while the antenna moves |
 | Clicks | The controls' mechanical sounds: dial detents, the power switch, the lever, buttons, the TV/VCR slide, and soft knob ticks. They follow volume and mute, and click with the set off too |
 | Captions | The video's captions (English, including auto-generated, where the concert has any), off by default |
-| Cabinet | Which set you're watching, in both 2D and 3D: the walnut NP-R1 (the default) or the NP-D6, a 1960s Danish-style teak console with a cloth grille, a brass rail and pencil legs. Same controls on each |
+| Cabinet | Which set you're watching, in both 2D and 3D: the walnut NP-R1 (the default); the NP-D6, a 1960s Danish-style teak console with a cloth grille, a brass rail and pencil legs; or the NP-S9, after Stig Lindberg's late-1950s Swedish set, its tube in a cream shell on a low teak base. Same controls on each |
 
 ### The TV guide
 
@@ -196,7 +196,7 @@ fonts).
 src/
   App.jsx             app state: tuning, volume, power, menus, shortcuts
   components/
-    TV.jsx            the 2D set (TV.css; TVTeak.css restyles it as the teak console)
+    TV.jsx            the 2D set (TV.css; TVTeak.css and TVCream.css restyle it per cabinet)
     tv3d/             the 3D set (loaded on first use)
       TVModel.jsx     the cabinet, and where its controls go
       cabinets.js     each cabinet's measurements (layout.js derives the rest)

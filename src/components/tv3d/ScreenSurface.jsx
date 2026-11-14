@@ -15,12 +15,14 @@ const CSS_H = 300;
  * "blending" occlusion puts the element *behind* the canvas and punches a
  * depth-only hole in the scene where the screen is. pointer-events are off so
  * orbiting and knob drags over the picture still reach the canvas wrapper.
+ *
+ * `scale` draws it smaller than SCREEN_W x SCREEN_H (the cream set's).
  */
-const ScreenSurface = ({ position, ...screenProps }) => (
+const ScreenSurface = ({ position, scale = 1, ...screenProps }) => (
   <Html
     transform
     occlude="blending"
-    distanceFactor={4}
+    distanceFactor={4 * scale}
     position={position}
     zIndexRange={[10, 0]}
     style={{ width: CSS_W, height: CSS_H, pointerEvents: 'none' }}
