@@ -331,9 +331,9 @@ unscheduled, roughly in order of size.
 - **4.11 More cabinets.** 1950s Bakelite, 1980s silver portable, Trinitron.
   The 2D tokens (`TV.css`), the 3D palette (`tv3d/materials.js`) and the
   shared wood generator keep much of this declarative.
-- **4.12 A "small desk" room.** The 3D set on a desk with a lamp, tinted by
-  the current concert's thumbnail colour (the iframe itself can't be
-  sampled).
+- **4.12 A "small desk" room.** The 3D set on a desk with a lamp. —
+  **Shelved** (November 2026): the floors felt like too much around the
+  set, and a desk would likely too. The thumbnail tint was tried (7.2).
 
 ---
 
@@ -587,7 +587,9 @@ closes it and focus returns to the button. Settings persist
   choice (both sets), a slow idle spin and the Quality switches (shadows,
   sharp rendering) were built and taken out again; the pane is 3D-only.
   Later, a Floor row (a braided rug, oak boards) and a Showroom mood went
-  too; Morning replaced Showroom.
+  too; Morning replaced Showroom. A glow tinted by the concert's thumbnail,
+  with a matching pool of light on the wall, was tried and removed as one
+  effect too many: the glow stays the TV blue.
 - **Fixed along the way.** drei's `Environment` re-applied its settings and
   re-rendered its cube map every time the 3D set re-rendered (it compares
   children by identity, and inline JSX is new each render), which happens
@@ -601,9 +603,6 @@ closes it and focus returns to the button. Settings persist
   `tv3d/moods.js`.
 
 ### 7.3 Next — Planned
-Phase 3, linking the scene to the roadmap's bigger items:
-- **4.12 A "small desk" room**: a desk and a lamp as another backdrop; the
-  Evening mood's lamp could become a real one.
-- **4.11 More cabinets**: the extra woods and the shared layout
-  (`tv3d/layout.js`) are the first steps.
+Phase 3: **4.11 More cabinets**. The extra woods and the shared layout
+(`tv3d/layout.js`) are the first steps. 4.12 is shelved.
 
