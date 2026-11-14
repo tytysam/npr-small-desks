@@ -9,6 +9,7 @@ import useAntennaGesture from '../../hooks/useAntennaGesture';
 import useLatest from '../../hooks/useLatest';
 import { BRIGHTNESS_MIN, BRIGHTNESS_MAX } from '../../js/picture';
 import ScreenSurface, { SCREEN_W, SCREEN_H } from './ScreenSurface';
+import { CABINET, FRONT_Z, BODY_FRONT_Z, BOARD, BOARD_Z, BODY, TOP_Y, BOTTOM_Y, BEZEL, OPENING, OPENING_Z, TUBE_Z, GUIDE } from './layout';
 import {
   PALETTE,
   makeWoodTexture,
@@ -29,28 +30,8 @@ import {
   makeGlyphTexture,
 } from './materials';
 
-// Layout (world units). The cabinet is centred on the origin; +Z faces the viewer.
-//
-// Depth, front to back: the outer rim of the cabinet (FRONT_Z) → the recessed
-// front board (BOARD_Z) that carries the bezel, control column and rail → the
-// tube, sunk behind the bezel's rolled opening → the cabinet body behind it.
-const CABINET = { w: 6.5, h: 4.7, d: 3.4 };
-const FRONT_Z = CABINET.d / 2;
-const RIM = 0.18;
-const BOARD = { w: CABINET.w - RIM * 2, h: CABINET.h - RIM * 2 };
-const BOARD_Z = FRONT_Z - 0.12;
-const BODY_FRONT_Z = FRONT_Z - 0.5;
-const BODY = { d: BODY_FRONT_Z + CABINET.d / 2, z: (BODY_FRONT_Z - CABINET.d / 2) / 2 };
-const TOP_Y = CABINET.h / 2;
-const BOTTOM_Y = -CABINET.h / 2;
-
-// Honey-wood bezel: a narrow flat face that rolls over into a cove and sinks
-// to a pillow-shaped opening just inside the tube's edge.
-const BEZEL = { x: -0.73, y: 0.35, w: 4.44, h: 3.44 };
-const OPENING = { w: SCREEN_W - 0.1, h: SCREEN_H - 0.1, r: 0.52 };
-const OPENING_Z = -0.13; // relative to BOARD_Z
-const TUBE_Z = BOARD_Z + OPENING_Z - 0.02;
-
+// Layout (world units). The cabinet is centred on the origin; +Z faces the
+// viewer. The cabinet, bezel and guide are in layout.js; the rest is here.
 const COLUMN = { x: 2.29, y: BEZEL.y, w: 1.32, h: BEZEL.h };
 const PANEL_Z = BOARD_Z + 0.02; // face of the column's inset panel
 const RAIL_Y = -1.77;
@@ -179,6 +160,8 @@ const HEART_SQUASH = 0.8; // as .heart-glyph squashes the guide's ♥
 
 // The set's lights, off → on. They fade between the two like the 2D set's
 // (a 0.3 s CSS transition), via useFade.
+const GLOW = { color: '#a9c2ff', intensity: 7, flicker: 0.12 };
+
 const LAMP = {
   heart: { off: new THREE.Color('#6e2a22'), on: new THREE.Color(PALETTE.heart), glow: 0.35, hover: 0.1 },
   onAir: { off: new THREE.Color('#2a0d08'), on: new THREE.Color('#d8352a'), glow: 1.4, light: 0.25 },
@@ -272,10 +255,8 @@ const PushButton = ({ position, pressed, onPress, disabled = false, finish = 'si
   );
 };
 
-// The TV guide lies on two older issues near the front of the top board,
-// spines toward the viewer (the camera sits below the top, so the spines
-// are what reads from the front; the cover shows when you orbit up).
-const GUIDE = { length: 1.45, width: 1.05, x: -1.75, z: 1.08, lift: 0.06 };
+// The TV guide (GUIDE, in layout.js) lies on two older issues near the front
+// of the top board.
 const GUIDE_ISSUES = [
   { color: '#c4372b', ink: '#fff8ec', text: 'NP-R1 LISTINGS · TINY DESK WEEKLY', thickness: 0.09, yaw: -0.07, dx: 0 },
   { color: '#2f5d7c', ink: '#e8dfc8', text: 'NP-R1 LISTINGS · NO. 38', thickness: 0.075, yaw: 0.05, dx: 0.06 },
@@ -540,10 +521,11 @@ const TVModel = ({
   canHeart = false,
   onHeartToggle,
   onKnobDragging,
+  glow = 0,
 }) => {
   // --- materials ---------------------------------------------------------
-  const walnutWood = useDisposable(() => makeWoodTexture('walnut'), []);
-  const honeyWood = useDisposable(() => makeWoodTexture('honey'), []);
+  const walnutWood = useDisposable(() => makeWoodTexture('walnut', 'body'), []);
+  const honeyWood = useDisposable(() => makeWoodTexture('honey', 'bezel'), []);
   const walnut = useDisposable(() => makeWoodMaterial(walnutWood), [walnutWood]);
   const walnutShade = useDisposable(() => makeWoodMaterial(walnutWood, { tint: '#bfae9c', clearcoat: 0.35 }), [walnutWood]);
   const honey = useDisposable(() => makeWoodMaterial(honeyWood, { clearcoat: 0.7 }), [honeyWood]);
@@ -573,6 +555,35 @@ const TVModel = ({
     }
     if (pilotLightRef.current) pilotLightRef.current.intensity = LAMP.pilot.light * k;
   });
+
+  // --- the tube's glow: the picture lighting the set in a dark room --------
+  // (`glow` comes from the lighting mood). A cool light just in front of the
+  // screen, fading with the power, flickering faintly as pictures do.
+  const glowRef = useRef(null);
+  const glowLevel = useRef(0);
+  const flicker = useRef(1);
+  const invalidate = useThree((state) => state.invalidate);
+  const applyGlow = () => {
+    if (glowRef.current) glowRef.current.intensity = GLOW.intensity * glowLevel.current * flicker.current;
+  };
+  useFade(isOn ? glow * brightness : 0, (k) => {
+    glowLevel.current = k;
+    applyGlow();
+  });
+  const flickering = isOn && glow > 0;
+  useEffect(() => {
+    if (!flickering || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return undefined;
+    const id = setInterval(() => {
+      flicker.current = 1 - Math.random() * GLOW.flicker;
+      applyGlow();
+      invalidate();
+    }, 110);
+    return () => {
+      clearInterval(id);
+      flicker.current = 1;
+    };
+  }, [flickering, invalidate]);
+
   const perforated = useDisposable(() => makePerforatedTexture({ repeat: [10, 8] }), []);
   const glareTexture = useDisposable(makeGlareTexture, []);
   const backPanelTexture = useDisposable(makeBackPanelTexture, []);
@@ -781,6 +792,8 @@ const TVModel = ({
 
       {/* the tube (DOM layer punched through the canvas) */}
       <ScreenSurface position={[BEZEL.x, BEZEL.y, TUBE_Z]} {...screen} />
+      {/* its glow, for the dark lighting moods (intensity set by useFade) */}
+      <pointLight ref={glowRef} position={[BEZEL.x, BEZEL.y, FRONT_Z + 1.3]} color={GLOW.color} intensity={0} distance={8} decay={2.2} />
 
       {/* domed glass: faint tint + environment reflections, then the window glare */}
       <group position={[BEZEL.x, BEZEL.y, TUBE_Z + 0.005]}>

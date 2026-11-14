@@ -65,7 +65,7 @@ const TV = ({
 }) => {
   const wood = useWoodImages();
   const woodStyle = wood
-    ? { '--wood-walnut': `url(${wood.walnut})`, '--wood-honey': `url(${wood.honey})`, '--wood-ready': 1 }
+    ? { '--wood-walnut': `url(${wood.body})`, '--wood-honey': `url(${wood.bezel})`, '--wood-ready': 1 }
     : undefined;
 
   return (

@@ -2,6 +2,7 @@ import { useState, useEffect, useEffectEvent, useCallback, useRef, Suspense, laz
 import TV from './components/TV';
 import ModeToggle from './components/ModeToggle';
 import { HelpButton, HelpCard } from './components/Help';
+import ScenePane, { SceneButton } from './components/ScenePane';
 import { GuideBook } from './components/Guide';
 import CrtTransition, { CRT_OFF_MS, CRT_ON_MS } from './components/CrtTransition';
 import useViewMode from './hooks/useViewMode';
@@ -14,8 +15,10 @@ import useOsd from './hooks/useOsd';
 import useShortcuts from './hooks/useShortcuts';
 import useLatest from './hooks/useLatest';
 import useHearts from './hooks/useHearts';
+import useSceneSettings from './hooks/useSceneSettings';
 import { BRIGHTNESS_MIN, BRIGHTNESS_MAX } from './js/picture';
 import { CRT_ITEMS } from './js/crtSettings';
+import { nextView, wallTones } from './js/sceneSettings';
 import { setHiss, playSound, crossedStep } from './js/sounds';
 import { mediaArtwork } from './js/thumbnails';
 import './App.css';
@@ -77,6 +80,29 @@ function App() {
   const guideReturnRef = useRef(null); // where focus goes back to when the guide closes
 
   const [viewMode, setViewMode] = useViewMode();
+
+  // --- the Scene pane: the room around the set ---------------------------
+  const [scene, setSceneSetting] = useSceneSettings();
+  const [sceneOpen, setSceneOpen] = useState(false);
+  const sceneButtonRef = useRef(null);
+  const closeScene = useCallback(() => {
+    setSceneOpen(false);
+    sceneButtonRef.current?.focus();
+  }, []);
+  // The 3D camera's view: `n` counts requests, so asking for the same view
+  // again (after orbiting away) still moves there.
+  const [cameraView, setCameraView] = useState({ view: 'front', n: 0 });
+  const requestView = useCallback((view) => setCameraView((v) => ({ view, n: v.n + 1 })), []);
+
+  // The wall behind both sets (dimmed for the 3D set's lighting mood).
+  const is3d = viewMode === '3d';
+  const wall = wallTones(scene, { is3d });
+  useEffect(() => {
+    const root = document.documentElement.style;
+    root.setProperty('--wall-hi', wall.hi);
+    root.setProperty('--wall-mid', wall.mid);
+    root.setProperty('--wall-lo', wall.lo);
+  }, [wall.hi, wall.mid, wall.lo]);
   const [transition, setTransition] = useState('idle'); // 'idle' | 'off' | 'on'
   const playedSecondsRef = useRef(0);
   const transitionTimersRef = useRef([]);
@@ -386,6 +412,7 @@ function App() {
     (nextMode) => {
       if (transition !== 'idle' || nextMode === viewMode) return;
       setTransition('off');
+      setSceneOpen(false); // the Scene pane is the 3D set's
       const swap = setTimeout(() => {
         if (program?.live) tuner.rejoin();
         else tuner.rejoin(playedSecondsRef.current);
@@ -461,6 +488,7 @@ function App() {
       '?': openHelp,
       g: () => openGuide(),
       h: toggleHeart,
+      c: () => is3d && requestView(nextView(cameraView.view)),
     },
     { enabled: !helpOpen && !guideOpen }
   );
@@ -533,6 +561,9 @@ function App() {
   return (
     <div className="app">
       <div className="app-controls">
+        {is3d && (
+          <SceneButton ref={sceneButtonRef} open={sceneOpen} onClick={() => (sceneOpen ? closeScene() : setSceneOpen(true))} />
+        )}
         <HelpButton ref={helpButtonRef} onClick={openHelp} pulse={!seenHelp} />
         <ModeToggle
           mode={viewMode}
@@ -543,11 +574,12 @@ function App() {
       </div>
       {viewMode === '3d' ? (
         <Suspense fallback={<div className="tv-loading" />}>
-          <TV3D {...setProps} />
+          <TV3D {...setProps} scene={scene} view={cameraView} onView={requestView} />
         </Suspense>
       ) : (
         <TV {...setProps} />
       )}
+      {sceneOpen && <ScenePane scene={scene} onChange={setSceneSetting} onView={requestView} onClose={closeScene} />}
       {helpOpen && <HelpCard onClose={closeHelp} />}
       {guideOpen && (
         <GuideBook

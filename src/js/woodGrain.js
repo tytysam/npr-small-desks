@@ -4,19 +4,25 @@
  * three.js here, so the 2D bundle stays light.
  */
 
-// earlywood (light, porous spring growth) → latewood (dense, dark summer growth)
+// earlywood (light, porous spring growth) → latewood (dense, dark summer growth).
+// The set is walnut with a honey bezel; teak, blond, oak and ebony are kept
+// for other cabinets (ROADMAP 4.11).
 export const WOOD = {
   walnut: { early: '#7e4b26', late: '#56301a' },
   honey: { early: '#c0843f', late: '#985c2b' },
+  teak: { early: '#9c5f2e', late: '#6c3818' },
+  blond: { early: '#d9b27c', late: '#b88a53' },
+  oak: { early: '#b48654', late: '#8a6035' },
+  ebony: { early: '#4b3427', late: '#2a1b13' },
 };
 
 /**
- * The two woods on the set. The bezel is cut farther from the pith, so its
- * grain runs straighter and finer.
+ * How each part is cut: the cabinet (body) is broad, wavy plank; the bezel is
+ * cut farther from the pith, so its grain runs straighter and finer.
  */
-export const WOOD_PRESETS = {
-  walnut: { palette: WOOD.walnut },
-  honey: { palette: WOOD.honey, seed: 42, size: 512, ringPx: 11, pithDepth: 0.3, taper: 0.2, warp: 1.2 },
+const CUTS = {
+  body: {},
+  bezel: { seed: 42, size: 512, ringPx: 11, pithDepth: 0.3, taper: 0.2, warp: 1.2 },
 };
 
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -152,10 +158,12 @@ const paintWood = ({
 const cache = new Map();
 
 /**
- * The painted canvases for a preset ('walnut' | 'honey'), drawn once per
- * visit and shared — switching between 2D and 3D doesn't repaint them.
+ * The painted canvases for a wood (a WOOD key) cut for a part ('body' |
+ * 'bezel'), drawn once per visit and shared — switching between 2D and 3D,
+ * doesn't repaint them.
  */
-export const getWood = (name) => {
-  if (!cache.has(name)) cache.set(name, paintWood(WOOD_PRESETS[name]));
-  return cache.get(name);
+export const getWood = (wood, cut = 'body') => {
+  const key = `${wood}:${cut}`;
+  if (!cache.has(key)) cache.set(key, paintWood({ palette: WOOD[wood], ...CUTS[cut] }));
+  return cache.get(key);
 };
