@@ -376,7 +376,7 @@ export const makeChannelRingTexture = ({ pointer = 'arrow' } = {}) => {
   ctx.fillStyle = PALETTE.amber;
   ctx.beginPath();
   if (pointer === 'dot') {
-    ctx.arc(cx, size * 0.171, 8, 0, Math.PI * 2);
+    ctx.arc(cx, size * 0.179, 8, 0, Math.PI * 2);
   } else {
     ctx.moveTo(cx - 12, size * 0.14);
     ctx.lineTo(cx + 12, size * 0.14);

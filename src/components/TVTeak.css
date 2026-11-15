@@ -239,10 +239,19 @@
   filter: brightness(0.7) contrast(0.92); /* the 2D silver's darkening, past its own */
 }
 
+/* The channel dial's bar as small as the volume dial's (its 72px knob's
+   bar, on this 82px knob), the dial round it still the bigger one. */
+.tv-set--teak .knob-channel .knob-pointer {
+  top: 6.4px;
+  bottom: 6.4px;
+  width: 15.8px;
+  margin-left: -7.9px;
+}
+
 /* The channel dial's pointer is a dot, midway between the "1" and the bar's
    tip. */
 .tv-set--teak .dial-ring-pointer {
-  top: 18px;
+  top: 20px;
   width: 5px;
   height: 5px;
   margin-left: -2.5px;
@@ -359,22 +368,64 @@
   transform: rotate(-8deg);
 }
 
+/* Stacked, the screen over the controls, from tablet widths down (beside
+   the wide panel the tube squeezes): the dials side by side, then the grille
+   over the power switch, the grille taking whatever room is left, as on the
+   walnut set. */
+@media (max-width: 1024px) {
+  .tv-set--teak .tv-front {
+    flex-direction: column;
+  }
+
+  .tv-set--teak .tv-column {
+    width: 100%;
+    grid-template-columns: auto auto 1fr;
+    grid-template-rows: 1fr auto;
+    justify-content: stretch;
+    align-items: center;
+  }
+
+  .tv-set--teak .knob-group {
+    grid-row: 1 / -1;
+  }
+
+  .tv-set--teak .tv-speaker {
+    display: block;
+    grid-column: auto;
+    min-height: 60px;
+  }
+
+  .tv-set--teak .tv-switch {
+    grid-column: 3;
+  }
+}
+
 @media (max-width: 680px) {
   /* the board's own padding here (TV.css) */
   .tv-set--teak {
     --teak-space: 10px;
   }
 
-  /* No grille: the dials side by side, the switch centred under them. */
-  .tv-set--teak .tv-column {
-    width: 100%;
-    grid-template-rows: auto;
-    justify-content: space-evenly;
-    align-items: center;
+  /* As on the walnut set: the dials (smaller) beside the grille over the
+     switch, rather than a stack of rows. */
+  .tv-set--teak .knob-group {
+    zoom: 0.8;
+  }
+
+  .tv-set--teak .tv-speaker {
+    min-height: 50px;
   }
 
   .tv-set--teak .tv-leg {
     width: 11px;
     height: 90px;
+  }
+}
+
+/* Small phones: the dials smaller still (they're bigger than the walnut
+   set's), to leave the grille room beside them. */
+@media (max-width: 499px) {
+  .tv-set--teak .knob-group {
+    zoom: 0.62;
   }
 }

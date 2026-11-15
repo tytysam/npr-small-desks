@@ -830,7 +830,8 @@ const TVModel = ({
 
         <Knob3D
           position={[...panel.channel, PANEL_Z]}
-          radius={0.32}
+          // a bar handle as small as the volume dial's, on the bigger dial
+          radius={panel.knobs?.style === 'bar' ? volumeKnob.radius : 0.32}
           height={0.2}
           angleDeg={dialPosition * CHANNEL_DETENT}
           onDelta={handleChannelDelta}
