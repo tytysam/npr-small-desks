@@ -154,6 +154,103 @@
   margin: 10px; /* room for the ring */
 }
 
+/* No knobs: each dial is turned by a brass bar across it, as on the 3D set.
+   The knob stays as the (invisible) round thing you grab; only its bar
+   shows: smooth, the rail's brass, tapering gently to a blunt rounded tip
+   at the indicator end, pinched in at both sides toward the other, where
+   you'd grip it. */
+.tv-set--teak .knob {
+  box-shadow: none;
+}
+
+.tv-set--teak .knob:focus-visible {
+  box-shadow: 0 0 0 3px #ffb347;
+}
+
+.tv-set--teak .knob-ridges,
+.tv-set--teak .knob-face,
+.tv-set--teak .knob-cap {
+  display: none;
+}
+
+.tv-set--teak .knob-pointer {
+  top: 2%;
+  bottom: 2%;
+  width: 22%;
+  margin-left: -11%;
+  border-radius: 0;
+  background:
+    /* rounded across its width: lit on the left, shaded on the right */
+    linear-gradient(90deg, rgba(255, 245, 215, 0.4), transparent 35%, transparent 65%, rgba(60, 35, 10, 0.45)),
+    var(--brass);
+  /* the outline: tapering over the top 40% to a blunt tip, pinched in
+     at both sides 60–88% down */
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 100' preserveAspectRatio='none'%3E%3Cpath d='M7 0H13Q15.5 0 15.6 3L20 40V60Q17 74 20 88V93Q20 100 13 100H7Q0 100 0 93V88Q3 74 0 60V40L4.4 3Q4.5 0 7 0Z'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 100' preserveAspectRatio='none'%3E%3Cpath d='M7 0H13Q15.5 0 15.6 3L20 40V60Q17 74 20 88V93Q20 100 13 100H7Q0 100 0 93V88Q3 74 0 60V40L4.4 3Q4.5 0 7 0Z'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+  box-shadow: none;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.6));
+}
+
+/* The silver controls (power, TV/VCR, MENU, the play lever, the
+   brightness bar) darkened toward charcoal, so they sit back against the
+   brass. (Darker than
+   the 3D set's: flat CSS silver reads brighter than lit metal.) */
+.tv-set--teak .tv-switch-slider,
+.tv-set--teak .tv-input-slider,
+.tv-set--teak .tv-badge-knob,
+.tv-set--teak .tv-lever-nut,
+.tv-set--teak .tv-lever-handle {
+  filter: brightness(0.62) contrast(0.92); /* toward charcoal */
+}
+
+/* MENU latched in: darker still, as TV.css's (which this would replace) */
+.tv-set--teak .tv-badge-knob.is-pressed {
+  filter: brightness(0.5) contrast(0.92);
+}
+
+/* The brightness knob on the rail: the same bar, small, and no knob, in
+   the play lever's chrome (a shade darker), which reads against the brass. The drop shadow is on
+   the (invisible) knob, so the bar's outline doesn't clip it. */
+.tv-set--teak .tv-mini-knob {
+  position: relative;
+  width: 27px;
+  height: 27px;
+  background: none;
+  box-shadow: none;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.6));
+}
+
+.tv-set--teak .tv-mini-knob:focus-visible {
+  box-shadow: 0 0 0 2px var(--amber);
+}
+
+.tv-set--teak .tv-mini-knob::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 7px;
+  margin-left: -3.5px;
+  /* the play lever's chrome, a shade darker */
+  background: linear-gradient(90deg, #5e5e5e, #dcdcdc 40%, #9e9e9e 65%, #424242);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 100' preserveAspectRatio='none'%3E%3Cpath d='M7 0H13Q15.5 0 15.6 3L20 40V60Q17 74 20 88V93Q20 100 13 100H7Q0 100 0 93V88Q3 74 0 60V40L4.4 3Q4.5 0 7 0Z'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 100' preserveAspectRatio='none'%3E%3Cpath d='M7 0H13Q15.5 0 15.6 3L20 40V60Q17 74 20 88V93Q20 100 13 100H7Q0 100 0 93V88Q3 74 0 60V40L4.4 3Q4.5 0 7 0Z'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+  filter: brightness(0.7) contrast(0.92); /* the 2D silver's darkening, past its own */
+}
+
+/* The channel dial's pointer is a dot, midway between the "1" and the bar's
+   tip. */
+.tv-set--teak .dial-ring-pointer {
+  top: 18px;
+  width: 5px;
+  height: 5px;
+  margin-left: -2.5px;
+  border: none;
+  border-radius: 50%;
+  background: #ffb347;
+}
+
 .tv-set--teak .knob-label {
   margin-top: 4px;
   color: #e8c886;

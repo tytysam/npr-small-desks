@@ -10,7 +10,7 @@ import { BRIGHTNESS_MIN, BRIGHTNESS_MAX } from '../../js/picture';
 import { cabinetFor } from '../../js/cabinets';
 import ScreenSurface, { SCREEN_W, SCREEN_H } from './ScreenSurface';
 import { cabinetLayout } from './cabinets';
-import { Plate, Chrome, Silver, PushButton, GuideStack, Antenna } from './controls';
+import { Plate, Chrome, Silver, PushButton, GuideStack, Antenna, DARK_SILVER, DARK_CHROME } from './controls';
 import { LAMP } from './lamps';
 import {
   PALETTE,
@@ -373,6 +373,11 @@ const TVModel = ({
   const { spec, CABINET, CABINET_Y, BOARD, BOARD_Z, FRONT_Z, TOP_FACE, BEZEL, OPENING, OPENING_Z, TUBE_Z, GUIDE } = layout;
   const { panel, rail, shell } = spec;
   const knobFinish = panel.knobs?.finish;
+  // the rail's metal (lever, MENU, power and TV/VCR sliders): silver and
+  // chrome, or a shade darker against the teak set's brass
+  const darkMetal = rail.metal === 'dark';
+  const silverColor = darkMetal ? DARK_SILVER : undefined;
+  const chromeColor = darkMetal ? DARK_CHROME : undefined;
   const volumeKnob = panel.knobs?.volume ?? VOLUME_KNOB;
   const tuningW = rail.tuningW ?? 2.4;
   const inputStyle = { ...INPUT_STYLE, ...rail.inputStyle };
@@ -464,6 +469,12 @@ const TVModel = ({
   const { trim } = spec;
   const railBrassWidth = BOARD.w - 2 * (spec.space ?? 0.1);
   const railBrass = useDisposable(() => (rail.kind === 'brass' ? makeBrushedBrass() : null), [rail.kind]);
+  // the brightness bar's: the play lever's chrome, a shade darker, to
+  // stand out on the rail's brass
+  const barChrome = useDisposable(
+    () => (trim ? new THREE.MeshStandardMaterial({ color: '#a9a9a5', metalness: 0.6, roughness: 0.25 }) : null),
+    [trim]
+  );
   const trimBrass = useDisposable(
     () => (trim ? makeBrushedBrass({ repeat: [3 / railBrassWidth, 1 / 0.42] }) : null),
     [trim, railBrassWidth]
@@ -512,7 +523,9 @@ const TVModel = ({
   );
   const glareTexture = useDisposable(makeGlareTexture, []);
   const backPanelTexture = useDisposable(() => makeBackPanelTexture({ model, ...spec.back }), [model, spec.back]);
-  const channelRingTexture = useDisposable(makeChannelRingTexture, []);
+  // a dot for a bar handle to point at; the knobs' triangle otherwise
+  const ringPointer = panel.knobs?.style === 'bar' ? 'dot' : 'arrow';
+  const channelRingTexture = useDisposable(() => makeChannelRingTexture({ pointer: ringPointer }), [ringPointer]);
   const volumeTicksTexture = useDisposable(makeVolumeTicksTexture, []);
   const badgeTexture = useDisposable(
     () =>
@@ -824,6 +837,8 @@ const TVModel = ({
           onDragStart={startDrag}
           onDragEnd={endDrag}
           finish={knobFinish}
+          style={panel.knobs?.style}
+          material={trimBrass?.material}
           label={<Plate texture={channelRingTexture} position={[0, 0, 0.004]} size={[1.12, 1.12]} />}
         />
 
@@ -837,6 +852,8 @@ const TVModel = ({
           onDragEnd={endDrag}
           ridgeCount={volumeKnob.ridges}
           finish={knobFinish}
+          style={panel.knobs?.style}
+          material={trimBrass?.material}
           label={<Plate texture={volumeTicksTexture} position={[0, 0, 0.004]} size={[volumeKnob.ticks, volumeKnob.ticks]} />}
         />
 
@@ -882,6 +899,7 @@ const TVModel = ({
           <mesh position={[isOn ? 0.07 : -0.07, 0, 0.03]} castShadow>
             <boxGeometry args={[0.24, 0.09, 0.05]} />
             <Silver
+              color={silverColor}
               map={sliderRibs}
               bumpMap={sliderRibs}
               bumpScale={1.5}
@@ -908,7 +926,12 @@ const TVModel = ({
         )}
 
         {/* MENU: a push-button that latches in while SETUP is open */}
-        <PushButton position={[...at(rail.menu), 0]} finish={rail.buttons} pressed={Boolean(menuOpen)} onPress={onMenuToggle} />
+        <PushButton
+          position={[...at(rail.menu), 0]}
+          finish={rail.buttons ?? (darkMetal ? 'darkSilver' : undefined)}
+          pressed={Boolean(menuOpen)}
+          onPress={onMenuToggle}
+        />
         <Plate texture={badgeTexture} position={[...at(rail.badge), 0.003]} size={[0.567, 0.17]} />
 
         {/* the tuning strip; a narrower one is scaled down whole, keeping the
@@ -944,6 +967,7 @@ const TVModel = ({
             <mesh position={[broadcast ? -0.07 : 0.07, 0, 0.02]} castShadow>
               <boxGeometry args={[0.13, 0.06, 0.03]} />
               <Silver
+                color={silverColor}
                 map={inputRibs}
                 bumpMap={inputRibs}
                 bumpScale={1.5}
@@ -975,21 +999,21 @@ const TVModel = ({
         <group position={[...at(rail.lever), 0]} onClick={handleLeverClick} onPointerOver={handleLeverOver} onPointerOut={handleLeverOut}>
           <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.02]} castShadow>
             <cylinderGeometry args={[0.07, 0.075, 0.04, 6]} />
-            <Chrome roughness={0.3} />
+            <Chrome color={chromeColor} roughness={0.3} />
           </mesh>
           <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.05]}>
             <cylinderGeometry args={[0.035, 0.04, 0.03, 16]} />
-            <Chrome roughness={0.25} />
+            <Chrome color={chromeColor} roughness={0.25} />
           </mesh>
           {/* pivot: +x rotation swings the handle from pointing up toward the viewer */}
           <group position={[0, 0, 0.06]} rotation={[paused ? Math.PI - LEVER_TILT : LEVER_TILT, 0, 0]}>
             <mesh position={[0, LEVER.length / 2, 0]} castShadow>
               <cylinderGeometry args={[LEVER.tip, LEVER.base, LEVER.length, 16]} />
-              <Chrome roughness={0.2} emissive="#ffffff" emissiveIntensity={leverHovered ? 0.08 : 0} />
+              <Chrome color={chromeColor} roughness={0.2} emissive="#ffffff" emissiveIntensity={leverHovered ? 0.08 : 0} />
             </mesh>
             <mesh position={[0, LEVER.length, 0]} castShadow>
               <sphereGeometry args={[0.032, 20, 16]} />
-              <Chrome roughness={0.15} emissive="#ffffff" emissiveIntensity={leverHovered ? 0.08 : 0} />
+              <Chrome color={chromeColor} roughness={0.15} emissive="#ffffff" emissiveIntensity={leverHovered ? 0.08 : 0} />
             </mesh>
           </group>
         </group>
@@ -1001,13 +1025,17 @@ const TVModel = ({
         </mesh>
         <pointLight ref={pilotLightRef} position={[...at(rail.lamp), 0.25]} color={PALETTE.amber} distance={1} />
 
-        {/* brightness */}
+        {/* brightness: a small knob, or a bar handle like the dials', in the
+            play lever's chrome so it reads against the brass rail */}
         <Knob3D
           position={[...at(rail.brightness), 0]}
-          radius={0.096}
+          // a bar a little bigger than the knob, as on the 2D set
+          radius={panel.knobs?.style === 'bar' ? 0.135 : 0.096}
           height={0.08}
           finish={knobFinish ?? 'black'}
           ridgeCount={30}
+          style={panel.knobs?.style}
+          material={barChrome}
           angleDeg={((brightness - BRIGHTNESS_MIN) / (BRIGHTNESS_MAX - BRIGHTNESS_MIN)) * VOLUME_SWEEP - VOLUME_SWEEP / 2}
           onDelta={handleBrightnessDelta}
           onDragStart={startDrag}

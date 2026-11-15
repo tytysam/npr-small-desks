@@ -26,11 +26,13 @@ import { makeLayout } from './layout';
  *   by side above a cloth grille; `base` puts them straight on the front
  *   board (the cream set). Positions are relative to its centre (level with
  *   the bezel's, unless `y` says otherwise). Optional: the knobs' finish and
- *   volume knob size, dark `escutcheons` behind knobs, power as a `button`.
+ *   volume knob size, or a bar handle instead of a knob (`style`), dark
+ *   `escutcheons` behind knobs, power as a `button`.
  * - rail: the lower rail, `groove` (routed into the board), `brass` (a
  *   brushed strip) or `none`; its controls' positions, as x or [x, y]; the
  *   tuning strip's width, the louvres' count and pitch, the buttons' finish;
- *   `inputStyle` spaces and colours the TV/VCR selector
+ *   `inputStyle` spaces and colours the TV/VCR selector; `metal: 'dark'`
+ *   darkens its silver controls (and power's) a shade
  * - trim: brass accents, or none: a ring round the tube `opening`, the
  *   `grille` framed (widths)
  * - legs: `slab` (tapered, splayed slabs), `pencil` (thin round legs with
@@ -113,6 +115,8 @@ export const CABINET_SPECS = {
       channel: [-0.595, 0.935],
       volume: [0.695, 0.935],
       escutcheons: { channel: 0.6, volume: 0.5 },
+      // no knobs: a brass bar across each dial (Knob3D's 'bar')
+      knobs: { style: 'bar' },
       // its brass frame (0.065 round the cloth) a space from the dials, the
       // panel's sides and the power switch (0.12 high), which sits a space
       // off the bottom
@@ -121,6 +125,7 @@ export const CABINET_SPECS = {
     },
     rail: {
       kind: 'brass',
+      metal: 'dark', // its silver controls a shade darker against the brass
       y: -1.74, // the strip (0.42 high) a space off the board's bottom
       menu: -3.4,
       badge: -2.95,
@@ -145,6 +150,7 @@ export const CABINET_SPECS = {
       caution: { x: 1164, y: 750 },
       plate: { x: 160, y: 1013 },
       tag: { x: 2029, y: 1098 },
+      screws: { finish: 'brass', scale: 0.8 },
     },
     // each leg rising into the body, its top buried `sink` deep
     legs: { kind: 'pencil', radius: [0.085, 0.045], spreadX: 3.45, spreadZ: 1.05, splayX: 0.14, splayZ: 0.12, sink: 0.08, ferrule: 0.13 },

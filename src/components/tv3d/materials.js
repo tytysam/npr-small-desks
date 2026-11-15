@@ -353,7 +353,7 @@ export const makeLabelTexture = (
 };
 
 /** Numbered ring (1–12) with a pointer at twelve o'clock, printed on the panel around the channel knob. */
-export const makeChannelRingTexture = () => {
+export const makeChannelRingTexture = ({ pointer = 'arrow' } = {}) => {
   const size = 512;
   const canvas = makeCanvas(size, size);
   const ctx = canvas.getContext('2d');
@@ -371,13 +371,18 @@ export const makeChannelRingTexture = () => {
     const y = cy + Math.sin(angle) * radius;
     ctx.fillText(String(i + 1), x, y);
   }
-  // amber pointer triangle at the top, just inside the numerals
+  // the amber pointer at the top, just inside the numerals: a triangle, or
+  // a dot (the teak set's), midway between the "1" and its bar handle's tip
   ctx.fillStyle = PALETTE.amber;
   ctx.beginPath();
-  ctx.moveTo(cx - 12, size * 0.14);
-  ctx.lineTo(cx + 12, size * 0.14);
-  ctx.lineTo(cx, size * 0.14 + 18);
-  ctx.closePath();
+  if (pointer === 'dot') {
+    ctx.arc(cx, size * 0.171, 8, 0, Math.PI * 2);
+  } else {
+    ctx.moveTo(cx - 12, size * 0.14);
+    ctx.lineTo(cx + 12, size * 0.14);
+    ctx.lineTo(cx, size * 0.14 + 18);
+    ctx.closePath();
+  }
   ctx.fill();
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -578,7 +583,8 @@ export const makeGuideTextures = (issues) => {
  * the rating plate and the inspector's tag, signed and stamped. Drawn at the
  * cabinet's own proportions, the same scale on every set (`size` is in
  * pixels), so nothing is stretched; `scale` shrinks the plate, the caution
- * and the tag where the back is short (the cream set's base).
+ * and the tag where the back is short (the cream set's base). `screws`
+ * sets the screws' finish ('steel' or 'brass') and size (`scale`).
  */
 export const makeBackPanelTexture = ({
   model = 'NP-R1',
@@ -590,6 +596,7 @@ export const makeBackPanelTexture = ({
   plate = { x: 160, y: 1080 },
   tag = { x: 1600, y: 1165 },
   scale = 1,
+  screws = {},
 } = {}) => {
   const canvas = makeCanvas(width, height);
   const ctx = canvas.getContext('2d');
@@ -620,18 +627,21 @@ export const makeBackPanelTexture = ({
     [screwInset, height - screwInset],
     [width - screwInset, height - screwInset],
   ].forEach(([x, y]) => {
-    const head = ctx.createRadialGradient(x - 8, y - 8, 2, x, y, 26);
-    head.addColorStop(0, '#e8e4dc');
-    head.addColorStop(1, '#6d6a64');
+    const k = screws.scale ?? 1;
+    const [light, dark, slot] =
+      screws.finish === 'brass' ? ['#f4dca0', '#8a6a34', '#4a3414'] : ['#e8e4dc', '#6d6a64', '#3a3834'];
+    const head = ctx.createRadialGradient(x - 8 * k, y - 8 * k, 2 * k, x, y, 26 * k);
+    head.addColorStop(0, light);
+    head.addColorStop(1, dark);
     ctx.fillStyle = head;
     ctx.beginPath();
-    ctx.arc(x, y, 24, 0, Math.PI * 2);
+    ctx.arc(x, y, 24 * k, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = '#3a3834';
-    ctx.lineWidth = 5;
+    ctx.strokeStyle = slot;
+    ctx.lineWidth = 5 * k;
     ctx.beginPath();
-    ctx.moveTo(x - 15, y - 6);
-    ctx.lineTo(x + 15, y + 6);
+    ctx.moveTo(x - 15 * k, y - 6 * k);
+    ctx.lineTo(x + 15 * k, y + 6 * k);
     ctx.stroke();
   });
 

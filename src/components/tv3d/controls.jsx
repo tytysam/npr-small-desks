@@ -21,12 +21,17 @@ export const Plate = ({ texture, position, size, rotation }) => (
   </mesh>
 );
 
-export const Chrome = (props) => <meshStandardMaterial color={PALETTE.chrome} metalness={1} roughness={0.2} {...props} />;
+export const Chrome = ({ color = PALETTE.chrome, ...props }) => <meshStandardMaterial color={color} metalness={1} roughness={0.2} {...props} />;
 
 // Brushed silver for faces that look straight at the viewer: a pure mirror
 // there reflects the empty space behind the camera and reads as dark grey, so
 // mix in diffuse shading (as the knobs do) to match the 2D set's silver.
-export const Silver = (props) => <meshStandardMaterial color="#d6d6d2" metalness={0.55} roughness={0.3} {...props} />;
+export const Silver = ({ color = '#d6d6d2', ...props }) => <meshStandardMaterial color={color} metalness={0.55} roughness={0.3} {...props} />;
+
+// The silver and chrome a shade darker (about 10%), for a set whose metal
+// should sit back against brass (the teak set's `rail.metal: 'dark'`).
+export const DARK_SILVER = '#c1c1bd';
+export const DARK_CHROME = '#cfcfcf';
 
 const MENU_RADIUS = 0.085;
 const MENU_HEIGHT = 0.08;
@@ -40,7 +45,8 @@ const HEART_SQUASH = 0.8; // as .heart-glyph squashes the guide's ♥
 /**
  * A push-button on the rail: MENU (silver, latched in while SETUP is open)
  * and the heart (red, latched in while the concert is hearted); on the
- * cream set, MENU and power are grey plastic (`finish="grey"`). It sinks
+ * cream set, MENU and power are grey plastic (`finish="grey"`); on the teak
+ * set MENU is a shade darker (`finish="darkSilver"`). It sinks
  * into the cabinet while `pressed` and springs back out; frames only render
  * while it's moving. A `disabled` button ignores clicks.
  */
@@ -109,7 +115,8 @@ export const PushButton = ({ position, pressed, onPress, disabled = false, finis
             // grey plastic, as on the cream set's base
             <meshStandardMaterial color="#bdbdb8" roughness={0.5} metalness={0.1} emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
           ) : (
-            <Silver emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
+            // silver, or a shade darker (`darkSilver`, the teak set's)
+            <Silver color={finish === 'darkSilver' ? DARK_SILVER : undefined} emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
           )}
         </mesh>
         {finish === 'heart' ? (

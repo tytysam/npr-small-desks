@@ -296,6 +296,16 @@
   overflow: hidden;
 }
 
+/* The walnut set's channel pointer, 10% smaller than Knob.css's, still
+   centred between the "1" and the knob. */
+.tv-set--walnut .dial-ring-pointer {
+  top: 17.3px;
+  margin-left: -3.6px;
+  border-left-width: 3.6px;
+  border-right-width: 3.6px;
+  border-top-width: 5.4px;
+}
+
 /* ---- Control column ----------------------------------------------------- */
 
 .tv-column {
