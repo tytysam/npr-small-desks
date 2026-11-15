@@ -8,7 +8,8 @@
 // The set is walnut with a honey bezel; teak, blond, oak and ebony are kept
 // for other cabinets (ROADMAP 4.11).
 export const WOOD = {
-  walnut: { early: '#7e4b26', late: '#56301a' },
+  // a shade darker than it started, to stay distinct from the teak set's
+  walnut: { early: '#6b3d1e', late: '#472614' },
   honey: { early: '#c0843f', late: '#985c2b' },
   // Teak's grain is finer and straighter than walnut's: close, straight
   // growth lines.

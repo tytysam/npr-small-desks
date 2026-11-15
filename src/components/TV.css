@@ -296,6 +296,36 @@
   overflow: hidden;
 }
 
+/* Walnut under the warm light: a deeper, redder wash than the default, so it
+   reads darker than the teak set (TVTeak.css has its own). */
+.tv-set--walnut .tv-top-board,
+.tv-set--walnut .tv-console,
+.tv-set--walnut .tv-board,
+.tv-set--walnut .tv-plinth,
+.tv-set--walnut .tv-legs,
+.tv-set--walnut .tv-leg {
+  --wood-warmth: linear-gradient(rgba(110, 40, 12, 0.55), rgba(110, 40, 12, 0.55));
+}
+
+/* The walnut set's honey bezel a little wider round the tube, toward the 3D
+   set's proportion. */
+.tv-set--walnut .tv-frame {
+  padding: 30px;
+}
+
+/* The control column's chrome trim is drawn 3px outside it (shadows), so it
+   steps in that much all round: 16px from the board's edge and the bezel,
+   measured to the chrome, its top and bottom level with the bezel's. */
+@media (min-width: 681px) {
+  .tv-set--walnut .tv-front {
+    gap: 16px;
+  }
+
+  .tv-set--walnut .tv-column {
+    margin: 3px;
+  }
+}
+
 /* The walnut set's channel pointer, 10% smaller than Knob.css's, still
    centred between the "1" and the knob. */
 .tv-set--walnut .dial-ring-pointer {
@@ -932,7 +962,8 @@
     gap: 14px;
   }
 
-  .tv-frame {
+  .tv-frame,
+  .tv-set--walnut .tv-frame {
     padding: 14px;
   }
 

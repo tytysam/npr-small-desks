@@ -12,7 +12,8 @@ import { makeLayout } from './layout';
  * - space: the even spacing the front is laid out on (optional); the brass
  *   rail's strip is inset from the board's ends by it
  * - bezel: centre and size of the bezel around the tube, and how wide its
- *   flat `face` is before the cove (0.08 unless given); a shallow `cove`
+ *   flat `face` is before the cove (0.08 unless given) and its outer corners'
+ *   `radius` (0.1 unless given), `screen` to draw the tube bigger; a shallow `cove`
  *   instead of the deep rolled one (the teak set's); a `pillow` one is the
  *   cream set's lip
  * - shell: the pod's shell, as rings lofted back from the bezel, its boss,
@@ -50,7 +51,10 @@ export const CABINET_SPECS = {
   walnut: {
     cabinet: { w: 6.5, h: 4.7, d: 3.4 },
     bodyRadius: 0.06,
-    bezel: { x: -0.73, y: 0.35, w: 4.44, h: 3.44 },
+    // Its outer edges line up with the control column's and the rail's; the
+    // tube drawn 3% bigger (`screen`) so the honey round it is 0.21 wide,
+    // the 2D set's proportion. Its outer corners as tight as the column's.
+    bezel: { x: -0.73, y: 0.35, w: 4.44, h: 3.44, radius: 0.04, screen: 1.03 },
     top: { w: 0.16, d: 0.12, thickness: 0.12, y: 0.04, radius: 0.04 },
     plinth: { w: -0.3, d: -0.4, height: 0.14, y: -0.06 },
     guide: { x: -1.75, z: 1.08 },

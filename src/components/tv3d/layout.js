@@ -36,7 +36,10 @@ export const makeLayout = (spec) => {
   // pillow-shaped opening just inside the tube's edge. The tube is the same
   // in every cabinet.
   const BEZEL = spec.bezel;
-  const OPENING = { w: SCREEN_W - 0.1, h: SCREEN_H - 0.1, r: 0.52 };
+  // `bezel.screen` draws the tube a little bigger (or, on a pillow bezel,
+  // smaller) than usual; a rolled bezel's opening grows with it.
+  const screen = BEZEL.pillow ? 1 : (BEZEL.screen ?? 1);
+  const OPENING = { w: SCREEN_W * screen - 0.1, h: SCREEN_H * screen - 0.1, r: 0.52 * screen };
   // relative to BOARD_Z: deep behind a rolled cove, or just under the board
   // behind a shallow one (`bezel.cove`)
   const OPENING_Z = BEZEL.cove ? -BEZEL.cove.depth : -0.13;

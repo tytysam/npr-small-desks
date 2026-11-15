@@ -105,15 +105,15 @@ const shallowBezelRings = ({ BEZEL, OPENING, OPENING_Z, spec }) => {
 const bezelRings = (layout) => {
   if (layout.BEZEL.cove) return shallowBezelRings(layout);
   const { BEZEL, OPENING, OPENING_Z } = layout;
-  const { w, h, face = 0.08 } = BEZEL;
+  const { w, h, face = 0.08, radius = 0.1 } = BEZEL;
   const faceW = w - 2 * face;
   const faceH = h - 2 * face;
-  const faceR = 0.1;
+  const faceR = radius;
   const rings = [
-    { w, h, r: 0.1, z: -0.03 }, // tucked under the board
-    { w, h, r: 0.1, z: 0.05 }, // outer wall
-    { w: w - 0.015, h: h - 0.015, r: 0.095, z: 0.075 }, // eased edge
-    { w: w - 0.05, h: h - 0.05, r: 0.085, z: 0.085 },
+    { w, h, r: radius, z: -0.03 }, // tucked under the board
+    { w, h, r: radius, z: 0.05 }, // outer wall
+    { w: w - 0.015, h: h - 0.015, r: Math.max(0.01, radius - 0.005), z: 0.075 }, // eased edge
+    { w: w - 0.05, h: h - 0.05, r: Math.max(0.01, radius - 0.015), z: 0.085 },
     { w: faceW, h: faceH, r: faceR, z: 0.085 }, // flat face
   ];
   // Convex cove: sweeps inward first, then drops toward the tube.
@@ -383,7 +383,7 @@ const TVModel = ({
   const inputStyle = { ...INPUT_STYLE, ...rail.inputStyle };
   const louvres = { n: 5, pitch: 0.06, y: 0, ...rail.louvres };
   const powerAt = Array.isArray(panel.power) ? panel.power : panel.power.at;
-  const screenScale = BEZEL.pillow?.screen ?? 1;
+  const screenScale = BEZEL.pillow?.screen ?? BEZEL.screen ?? 1;
   const { model, woods } = cabinetFor(layout.key);
 
   // --- materials ---------------------------------------------------------
