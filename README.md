@@ -124,7 +124,7 @@ control changes it, so it works the same with the knobs, keys, 2D or 3D.
 | Hiss | Tuning hiss while the antenna moves |
 | Clicks | The controls' mechanical sounds: dial detents, the power switch, the lever, buttons, the TV/VCR slide, and soft knob ticks. They follow volume and mute, and click with the set off too |
 | Captions | The video's captions (English, including auto-generated, where the concert has any), off by default |
-| Cabinet | Which set you're watching, in both 2D and 3D: the walnut NP-R1 (the default); the NP-D6, a 1960s Danish-style teak console with a cloth grille, a brass rail and pencil legs; or the NP-S9, after Stig Lindberg's late-1950s Swedish set, its tube in a cream shell on a low teak base. Same controls on each |
+| Cabinet | Which set you're watching, in both 2D and 3D: the walnut NP-R1 (the default); the NP-D6, a 1960s Danish-style teak console picked out in brass, with a cloth grille and pencil legs; or the NP-S9, after Stig Lindberg's late-1950s Swedish set, its tube in a cream shell on a low teak base. Same controls on each |
 
 ### The TV guide
 

@@ -22,7 +22,7 @@ import {
   makeTaperedLegGeometry,
   makePerforatedTexture,
   makeClothTexture,
-  makeBrushedTextures,
+  makeBrushedBrass,
   makeKnurlTexture,
   makeGlareTexture,
   makeLabelTexture,
@@ -65,11 +65,49 @@ const INPUT_STYLE = { onAir: 0.15, toggle: 0, labels: -0.12, onAirW: 0.24, unlit
 // The walnut set's knobs, unless a cabinet's panel says otherwise.
 const VOLUME_KNOB = { radius: 0.3, height: 0.19, ticks: 0.92, ridges: 52 };
 
+/** A ring `d` out from the tube's opening, its corners concentric with it. */
+const aroundOpening = (OPENING, d, z) => ({ w: OPENING.w + 2 * d, h: OPENING.h + 2 * d, r: OPENING.r + d, z });
+
+/**
+ * A shallow bezel (`bezel.cove`, the teak set's): a low flat face, then a
+ * short cove `cove.w` wide down to the brass ring round the opening (the
+ * trim's `opening` wide), every ring inside the face concentric with the
+ * opening, so the cove meets the ring evenly all the way round its corners.
+ */
+const shallowBezelRings = ({ BEZEL, OPENING, OPENING_Z, spec }) => {
+  const { w, h, cove } = BEZEL;
+  const ring = spec.trim?.opening ?? 0;
+  const faceZ = cove.rise;
+  const endZ = OPENING_Z + 0.01; // the brass ring's face
+  // the outer corners as tight as the grille panel's beside it (0.02),
+  // concentric as the eased edge rolls in
+  const r = (inset) => Math.max(0.004, 0.02 - inset / 2);
+  const rings = [
+    { w, h, r: r(0), z: -0.03 }, // tucked under the board
+    { w, h, r: r(0), z: faceZ - 0.02 }, // outer wall
+    { w: w - 0.015, h: h - 0.015, r: r(0.015), z: faceZ - 0.005 }, // eased edge
+    { w: w - 0.04, h: h - 0.04, r: r(0.04), z: faceZ }, // flat face
+    aroundOpening(OPENING, ring + cove.w, faceZ),
+  ];
+  // Convex cove: rolls over, then drops to the ring.
+  const steps = 6;
+  for (let k = 1; k <= steps; k += 1) {
+    const t = k / steps;
+    rings.push(aroundOpening(OPENING, ring + cove.w * (1 - Math.sin((t * Math.PI) / 2)), faceZ + (endZ - faceZ) * (1 - Math.cos((t * Math.PI) / 2))));
+  }
+  // under the ring, down to a short throat behind the opening
+  rings.push(aroundOpening(OPENING, ring, OPENING_Z - 0.03));
+  rings.push({ ...OPENING, z: OPENING_Z - 0.08 });
+  return rings;
+};
+
 /** Bezel profile, outer edge first. z is relative to the board's face. */
-const bezelRings = ({ BEZEL, OPENING, OPENING_Z }) => {
-  const { w, h } = BEZEL;
-  const faceW = w - 0.16;
-  const faceH = h - 0.16;
+const bezelRings = (layout) => {
+  if (layout.BEZEL.cove) return shallowBezelRings(layout);
+  const { BEZEL, OPENING, OPENING_Z } = layout;
+  const { w, h, face = 0.08 } = BEZEL;
+  const faceW = w - 2 * face;
+  const faceH = h - 2 * face;
   const faceR = 0.1;
   const rings = [
     { w, h, r: 0.1, z: -0.03 }, // tucked under the board
@@ -149,35 +187,46 @@ const shellRings = ({ BEZEL }, shell) =>
  * to the next.
  */
 const makeWoodParts = (layout) => {
-  const { spec, CABINET, CABINET_Y, BOARD, BOARD_Z, FRONT_Z, BODY_FRONT_Z, BODY, TOP_Y, BOTTOM_Y, BEZEL } = layout;
+  const { spec, CABINET, CABINET_Y, BOARD, BOARD_Z, BODY, TOP_Y, BOTTOM_Y, BEZEL } = layout;
   const pod = spec.body === 'pod'; // the tube stands on the cabinet, in its own shell
   const { top, plinth, panel, legs } = spec;
   // The cabinet's boards share one grain, projected from the room's centre so
   // the body, rim, front board and top line up as if cut from one plank. Its
   // tile is at least as wide as the widest board (the top), so the grain never
   // repeats across a board and leaves a seam.
-  const bodySpan = Math.max(7, CABINET.w + top.w + 0.3);
+  const bodySpan = Math.max(7, CABINET.w + (top?.w ?? 0) + 0.3);
   const wood = (geometry, at, span = bodySpan) => ({ geometry: boxProjectUVs(geometry, { span, offset: at }), position: at });
   // Pieces cut separately (the bezel, a grille panel, runners, legs) are each
   // centred on their own tile, so a piece off to one side doesn't run past
   // the tile's edge.
   const piece = (geometry, at, span) => ({ geometry: boxProjectUVs(geometry, { span }), position: at });
   const parts = {
-    body: wood(new RoundedBoxGeometry(CABINET.w, CABINET.h, BODY.d, 4, spec.bodyRadius), [0, CABINET_Y, BODY.z]),
+    // The cabinet's skin, one piece front to back: a sleeve (the rim round
+    // the recessed front board, run on to the back), so its sides, top and
+    // bottom have no seam where a separate rim would meet the body. Its
+    // bevel (0.02) brings it out to the cabinet's size and rounds the front
+    // and back edges; its long edges are rounded as `bodyRadius`.
     rim: wood(
       makeFrameGeometry({
         outerW: CABINET.w - 0.04,
         outerH: CABINET.h - 0.04,
         innerW: BOARD.w + 0.04,
         innerH: BOARD.h + 0.04,
-        depth: FRONT_Z - BODY_FRONT_Z + 0.06,
-        radius: 0.04,
+        depth: CABINET.d - 0.04,
+        radius: Math.max(0.005, spec.bodyRadius - 0.02),
+        arcs: true,
         innerRadius: 0.03,
         bevelSize: 0.02,
         bevelSegments: 3,
       }),
-      // starts inside the body so the back bevel is buried and the sides read as one board
-      [0, CABINET_Y, BODY_FRONT_Z - 0.08]
+      [0, CABINET_Y, -CABINET.d / 2 + 0.02]
+    ),
+    // The body inside it, a hair smaller all round so the sleeve is what's
+    // drawn: it closes the sleeve's back (behind the hardboard) and fills
+    // it behind the front board.
+    body: wood(
+      new RoundedBoxGeometry(CABINET.w - 0.01, CABINET.h - 0.01, BODY.d - 0.01, 4, spec.bodyRadius),
+      [0, CABINET_Y, BODY.z + 0.005]
     ),
     // The front board, with a hole for the bezel; solid when the tube stands
     // above the cabinet.
@@ -197,7 +246,9 @@ const makeWoodParts = (layout) => {
           }),
           [0, 0, BOARD_Z - 0.04]
         ),
-    top: wood(new RoundedBoxGeometry(CABINET.w + top.w, top.thickness, CABINET.d + top.d, 3, top.radius), [0, TOP_Y + top.y, 0]),
+    top: top
+      ? wood(new RoundedBoxGeometry(CABINET.w + top.w, top.thickness, CABINET.d + top.d, 3, top.radius), [0, TOP_Y + top.y, 0])
+      : null,
     bezel: piece(
       BEZEL.pillow ? makePillowLoftGeometry(lipRings(layout)) : makeLoftGeometry(bezelRings(layout), 12),
       [BEZEL.x, BEZEL.y, BOARD_Z],
@@ -242,36 +293,43 @@ const makeWoodParts = (layout) => {
 
 /**
  * Thin round legs, splayed out toward their corners, with brass ferrules.
- * Each is screwed into a teak mounting block fixed flush under the body: the
- * leg's top is buried in the block, so it never shows a gap however it's
- * splayed, and a brass collar finishes it where it leaves the block.
+ * Each rises into the body itself: its top is buried `sink` deep in the
+ * cabinet's underside, so it never shows a gap however it's splayed. A brass
+ * collar sits flat against the underside, square to the body rather than to
+ * the leg, and the splayed leg passes through it at its own angle. `brass`
+ * is the set's brass, if it has one.
  */
-const PencilLegs = ({ layout, material }) => {
+const PencilLegs = ({ layout, material, brass }) => {
   const { legs, floorY } = layout.spec;
-  const { block } = legs;
-  const blockGeo = useDisposable(() => new RoundedBoxGeometry(block.w, block.h, block.d, 2, 0.02), [block]);
-  // the leg pivots from the middle of its block
-  const topY = layout.BOTTOM_Y - block.h / 2;
+  // the leg pivots from inside the body
+  const topY = layout.BOTTOM_Y + legs.sink;
   // Long enough, once splayed, for the ferrule to stand on the floor.
   const length = (topY - floorY) / (Math.cos(legs.splayX) * Math.cos(legs.splayZ));
   const [rTop, rFoot] = legs.radius;
-  // where the leg leaves the block (a little past its bottom face, as splayed)
-  const collarAt = block.h / 2 + 0.03;
-  const rCollar = rTop - (rTop - rFoot) * (collarAt / length);
+  // The collar: level, its top on the underside, centred where the leg
+  // comes out of it (halfway down), and wide enough for the leg's slanted
+  // section to pass through it.
+  const collarH = 0.05;
+  const collarDrop = legs.sink + collarH / 2;
+  const rCollar = (rTop * 1.18) / Math.cos(Math.max(legs.splayX, legs.splayZ));
+  const brassFinish = brass ? null : <meshStandardMaterial {...BRASS} roughness={0.3} />;
   return LEG_CORNERS.map(([sx, sz]) => (
     <group key={`${sx}${sz}`} position={[sx * legs.spreadX, topY, sz * legs.spreadZ]}>
-      <mesh geometry={blockGeo} material={material} castShadow receiveShadow />
+      <mesh
+        position={[sx * collarDrop * Math.tan(legs.splayX), -collarDrop, sz * collarDrop * Math.tan(legs.splayZ)]}
+        material={brass}
+        castShadow
+      >
+        <cylinderGeometry args={[rCollar, rCollar * 0.96, collarH, 24]} />
+        {brassFinish}
+      </mesh>
       <group rotation={[-sz * legs.splayZ, 0, sx * legs.splayX]}>
-        <mesh position={[0, -collarAt, 0]} castShadow>
-          <cylinderGeometry args={[rCollar * 1.18, rCollar * 1.18, 0.05, 20]} />
-          <meshStandardMaterial {...BRASS} roughness={0.3} />
-        </mesh>
         <mesh position={[0, -length / 2, 0]} material={material} castShadow receiveShadow>
           <cylinderGeometry args={[rTop, rFoot, length, 20]} />
         </mesh>
-        <mesh position={[0, -length + legs.ferrule / 2, 0]} castShadow>
+        <mesh position={[0, -length + legs.ferrule / 2, 0]} material={brass} castShadow>
           <cylinderGeometry args={[rFoot * 1.08, rFoot * 1.02, legs.ferrule, 20]} />
-          <meshStandardMaterial {...BRASS} roughness={0.3} />
+          {brassFinish}
         </mesh>
       </group>
     </group>
@@ -325,7 +383,8 @@ const TVModel = ({
 
   // --- materials ---------------------------------------------------------
   // "body" is the cabinet's wood (walnut on the NP-R1), "bezel" the bezel's
-  // (honey); a grille panel is the bezel's wood too.
+  // (honey; teak again on the NP-D6, cut finer); a grille panel is the
+  // bezel's wood too.
   const bodyWood = useDisposable(() => makeWoodTexture(woods.body, 'body'), [woods.body]);
   const bezelWood = useDisposable(() => makeWoodTexture(woods.bezel, 'bezel'), [woods.bezel]);
   const body = useDisposable(() => makeWoodMaterial(bodyWood), [bodyWood]);
@@ -399,10 +458,53 @@ const TVModel = ({
     };
   }, [flickering, invalidate]);
 
-  const brushed = useDisposable(() => (rail.kind === 'brass' ? makeBrushedTextures() : null), [rail.kind]);
-  const brassGeometry = useDisposable(
-    () => (rail.kind === 'brass' ? new RoundedBoxGeometry(BOARD.w - 0.2, 0.42, 0.028, 3, 0.012) : null),
-    [rail.kind, BOARD]
+  // Brass, all of it the rail's brushed brass (makeBrushedBrass): the rail
+  // strip, and any trim and the dials' rings, the brushing scaled to match
+  // the strip's (its UVs span the strip; theirs are in world units).
+  const { trim } = spec;
+  const railBrassWidth = BOARD.w - 2 * (spec.space ?? 0.1);
+  const railBrass = useDisposable(() => (rail.kind === 'brass' ? makeBrushedBrass() : null), [rail.kind]);
+  const trimBrass = useDisposable(
+    () => (trim ? makeBrushedBrass({ repeat: [3 / railBrassWidth, 1 / 0.42] }) : null),
+    [trim, railBrassWidth]
+  );
+  // The trim's pieces: a ring round the tube opening, a frame round the grille.
+  const trimGeometry = useDisposable(() => {
+    if (!trim) return null;
+    const o = trim.opening;
+    return {
+      opening: makeFrameGeometry({
+        outerW: OPENING.w + 2 * o,
+        outerH: OPENING.h + 2 * o,
+        // its inner edge on the opening's (the bevel takes it in a little);
+        // the bezel's cove covers its outer bevel, so `o` is what shows
+        innerW: OPENING.w,
+        innerH: OPENING.h,
+        depth: 0.03,
+        radius: OPENING.r + o,
+        innerRadius: OPENING.r,
+        bevelSize: 0.008,
+        arcs: true, // concentric with the bezel's cove round it
+      }),
+      grille:
+        panel.speaker && trim.grille
+          ? // round the cloth's dark surround, a sliver of it showing inside
+            makeFrameGeometry({
+              outerW: panel.speaker.w + 0.03 + 2 * trim.grille,
+              outerH: panel.speaker.h + 0.03 + 2 * trim.grille,
+              innerW: panel.speaker.w + 0.03,
+              innerH: panel.speaker.h + 0.03,
+              depth: 0.012,
+              radius: 0.03,
+              innerRadius: 0.01,
+              bevelSize: 0.006,
+            })
+          : null,
+    };
+  }, [trim, OPENING, panel]);
+  const railBrassGeometry = useDisposable(
+    () => (rail.kind === 'brass' ? new RoundedBoxGeometry(railBrassWidth, 0.42, 0.028, 3, 0.012) : null),
+    [rail.kind, railBrassWidth]
   );
   const speakerTexture = useDisposable(
     () => (panel.kind === 'grille' ? makeClothTexture() : makePerforatedTexture({ repeat: [10, 8] })),
@@ -614,7 +716,7 @@ const TVModel = ({
       {woodMesh(parts.body, body)}
       {woodMesh(parts.rim, body)}
       {woodMesh(parts.board, body, false)}
-      {woodMesh(parts.top, body)}
+      {parts.top && woodMesh(parts.top, body)}
       {parts.plinth && woodMesh(parts.plinth, bodyShade)}
       {/* the hardboard back, with the inspector's tag */}
       <mesh position={[0, CABINET_Y, -CABINET.d / 2 - 0.003]} rotation={[0, Math.PI, 0]} receiveShadow>
@@ -652,6 +754,9 @@ const TVModel = ({
       <mesh geometry={throatGeometry} position={[BEZEL.x, BEZEL.y, BOARD_Z + OPENING_Z - 0.025]}>
         <meshStandardMaterial color="#1a1108" roughness={0.8} />
       </mesh>
+      {trimGeometry && (
+        <mesh geometry={trimGeometry.opening} position={[BEZEL.x, BEZEL.y, BOARD_Z + OPENING_Z - 0.02]} material={trimBrass.material} />
+      )}
 
       {/* the tube (DOM layer punched through the canvas) */}
       <ScreenSurface position={[BEZEL.x, BEZEL.y, TUBE_Z]} scale={screenScale} {...screen} />
@@ -703,9 +808,9 @@ const TVModel = ({
                 <circleGeometry args={[r, 64]} />
                 <meshStandardMaterial color="#1c140c" roughness={0.5} metalness={0.3} />
               </mesh>
-              <mesh position={[0, 0, 0.0015]}>
+              <mesh position={[0, 0, 0.0015]} material={trimBrass?.material}>
                 <ringGeometry args={[r, r + 0.025, 64]} />
-                <meshStandardMaterial {...BRASS} />
+                {!trimBrass && <meshStandardMaterial {...BRASS} />}
               </mesh>
             </group>
           ))}
@@ -737,6 +842,9 @@ const TVModel = ({
 
         {/* the speaker: perforated metal, or grille cloth in a dark surround (on
             the cream set it's the rail's louvres) */}
+        {trimGeometry?.grille && (
+          <mesh geometry={trimGeometry.grille} position={[0, panel.speaker.y, PANEL_Z - 0.006]} material={trimBrass.material} castShadow />
+        )}
         {panel.kind === 'grille' && (
           <mesh position={[0, panel.speaker.y, PANEL_Z + 0.001]}>
             <planeGeometry args={[panel.speaker.w + 0.06, panel.speaker.h + 0.06]} />
@@ -794,24 +902,9 @@ const TVModel = ({
             <meshStandardMaterial color="#1a0e05" roughness={0.9} />
           </mesh>
         )}
-        {/* brushed brass, its edges eased so they catch the light. Only partly
-            metallic: a full mirror facing the camera reflects the empty room
-            behind it and reads as dark (as the Silver trim notes); the clear
-            coat and the stretched (anisotropic) highlights carry the shine. */}
+        {/* brushed brass, its edges eased so they catch the light */}
         {rail.kind === 'brass' && (
-          <mesh geometry={brassGeometry} position={[0, 0, -0.012]} receiveShadow>
-            <meshPhysicalMaterial
-              color="#e2bf75"
-              metalness={0.6}
-              roughness={1}
-              map={brushed.map}
-              roughnessMap={brushed.roughnessMap}
-              clearcoat={0.5}
-              clearcoatRoughness={0.25}
-              anisotropy={0.6}
-              envMapIntensity={1.3}
-            />
-          </mesh>
+          <mesh geometry={railBrassGeometry} position={[0, 0, -0.012]} material={railBrass.material} receiveShadow />
         )}
 
         {/* MENU: a push-button that latches in while SETUP is open */}
@@ -940,7 +1033,7 @@ const TVModel = ({
       {parts.legs?.map((leg, i) => (
         <mesh key={i} geometry={leg.geometry} position={leg.position} material={bodyShade} castShadow receiveShadow />
       ))}
-      {spec.legs.kind === 'pencil' && <PencilLegs layout={layout} material={bodyShade} />}
+      {spec.legs.kind === 'pencil' && <PencilLegs layout={layout} material={bodyShade} brass={trimBrass?.material} />}
     </group>
   );
 };

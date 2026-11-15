@@ -626,10 +626,13 @@ they look changes). 4.12 is shelved.
 - **2D**: `.tv-set--<cabinet>` on the set; `TVTeak.css` restyles `TV.css`
   (tokens, the panel as a grid, the cloth, the brass rail, pencil legs).
   The wood images are painted per cabinet (`useWoodImages(woods)`).
-- **The NP-D6**: wider and lower (7.8 × 4.5 against 6.5 × 4.7), teak with a
-  blond bezel and panel, the knobs side by side on dark escutcheons ringed
-  in brass, a woven cloth grille, a brass rail, a thin overhanging top,
-  tall pencil legs with brass ferrules.
+- **The NP-D6**: wider and lower (7.8 × 4.5 against 6.5 × 4.7), all teak
+  (straight, fine grain; the bezel and panel cut finer) picked out in
+  brass: a ring round the tube, the cloth grille framed (the spec's `trim`), the knobs side by side on
+  dark escutcheons ringed in brass, a brass rail. A plain box (no top
+  board), tall pencil legs with brass collars and ferrules, rising straight into
+  the body. The cabinet's grain is one tile across its widest board, so the
+  top reads as one piece.
 - Checked: before and after the refactor, screenshots of the walnut set
   with the power off (2D, and all five 3D views) match pixel for pixel,
   bar the faint noise two baseline runs show between themselves. The teak

@@ -1,24 +1,25 @@
 /* The NP-D6: a Danish-modern teak console, restyling the walnut NP-R1
    (TV.css) as the 3D set's teak cabinet (tv3d/cabinets.js) is built: wider
-   and lower, a blond bezel, the knobs side by side on a blond panel above a
-   cloth grille, a brass rail, and tall pencil legs with brass ferrules. The
-   wood images are teak and blond (src/js/cabinets.js); the tokens below are
-   the CSS wood shown until they're painted. */
+   and lower, a plain box (no top board), all teak, picked out in brass: a ring around the tube, the
+   grille framed in brass, a brass rail, and tall pencil legs with brass ferrules. The bezel and panel
+   are teak too (src/js/cabinets.js), cut finer; the tokens below are the CSS
+   wood shown until it's painted. */
 
 .tv-set--teak {
   --walnut-light: #8f6236;
   --walnut-mid: #6e4626;
   --walnut-dark: #4a2c14;
-  --honey-light: #e2c08c;
-  --honey-mid: #c9a06a;
-  --honey-dark: #a07a48;
-  --bezel-glaze: rgba(255, 200, 130, 0.22);
+  --honey-light: #8f6236;
+  --honey-mid: #7a5230;
+  --honey-dark: #5f3b1d;
+  --bezel-glaze: rgba(110, 60, 25, 0.5);
+  /* every piece of brass: the rail, and the rings round the tube, the dials
+     and the grille (.tv-brass-ring below) */
   --brass: linear-gradient(180deg, #e2c48a, #c8a463 35%, #a8874e 70%, #c09a5a);
   width: min(94vw, 1040px);
 }
 
 /* Teak is browner than walnut under the same warm light: a deeper wash. */
-.tv-set--teak .tv-top-board,
 .tv-set--teak .tv-console,
 .tv-set--teak .tv-board,
 .tv-set--teak .tv-legs,
@@ -26,25 +27,43 @@
   --wood-warmth: linear-gradient(rgba(110, 60, 25, 0.5), rgba(110, 60, 25, 0.5));
 }
 
-/* A thin slab top, overhanging the sides more than the walnut set's. */
+/* No top board: a plain box, the guide and the antenna standing on the
+   cabinet itself (its top where the board's was). */
 .tv-set--teak .tv-top-board {
-  width: calc(100% + 44px);
-  height: 11px;
-  border-radius: 3px;
+  display: none;
 }
 
-/* ---- The control panel: blond wood, knobs side by side over a cloth grille ----
+.tv-set--teak .tv-console {
+  margin-top: 0;
+}
+
+/* ---- The control panel: teak, knobs side by side over a cloth grille ----
    As on the 3D set: the dials across the top, the grille filling everything
-   between them and the power switch. */
+   between them and the power switch.
+
+   One spacing throughout, --teak-space: the board's padding, the gaps
+   between the bezel, the panel and the rail, and inside the panel the space
+   round and between its parts (measured to the brass, which is drawn as
+   shadows outside each part's box: margins make room for it). */
+
+.tv-set--teak {
+  --teak-space: 16px;
+}
+
+.tv-set--teak .tv-front {
+  gap: var(--teak-space);
+}
 
 .tv-set--teak .tv-column {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: auto auto;
   grid-template-rows: auto 1fr auto;
+  justify-content: space-between;
   justify-items: center;
-  gap: 14px 6px;
-  width: 316px;
-  padding: 18px 12px 12px;
+  gap: var(--teak-space);
+  /* the dials' rings, their gap and the padding: 154 + 132 + 3 × 16 */
+  width: 334px;
+  padding: var(--teak-space);
   border-radius: 6px;
   background:
     linear-gradient(180deg, rgba(255, 245, 220, 0.14), transparent 18%, transparent 80%, rgba(60, 30, 5, 0.18)),
@@ -53,10 +72,72 @@
     repeating-linear-gradient(176deg, var(--honey-mid) 0px, var(--honey-light) 9px, var(--honey-mid) 18px, var(--honey-dark) 30px);
   background-blend-mode: normal, soft-light, normal, normal;
   box-shadow:
-    inset 0 2px 0 rgba(255, 240, 210, 0.65),
-    inset 0 -2px 0 rgba(70, 35, 8, 0.4),
+    inset 0 2px 0 rgba(255, 225, 185, 0.3),
+    inset 0 -2px 0 rgba(40, 20, 5, 0.45),
     0 3px 6px rgba(0, 0, 0, 0.55),
     0 0 0 1px rgba(40, 20, 5, 0.65);
+}
+
+/* ---- Brass rings: round the tube, the dials and the grille ---------------
+   3px of the rail's brass, as a pseudo-element masked to a ring (a shadow
+   can't take a gradient). --ring-at is how far outside its element the
+   ring's outer edge sits. */
+
+.tv-set--teak .tv-frame::after,
+.tv-set--teak .dial::before,
+.tv-set--teak .tv-speaker::before {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--ring-at));
+  z-index: 2;
+  padding: 3px;
+  border-radius: inherit;
+  background: var(--brass);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+
+
+/* The bezel's face is teak like the rest; the tube sits in a brass ring. */
+.tv-set--teak .tv-frame {
+  /* The space before the bevel round the tube (its 10px shadow ring) is the
+     set's spacing, not the space to the brass: the bevel reads as part of
+     the ring, so measuring to the brass looked tight. */
+  --frame-pad: calc(var(--teak-space) + 10px);
+  padding: var(--frame-pad);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 225, 185, 0.3),
+    inset 2px 0 0 rgba(255, 225, 185, 0.15),
+    inset 0 -2px 0 rgba(40, 20, 5, 0.5),
+    inset -2px 0 0 rgba(40, 20, 5, 0.35),
+    0 3px 6px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(40, 20, 5, 0.65);
+}
+
+/* The tube clips what overflows it, so its ring hangs off the bezel
+   instead, round the tube: the bezel is exactly the tube and its padding. */
+.tv-set--teak .tv-frame::after {
+  --ring-at: 3px;
+  inset: calc(var(--frame-pad) - var(--ring-at));
+  /* concentric with the tube's corners (14% / 18% of the tube), so the
+     ring's inner edge runs exactly along the glass: the tube's radius plus
+     the ring's 3px, in percentages of this box, 6px bigger than the tube */
+  border-radius: calc(14% + 2.16px) / calc(18% + 1.92px);
+}
+
+.tv-set--teak .tv-tube {
+  box-shadow:
+    0 0 0 3px #a8874e, /* under the ring, so no wood shows at its edges */
+    0 0 0 4px rgba(70, 45, 15, 0.5), /* the ring's outer line */
+    0 0 0 10px rgba(40, 20, 5, 0.25),
+    0 -7px 10px 5px rgba(25, 12, 2, 0.3),
+    inset 0 0 0 2px #000;
 }
 
 /* The knobs' numbers sit on dark escutcheons ringed in brass. The ring is
@@ -67,30 +148,49 @@
   background: #1c140c;
   box-shadow:
     0 0 0 6px #1c140c,
-    0 0 0 9px #c8a463,
-    0 0 0 10px rgba(70, 45, 15, 0.5),
+    0 0 0 10px rgba(70, 45, 15, 0.5), /* the ring's outer line */
     0 3px 6px 9px rgba(0, 0, 0, 0.35);
+  --ring-at: 9px;
+  margin: 10px; /* room for the ring */
 }
 
 .tv-set--teak .knob-label {
-  margin-top: 14px;
-  color: #3a2410;
-  opacity: 0.85;
-  text-shadow: 0 1px 0 rgba(255, 240, 210, 0.5);
+  margin-top: 4px;
+  color: #e8c886;
+  font-weight: bold;
+  opacity: 1;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.6);
 }
 
 /* Grille cloth: an open weave of oatmeal and brown, with the odd gold thread. */
 .tv-set--teak .tv-speaker {
   grid-column: 1 / -1;
   align-self: stretch;
-  width: 100%;
+  justify-self: stretch;
+  width: auto;
+  position: relative;
+  /* A heavier frame than the dials' rings, as on the 3D set: 7px of brass
+     (0.05 there, against the 0.12 spacing's 16px) round a 2px dark
+     surround. The margin makes room for it, so the spacing still measures
+     to the brass. */
+  margin: 10px;
+  --ring-at: 9px;
   min-height: 150px;
   border-radius: 2px;
   background:
     repeating-linear-gradient(90deg, rgba(196, 162, 101, 0.55) 0 1px, transparent 1px 44px),
     repeating-linear-gradient(0deg, rgba(150, 132, 102, 0.55) 0 2px, rgba(30, 22, 15, 0.35) 2px 4px),
     repeating-linear-gradient(90deg, #8c7a5e 0 2px, #3a2e22 2px 4px);
-  box-shadow: 0 0 0 3px #1e150c, inset 0 2px 6px rgba(0, 0, 0, 0.45);
+  /* framed in brass */
+  box-shadow:
+    0 0 0 2px #1e150c,
+    0 0 0 10px rgba(70, 45, 15, 0.5), /* the frame's outer line */
+    inset 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+.tv-set--teak .tv-speaker::before {
+  padding: 7px;
+  border-radius: 4px;
 }
 
 .tv-set--teak .tv-switch {
@@ -128,51 +228,24 @@
   display: none;
 }
 
+.tv-set--teak .tv-console {
+  z-index: 1; /* over the legs' tops */
+}
+
 .tv-set--teak .tv-legs {
-  position: relative;
   width: 90%;
-  margin-top: 0;
+  margin-top: -8px; /* the tops tucked up behind the body */
 }
 
-/* Each leg screws into a teak block fixed flush under the corner: the
-   blocks cover the legs' tops, so the splay never opens a gap under the
-   body. */
-.tv-set--teak .tv-legs::before,
-.tv-set--teak .tv-legs::after {
-  content: '';
-  position: absolute;
-  z-index: 1;
-  top: 0;
-  width: 46px;
-  height: 13px;
-  border-radius: 0 0 3px 3px;
-  background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent 45%, rgba(0, 0, 0, 0.25)),
-    var(--wood-warmth),
-    var(--wood) 60% 30% / 600px auto,
-    var(--wood-fallback);
-  background-blend-mode: normal, soft-light, normal, normal;
-  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
-}
-
-.tv-set--teak .tv-legs::before {
-  left: -15px;
-}
-
-.tv-set--teak .tv-legs::after {
-  right: -15px;
-}
-
-/* Tapered round legs, splayed outward from inside their blocks, a brass
-   collar where each leaves its block and a brass ferrule at the foot. */
+/* Tapered round legs, splayed outward from behind the body, a brass collar
+   where each meets it and a brass ferrule at the foot (the rail's brass). */
 .tv-set--teak .tv-leg {
   width: 16px;
   height: 134px;
-  margin-top: 6px;
   background:
-    linear-gradient(180deg, transparent 7px, #e2c48a 7px, #a8874e 11px, transparent 11px),
-    linear-gradient(180deg, transparent calc(100% - 18px), #c8a463 calc(100% - 18px), #8a6a34),
-    linear-gradient(90deg, rgba(255, 225, 185, 0.3), transparent 40%, rgba(0, 0, 0, 0.5)),
+    linear-gradient(90deg, rgba(255, 225, 185, 0.3), transparent 40%, rgba(0, 0, 0, 0.5)) 0 0 / 100% 100%,
+    var(--brass) 0 8px / 100% 5px no-repeat,
+    var(--brass) 0 100% / 100% 18px no-repeat,
     var(--wood-warmth),
     var(--wood) 30% 40% / 600px auto,
     var(--wood-fallback);
@@ -190,33 +263,21 @@
 }
 
 @media (max-width: 680px) {
-  .tv-set--teak .tv-column {
-    width: 100%;
-    grid-template-columns: 1fr 1fr 1fr;
-    grid-template-rows: auto;
-    align-items: center;
+  /* the board's own padding here (TV.css) */
+  .tv-set--teak {
+    --teak-space: 10px;
   }
 
-  .tv-set--teak .tv-switch {
-    grid-column: auto;
+  /* No grille: the dials side by side, the switch centred under them. */
+  .tv-set--teak .tv-column {
+    width: 100%;
+    grid-template-rows: auto;
+    justify-content: space-evenly;
+    align-items: center;
   }
 
   .tv-set--teak .tv-leg {
     width: 11px;
     height: 90px;
-  }
-
-  .tv-set--teak .tv-legs::before,
-  .tv-set--teak .tv-legs::after {
-    width: 34px;
-    height: 10px;
-  }
-
-  .tv-set--teak .tv-legs::before {
-    left: -11px;
-  }
-
-  .tv-set--teak .tv-legs::after {
-    right: -11px;
   }
 }

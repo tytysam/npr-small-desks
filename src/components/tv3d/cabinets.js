@@ -9,11 +9,15 @@ import { makeLayout } from './layout';
  *   (the cream set); otherwise the tube is set into the cabinet's front
  * - cabinet: the body (a base, when it's a pod: `y` lowers it); bodyRadius
  *   rounds its edges
- * - bezel: centre and size of the bezel around the tube; a `pillow` one is
- *   the cream set's lip
+ * - space: the even spacing the front is laid out on (optional); the brass
+ *   rail's strip is inset from the board's ends by it
+ * - bezel: centre and size of the bezel around the tube, and how wide its
+ *   flat `face` is before the cove (0.08 unless given); a shallow `cove`
+ *   instead of the deep rolled one (the teak set's); a `pillow` one is the
+ *   cream set's lip
  * - shell: the pod's shell, as rings lofted back from the bezel, its boss,
  *   and the neck it stands on
- * - top: the top board, `w`/`d` wider and deeper than the body
+ * - top: the top board, `w`/`d` wider and deeper than the body, or null
  * - plinth: a base board under the body, or null
  * - guide, antenna: where they stand on the top board (or on `topFace`)
  * - panel: the channel and volume knobs, power and the speaker. `column`
@@ -27,8 +31,10 @@ import { makeLayout } from './layout';
  *   brushed strip) or `none`; its controls' positions, as x or [x, y]; the
  *   tuning strip's width, the louvres' count and pitch, the buttons' finish;
  *   `inputStyle` spaces and colours the TV/VCR selector
+ * - trim: brass accents, or none: a ring round the tube `opening`, the
+ *   `grille` framed (widths)
  * - legs: `slab` (tapered, splayed slabs), `pencil` (thin round legs with
- *   brass ferrules, each in a mounting `block` under the body) or
+ *   brass ferrules, rising `sink` deep into the body) or
  *   `runners` (the side panels, run down to the floor)
  * - back: the hardboard back's layout (makeBackPanelTexture), in pixels at
  *   the same scale on every set (2048 px across the walnut set's 6.2-unit
@@ -77,29 +83,45 @@ export const CABINET_SPECS = {
     framing: { distance: 12.4, cameraY: 0.8, targetY: 0.35, comfortAspect: 1.15, watch: [-0.365, 0] },
   },
 
-  // Danish modern, about 1964: wider and lower, teak with a blond bezel, the
-  // knobs above a cloth grille, a brass rail, tall pencil legs.
+  // Danish modern, about 1964: wider and lower, a plain box (no top board),
+  // all teak picked out in brass (a ring round the tube, the grille framed,
+  // a brass rail), the knobs above a cloth grille, tall pencil legs.
   teak: {
     cabinet: { w: 7.8, h: 4.5, d: 3.0 },
     bodyRadius: 0.03,
-    bezel: { x: -1.35, y: 0.25, w: 4.44, h: 3.44 },
-    top: { w: 0.44, d: 0.16, thickness: 0.09, y: 0.025, radius: 0.03 },
+    // One spacing, `space`, throughout the front (as the 2D set's
+    // --teak-space): round the bezel, the panel and the brass rail within
+    // the front board (7.44 × 4.14), between them, and inside the panel,
+    // measured to the brass.
+    space: 0.12,
+    // A shallow bezel, as on the 2D set: a flat face a space wide, standing
+    // `rise` proud of the board, then a short cove (`w`) down to the brass
+    // ring, the opening just `depth` under the board. Its margin round the
+    // opening is even (0.12 + 0.093 + the ring's 0.017), so the cove's
+    // corners can follow the opening's.
+    bezel: { x: -1.42, y: 0.27, w: 4.36, h: 3.36, cove: { w: 0.093, rise: 0.04, depth: 0.02 } },
+    top: null, // a plain box
     plinth: null,
     guide: { x: -2.3, z: 0.82 },
     antenna: { x: 2.6, z: -0.4 },
     panel: {
       kind: 'grille',
-      x: 2.295,
-      w: 2.55,
-      channel: [-0.62, 1.0],
-      volume: [0.62, 1.0],
+      // the rest of the board's width; the dials' brass rings (1.25, 1.05)
+      // evenly spaced across it
+      x: 2.24,
+      w: 2.72,
+      channel: [-0.595, 0.935],
+      volume: [0.695, 0.935],
       escutcheons: { channel: 0.6, volume: 0.5 },
-      speaker: { y: -0.47, w: 2.25, h: 1.55 },
-      power: [0, -1.48],
+      // its brass frame (0.065 round the cloth) a space from the dials, the
+      // panel's sides and the power switch (0.12 high), which sits a space
+      // off the bottom
+      speaker: { y: -0.565, w: 2.35, h: 1.38 },
+      power: [0, -1.5],
     },
     rail: {
       kind: 'brass',
-      y: -1.82,
+      y: -1.74, // the strip (0.42 high) a space off the board's bottom
       menu: -3.4,
       badge: -2.95,
       tuning: -1.35,
@@ -113,6 +135,8 @@ export const CABINET_SPECS = {
       lamp: 3.03,
       brightness: 3.33,
     },
+    // the tube's ring as thin as the dials' (0.025 showing), the grille's heavier
+    trim: { opening: 0.017, grille: 0.05 },
     // wider and shorter: more vent slots, the plate and tag nearer the vents
     back: {
       serial: '000214',
@@ -122,8 +146,8 @@ export const CABINET_SPECS = {
       plate: { x: 160, y: 1013 },
       tag: { x: 2029, y: 1098 },
     },
-    // each leg screwed into a teak block under the corner
-    legs: { kind: 'pencil', radius: [0.085, 0.045], spreadX: 3.45, spreadZ: 1.05, splayX: 0.14, splayZ: 0.12, block: { w: 0.5, h: 0.14, d: 0.42 }, ferrule: 0.13 },
+    // each leg rising into the body, its top buried `sink` deep
+    legs: { kind: 'pencil', radius: [0.085, 0.045], spreadX: 3.45, spreadZ: 1.05, splayX: 0.14, splayZ: 0.12, sink: 0.08, ferrule: 0.13 },
     floorY: -3.28,
     framing: { distance: 12.4, cameraY: 0.7, targetY: 0.2, comfortAspect: 1.4, watch: [0, -0.1] },
   },

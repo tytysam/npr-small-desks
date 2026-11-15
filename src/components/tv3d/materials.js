@@ -423,13 +423,28 @@ const roundedRect = (path, x, y, w, h, r) => {
   path.quadraticCurveTo(x, y, x + r, y);
 };
 
+// The same, its corners true quarter circles: the lofted bezels'
+// (roundedRectRing) corners, so a frame can sit concentric with one.
+const roundedRectArcs = (path, x, y, w, h, r) => {
+  path.moveTo(x + r, y);
+  path.lineTo(x + w - r, y);
+  path.absarc(x + w - r, y + r, r, -Math.PI / 2, 0, false);
+  path.lineTo(x + w, y + h - r);
+  path.absarc(x + w - r, y + h - r, r, 0, Math.PI / 2, false);
+  path.lineTo(x + r, y + h);
+  path.absarc(x + r, y + h - r, r, Math.PI / 2, Math.PI, false);
+  path.lineTo(x, y + r);
+  path.absarc(x + r, y + r, r, Math.PI, (3 * Math.PI) / 2, false);
+};
+
 /**
  * A rounded-rectangle frame with a rounded-rectangle opening, extruded toward +Z.
  *
  * Note three.js bevels push the walls *outward* from the shape's contour, so
  * the outer edge grows and the opening shrinks by `bevelSize` at mid-depth;
  * callers size `outer*`/`inner*` accordingly. `innerOffset` moves the opening
- * off-centre.
+ * off-centre. Corners are quadratic curves (squarer than circles) unless
+ * `arcs`: true quarter circles, to sit concentric with a lofted bezel.
  */
 export const makeFrameGeometry = ({
   outerW,
@@ -443,11 +458,13 @@ export const makeFrameGeometry = ({
   bevelThickness = bevelSize,
   bevelSegments = 3,
   innerOffset = [0, 0],
+  arcs = false,
 }) => {
+  const corner = arcs ? roundedRectArcs : roundedRect;
   const shape = new THREE.Shape();
-  roundedRect(shape, -outerW / 2, -outerH / 2, outerW, outerH, radius);
+  corner(shape, -outerW / 2, -outerH / 2, outerW, outerH, radius);
   const hole = new THREE.Path();
-  roundedRect(hole, innerOffset[0] - innerW / 2, innerOffset[1] - innerH / 2, innerW, innerH, innerRadius);
+  corner(hole, innerOffset[0] - innerW / 2, innerOffset[1] - innerH / 2, innerW, innerH, innerRadius);
   shape.holes.push(hole);
   return new THREE.ExtrudeGeometry(shape, {
     depth,
@@ -806,4 +823,30 @@ export const makeBrushedTextures = ({ repeat = [3, 1] } = {}) => {
     r.fillRect(x, y, len, 0.6 + rand() * 0.8);
   }
   return { map: finishTexture(color, { repeat }), roughnessMap: finishTexture(rough, { repeat, srgb: false }) };
+};
+
+/**
+ * Brushed brass, the rail's: every brass piece on a set uses it, so they
+ * match. Only partly metallic: a full mirror facing the camera reflects the
+ * empty room behind it and reads as dark (as the Silver trim notes); the
+ * clear coat and the stretched (anisotropic) highlights carry the shine.
+ * `repeat` scales the brushing to the piece's UVs: the rail's run 0–1 across
+ * the strip; a frame's (ExtrudeGeometry) are in world units, so give it
+ * `[3 / railWidth, 1 / railHeight]` for the same grain. Returns the material
+ * and its textures, for useDisposable to free together.
+ */
+export const makeBrushedBrass = ({ repeat = [3, 1] } = {}) => {
+  const { map, roughnessMap } = makeBrushedTextures({ repeat });
+  const material = new THREE.MeshPhysicalMaterial({
+    color: '#e2bf75',
+    metalness: 0.6,
+    roughness: 1,
+    map,
+    roughnessMap,
+    clearcoat: 0.5,
+    clearcoatRoughness: 0.25,
+    anisotropy: 0.6,
+    envMapIntensity: 1.3,
+  });
+  return { material, map, roughnessMap };
 };

@@ -27,16 +27,19 @@ export const makeLayout = (spec) => {
   const CABINET_Y = CABINET.y ?? 0;
   const TOP_Y = CABINET_Y + CABINET.h / 2;
   const BOTTOM_Y = CABINET_Y - CABINET.h / 2;
-  // Where the guide and the antenna stand: the top board's upper face, or
-  // the cabinet's own `topFace` (the cream set's shell).
-  const TOP_FACE = spec.topFace ?? TOP_Y + spec.top.y + spec.top.thickness / 2;
+  // Where the guide and the antenna stand: the top board's upper face, the
+  // cabinet's own `topFace` (the cream set's shell), or with no top board,
+  // the body's top.
+  const TOP_FACE = spec.topFace ?? (spec.top ? TOP_Y + spec.top.y + spec.top.thickness / 2 : TOP_Y);
 
   // The bezel: a narrow flat face that rolls over into a cove and sinks to a
   // pillow-shaped opening just inside the tube's edge. The tube is the same
   // in every cabinet.
   const BEZEL = spec.bezel;
   const OPENING = { w: SCREEN_W - 0.1, h: SCREEN_H - 0.1, r: 0.52 };
-  const OPENING_Z = -0.13; // relative to BOARD_Z
+  // relative to BOARD_Z: deep behind a rolled cove, or just under the board
+  // behind a shallow one (`bezel.cove`)
+  const OPENING_Z = BEZEL.cove ? -BEZEL.cove.depth : -0.13;
   const TUBE_Z = BOARD_Z + OPENING_Z - 0.02;
 
   // The guide lies near the front of the top board, spines toward the viewer

@@ -15,7 +15,7 @@ export const WOOD = {
   teak: {
     early: '#8f6236',
     late: '#5f3b1d',
-    grain: { body: { straight: true, straightPx: 10 } },
+    grain: { body: { straight: true, straightPx: 10 }, bezel: { straight: true, straightPx: 8 } },
   },
   blond: { early: '#d9b27c', late: '#b88a53' },
   oak: { early: '#b48654', late: '#8a6035' },
