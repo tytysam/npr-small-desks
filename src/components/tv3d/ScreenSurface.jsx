@@ -17,8 +17,10 @@ const CSS_H = 300;
  * orbiting and knob drags over the picture still reach the canvas wrapper.
  *
  * `scale` draws it smaller than SCREEN_W x SCREEN_H (the cream set's).
+ * `squircle` shapes it as one (where corner-shape is supported), to fill
+ * the cream set's glass edge to edge.
  */
-const ScreenSurface = ({ position, scale = 1, ...screenProps }) => (
+const ScreenSurface = ({ position, scale = 1, squircle = false, ...screenProps }) => (
   <Html
     transform
     occlude="blending"
@@ -32,7 +34,8 @@ const ScreenSurface = ({ position, scale = 1, ...screenProps }) => (
         width: CSS_W,
         height: CSS_H,
         background: '#000',
-        borderRadius: '14% / 18%',
+        borderRadius: squircle ? '50%' : '14% / 18%',
+        cornerShape: squircle ? 'squircle' : undefined,
         overflow: 'hidden',
       }}
     >

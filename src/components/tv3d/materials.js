@@ -199,6 +199,12 @@ const pillowRing = ({ a, b, n, taper = 0 }, count) =>
     return [x, y];
   });
 
+/** A flat pillow (pillowRing's outline, filled): the cream set's glass. */
+export const makePillowFaceGeometry = (ring, count = 160) => {
+  const shape = new THREE.Shape(pillowRing(ring, count).map(([x, y]) => new THREE.Vector2(x, y)));
+  return new THREE.ShapeGeometry(shape);
+};
+
 /** makeLoftGeometry for pillow rings ({ a, b, n, taper, z }): the cream set's shell. */
 export const makePillowLoftGeometry = (rings, count = 160) =>
   loftLoops(rings.map((ring) => pillowRing(ring, count).map(([x, y]) => [x, y, ring.z])));

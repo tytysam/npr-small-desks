@@ -16,8 +16,8 @@ import { makeLayout } from './layout';
  *   `radius` (0.1 unless given), `screen` to draw the tube bigger; a shallow `cove`
  *   instead of the deep rolled one (the teak set's); a `pillow` one is the
  *   cream set's lip
- * - shell: the pod's shell, as rings lofted back from the bezel, its boss,
- *   and the neck it stands on
+ * - shell: the pod's shell, as rings lofted back from the bezel (into a
+ *   round boss at the back), and the neck it stands on
  * - top: the top board, `w`/`d` wider and deeper than the body, or null
  * - plinth: a base board under the body, or null
  * - guide, antenna: where they stand on the top board (or on `topFace`)
@@ -169,18 +169,22 @@ export const CABINET_SPECS = {
     body: 'pod',
     cabinet: { w: 5.0, h: 1.6, d: 3.6, y: -2.4 }, // the base
     bodyRadius: 0.04,
-    // The front: a slim rounded lip, `lip` wide, around glass that fills
-    // nearly all of it, in a "pillow" outline (a superellipse, its corners
-    // well rounded, a little wider at the top; see makePillowLoftGeometry).
-    // The picture is drawn at `screen` of its usual size, so the rectangle
-    // the 3D screen layer cuts through the scene stays inside the outline
-    // (its corners would cut through the shell's wall), while the lip still
-    // overlaps the picture's edges.
-    bezel: { x: 0, y: 0.3, w: 4.32, h: 3.36, pillow: { n: 6, taper: 0.02, lip: 0.25, screen: 0.96 } },
+    // The front, after the reference set: a rounded lip, `lip` wide, round
+    // dark glass, in a squircle outline (a superellipse, n 4: straight-ish
+    // sides flowing into broad corners, neither a rounded rectangle nor an
+    // oval), barely wider at the top (`taper`; see makePillowLoftGeometry).
+    // The picture is a squircle too, drawn at `screen` of its usual size so
+    // it fills the glass (3.76 × 2.80, near enough 4:3) all but a hair, the
+    // glass behind it the same black. Any bigger and the rectangle the screen
+    // layer cuts through the scene pokes past the shell's outline at its
+    // corners, specking the shell's edge from an angle.
+    bezel: { x: 0, y: 0.3, w: 4.32, h: 3.36, pillow: { n: 4, taper: 0.008, lip: 0.28, screen: 0.92 } },
     // The shell behind it: straight back for a while, then a puffy rounded
-    // back with a large round boss a little below centre. Rings are scaled
-    // copies of the front's outline (z relative to the front board; `n`
-    // softens the outline toward the back). The neck it stands on.
+    // back that runs out into a round boss, as one moulding: the rings are
+    // scaled copies of the front's outline (`s`; z relative to the front
+    // board, `n` softening the outline toward the back), then circles (`r`)
+    // narrowing into the boss, along it, and rounding over its end to a
+    // point (which closes it). The neck it stands on.
     shell: {
       color: '#e6dcc6',
       rings: [
@@ -189,10 +193,16 @@ export const CABINET_SPECS = {
         { s: 0.97, z: -0.95, n: 3.8 },
         { s: 0.9, z: -1.5, n: 3.4 },
         { s: 0.76, z: -2.0, n: 3.0 },
-        { s: 0.52, z: -2.35, n: 2.7 },
-        { s: 0.3, z: -2.48, n: 2.4 },
+        { s: 0.52, z: -2.3, n: 2.5 },
+        { r: 0.74, z: -2.4 },
+        { r: 0.62, z: -2.47 },
+        { r: 0.6, z: -2.55 },
+        { r: 0.6, z: -2.7 },
+        { r: 0.585, z: -2.75 },
+        { r: 0.54, z: -2.78 },
+        { r: 0.3, z: -2.8 },
+        { r: 0.001, z: -2.8 },
       ],
-      boss: { r: 0.85, y: -0.12, depth: 0.12 },
       neck: { r: 0.3, z: -1.25 },
     },
     top: { w: 0.04, d: 0.04, thickness: 0.06, y: 0, radius: 0.02 },

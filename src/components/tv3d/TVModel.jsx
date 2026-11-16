@@ -19,6 +19,7 @@ import {
   boxProjectUVs,
   makeLoftGeometry,
   makePillowLoftGeometry,
+  makePillowFaceGeometry,
   makeTaperedLegGeometry,
   makePerforatedTexture,
   makeClothTexture,
@@ -170,16 +171,24 @@ const shellTopAt = ({ BEZEL, BOARD_Z }, shell, x, z) => {
   const [front, back] = [rings[i - 1], rings[i]];
   const t = Math.min(1, Math.max(0, (front.z - zRel) / (front.z - back.z)));
   const mix = (p, q) => p + (q - p) * t;
-  const s = mix(front.s, back.s);
-  const n = mix(front.n ?? BEZEL.pillow.n, back.n ?? BEZEL.pillow.n);
-  const a = (BEZEL.w / 2) * s;
-  const b = (BEZEL.h / 2) * s;
+  const [p, q] = [shellRingSize({ BEZEL }, front), shellRingSize({ BEZEL }, back)];
+  const n = mix(p.n, q.n);
+  const a = mix(p.a, q.a);
+  const b = mix(p.b, q.b);
   return BEZEL.y + b * Math.max(0, 1 - Math.abs(x / a) ** n) ** (1 / n);
 };
 
-/** The cream set's shell rings, scaled copies of the front's outline. */
-const shellRings = ({ BEZEL }, shell) =>
-  shell.rings.map(({ s, z, n }) => ({ a: (BEZEL.w / 2) * s, b: (BEZEL.h / 2) * s, n: n ?? BEZEL.pillow.n, taper: BEZEL.pillow.taper, z }));
+/**
+ * A shell ring's half-sizes and squareness: a scaled copy of the front's
+ * outline (`s`), or a circle of radius `r` (the boss the back runs out into).
+ */
+const shellRingSize = ({ BEZEL }, { s, r, n }) =>
+  r !== undefined
+    ? { a: r, b: r, n: 2, taper: 0 }
+    : { a: (BEZEL.w / 2) * s, b: (BEZEL.h / 2) * s, n: n ?? BEZEL.pillow.n, taper: BEZEL.pillow.taper };
+
+/** The cream set's shell rings, lofted into its shell. */
+const shellRings = (layout, shell) => shell.rings.map((ring) => ({ ...shellRingSize(layout, ring), z: ring.z }));
 
 /**
  * Every wooden part of a cabinet, with UVs box-projected in world space
@@ -384,6 +393,12 @@ const TVModel = ({
   const louvres = { n: 5, pitch: 0.06, y: 0, ...rail.louvres };
   const powerAt = Array.isArray(panel.power) ? panel.power : panel.power.at;
   const screenScale = BEZEL.pillow?.screen ?? BEZEL.screen ?? 1;
+  const pillowGlass = useDisposable(() => {
+    if (!BEZEL.pillow) return null;
+    const { n, taper, lip } = BEZEL.pillow;
+    // a little under the lip, so no gap shows at its inner edge
+    return makePillowFaceGeometry({ a: BEZEL.w / 2 - lip + 0.06, b: BEZEL.h / 2 - lip + 0.06, n, taper });
+  }, [BEZEL]);
   const { model, woods } = cabinetFor(layout.key);
 
   // --- materials ---------------------------------------------------------
@@ -741,19 +756,11 @@ const TVModel = ({
       {/* the bezel, rolling down into the cabinet toward the tube */}
       {woodMesh(parts.bezel, bezel)}
 
-      {/* the cream set: the shell's dome behind the bezel, a round boss at its
-          back, and the neck it stands on, on a swivel plate */}
+      {/* the cream set: the shell behind the bezel (running out into a round
+          boss at its back), and the neck it stands on, on a swivel plate */}
       {shell && (
         <>
           <mesh geometry={shellGeometry} material={shellMaterial} position={[BEZEL.x, BEZEL.y, BOARD_Z]} castShadow receiveShadow />
-          <mesh
-            material={shellMaterial}
-            position={[BEZEL.x, BEZEL.y + shell.boss.y, BOARD_Z + shell.rings.at(-1).z - shell.boss.depth / 2 + 0.02]}
-            rotation={[Math.PI / 2, 0, 0]}
-            castShadow
-          >
-            <cylinderGeometry args={[shell.boss.r * 0.96, shell.boss.r, shell.boss.depth, 48]} />
-          </mesh>
           <mesh position={[BEZEL.x, (layout.TOP_Y + BEZEL.y - BEZEL.h / 2) / 2 + 0.06, BOARD_Z + shell.neck.z]} castShadow>
             <cylinderGeometry args={[shell.neck.r, shell.neck.r * 1.1, BEZEL.y - BEZEL.h / 2 - layout.TOP_Y + 0.25, 32]} />
             <meshStandardMaterial color="#cfc6b2" roughness={0.45} />
@@ -771,8 +778,15 @@ const TVModel = ({
         <mesh geometry={trimGeometry.opening} position={[BEZEL.x, BEZEL.y, BOARD_Z + OPENING_Z - 0.02]} material={trimBrass.material} />
       )}
 
+      {/* the cream set's glass: dark, filling the lip's opening round the
+          picture (which, being a rectangle, sits inside its rounder outline) */}
+      {pillowGlass && (
+        <mesh geometry={pillowGlass} position={[BEZEL.x, BEZEL.y, TUBE_Z - 0.01]}>
+          <meshPhysicalMaterial color="#000000" roughness={0.4} clearcoat={0.5} clearcoatRoughness={0.2} />
+        </mesh>
+      )}
       {/* the tube (DOM layer punched through the canvas) */}
-      <ScreenSurface position={[BEZEL.x, BEZEL.y, TUBE_Z]} scale={screenScale} {...screen} />
+      <ScreenSurface position={[BEZEL.x, BEZEL.y, TUBE_Z]} scale={screenScale} squircle={Boolean(BEZEL.pillow)} {...screen} />
       {/* its glow, for the dark lighting moods (intensity set by useFade) */}
       <pointLight ref={glowRef} position={[BEZEL.x, BEZEL.y, FRONT_Z + 1.3]} color={GLOW.color} intensity={0} distance={8} decay={2.2} />
 

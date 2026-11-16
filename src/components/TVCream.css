@@ -33,7 +33,7 @@
 .tv-set--cream .tv-board {
   display: grid;
   grid-template-columns: 1fr auto;
-  row-gap: 9px; /* the neck: only a sliver shows */
+  row-gap: 16px; /* the neck: a short length of it shows */
   padding: 0;
   background: none;
   box-shadow: none;
@@ -69,19 +69,21 @@
     0 4px 8px rgba(0, 0, 0, 0.45);
 }
 
-/* ---- The shell: a slim cream lip around glass that fills nearly all of it -
-   As on the 3D set: a "pillow" outline (well-rounded corners), the lip rolled
-   like a tube rather than a flat face, and a little wider at the top than the
-   bottom (a slight backward tilt). */
+/* ---- The shell: a rounded cream lip round the glass ---------------------
+   As on the 3D set: a squircle outline (where corner-shape is supported:
+   straight-ish sides flowing into broad corners; a rounded rectangle
+   otherwise), the lip rolled like a tube rather than a flat face, a touch
+   wider at the top than the bottom (a slight backward tilt). */
 
 .tv-set--cream .tv-frame {
   grid-row: 1;
   grid-column: 1 / -1;
   margin: 0 5%;
-  padding: 20px;
-  border-radius: 15% / 19%;
+  padding: 28px; /* a thicker lip, as on the reference set */
+  border-radius: 20% / 25%;
   overflow: visible;
-  transform: perspective(1600px) rotateX(-5deg);
+  /* barely wider at the top than the bottom, as the 3D set */
+  transform: perspective(1600px) rotateX(-3deg);
   transform-origin: 50% 100%;
   background:
     radial-gradient(ellipse at 28% 8%, rgba(255, 255, 255, 0.6), transparent 45%),
@@ -111,18 +113,21 @@
   content: '';
   position: absolute;
   left: 50%;
-  bottom: -11px;
+  bottom: -17px; /* a pixel into the base, so it meets it with no gap */
   width: 80px;
-  height: 11px;
+  height: 17px;
   margin-left: -40px;
-  border-radius: 0 0 10px 10px / 0 0 6px 6px;
-  background: linear-gradient(90deg, #8e8676, #d4ccba 40%, #a59d8c);
+  /* tapering out toward the base, as on the 3D set, square where it meets it */
+  clip-path: polygon(5% 0, 95% 0, 100% 100%, 0 100%);
+  background:
+    linear-gradient(180deg, rgba(60, 50, 35, 0.35), transparent 40%),
+    linear-gradient(90deg, #8e8676, #d4ccba 40%, #a59d8c);
   z-index: -1;
 }
 
 /* The glass follows the lip's outline; the lip's inner wall drops to it. */
 .tv-set--cream .tv-tube {
-  border-radius: 12% / 16%;
+  border-radius: 16% / 21%;
   box-shadow:
     0 0 0 2px #2a2620,
     0 0 0 4px rgba(110, 98, 76, 0.55),
@@ -130,6 +135,20 @@
     0 -5px 7px 2px rgba(80, 66, 44, 0.3),
     0 6px 6px 1px rgba(255, 255, 255, 0.45),
     inset 0 0 0 2px #000;
+}
+
+/* The squircle: the corners as big as they go, shaped as a superellipse
+   rather than a circle's arc. */
+@supports (corner-shape: squircle) {
+  .tv-set--cream .tv-frame {
+    border-radius: 50%;
+    corner-shape: squircle;
+  }
+
+  .tv-set--cream .tv-tube {
+    border-radius: 50%;
+    corner-shape: squircle;
+  }
 }
 
 /* ---- The base front: every control ---------------------------------------- */
@@ -268,32 +287,44 @@
 /* The guide (centred) and the antenna stand on the shell's top, which the
    tilt lifts about 10px above the set's top line. */
 .tv-set--cream .tv-guide {
-  top: 80px;
+  top: 83px; /* resting on the shell's top, which falls away from the middle */
   left: calc(50% - 95px);
 }
 
+/* the aerial seated on the shell's top, its ball mount sunk a little into
+   it where the top starts to curve down */
+/* set back from the front edge: behind the shell's top line, so the lip
+   hides the foot of its mount */
 .tv-set--cream .tv-antenna {
-  right: 22%;
-  height: 82px;
+  right: 23%;
+  height: 94px;
+  z-index: 0;
+}
+
+/* the ball mount tilted to sit on the shell's top where it slopes away to
+   the corner, the rod still upright from it */
+.tv-set--cream .tv-antenna-base {
+  transform: rotate(7deg);
+  transform-origin: 50% 100%;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .tv-set--cream .tv-guide {
-    top: 90px;
+    top: 92px;
   }
 
   .tv-set--cream .tv-antenna {
-    height: 92px;
+    height: 98px;
   }
 }
 
 @media (max-width: 680px) {
   .tv-set--cream .tv-guide {
-    top: 46px;
+    top: 50px;
   }
 
   .tv-set--cream .tv-antenna {
-    height: 48px;
+    height: 53px;
   }
 
   .tv-set--cream .tv-board {

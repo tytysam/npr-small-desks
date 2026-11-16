@@ -37,6 +37,12 @@
   margin-top: 0;
 }
 
+/* the aerial behind the cabinet's top edge, its mount's foot hidden by it,
+   as the walnut set's top board hides its */
+.tv-set--teak .tv-antenna {
+  z-index: 0;
+}
+
 /* ---- The control panel: teak, knobs side by side over a cloth grille ----
    As on the 3D set: the dials across the top, the grille filling everything
    between them and the power switch.
