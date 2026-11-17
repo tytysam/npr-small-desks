@@ -454,47 +454,12 @@
     height: 53px;
   }
 
-  .tv-set--cream .tv-board {
-    grid-template-columns: 1fr;
-  }
-
-  .tv-set--cream .tv-board::before {
-    grid-row: 2 / 4;
-  }
-
-  .tv-set--cream .tv-rail {
-    grid-template-columns: auto auto auto auto auto 1fr;
-    padding: 12px 14px 0;
-  }
-
-  .tv-set--cream .tv-louvres {
-    display: none;
-  }
-
-  .tv-set--cream .tv-badge {
-    grid-row: 2;
-  }
-
-  /* no speaker slots to sit over: back in the row, after the badge */
-  .tv-set--cream .tv-input {
-    grid-row: 2;
-    grid-column: auto;
-    justify-self: auto;
-  }
-
-  .tv-set--cream .tv-column {
-    grid-row: 3;
-    grid-column: 1;
-    justify-content: center;
-    padding: 0 0 12px;
-  }
-
   .tv-set--cream .tv-frame {
     padding: 18px;
   }
 }
 
-/* ---- Wider screens: the base laid out as the 3D set's ----------------------
+/* ---- The base, laid out as the 3D set's --------------------------------------
    At 137.6px to the 3D set's unit (its 5.0-wide base, 688px): the base
    220px tall, its rim (0.18) round a recessed board, one gap (0.12, 16.5px)
    inside it, at the board's edges and between the groups; a 30px neck.
@@ -506,221 +471,323 @@
      and volume at the right, all centred on the channel dial's centre; the
      tuning strip along the bottom;
    - right: the channel dial, the board's height less the gap. */
-@media (min-width: 681px) {
+.tv-set--cream {
+  width: min(92vw, 688px);
+}
+
+.tv-set--cream .tv-board {
+  grid-template-columns:
+    [rim-l] 24.8px [pad-l] 16.5px [left] minmax(170px, 220px) 16.5px [power] auto 16.5px [lever] auto 16.5px
+    [heart] auto minmax(16.5px, 1fr) [bright] auto 16.5px [volume] auto [vol-end] 16.5px [dial] auto 16.5px
+    [rim-r] 24.8px;
+  /* the content rows: the top row (as tall as TV/VCR), the rest, the tuning
+     strip; 137.4px together, as the 3D board's 1.0 inside the gap */
+  grid-template-rows: [frame] auto [neck] 30px [rim-t] 24.8px [pad-t] 16.5px [r1] 38px [r2] 70.4px [r3] 29px [pad-b] 16.5px [rim-b] 24.8px;
+  row-gap: 0;
+}
+
+.tv-set--cream .tv-frame {
+  grid-row: frame;
+  margin: 0 6.8%; /* 594px: the 3D shell's 4.32 to the base's 5.0 */
+}
+
+.tv-set--cream .tv-frame::after {
+  bottom: -30px;
+  height: 30px;
+}
+
+/* the base, and the board recessed inside its rim */
+.tv-set--cream .tv-board::before {
+  grid-row: rim-t / -1;
+  box-shadow:
+    /* the side panels (the 3D set's runners, 0.1 wide) */
+    inset 14px 0 0 rgba(0, 0, 0, 0.22),
+    inset -14px 0 0 rgba(0, 0, 0, 0.22),
+    inset 0 2px 0 rgba(255, 225, 185, 0.3),
+    0 18px 36px rgba(0, 0, 0, 0.6),
+    0 4px 8px rgba(0, 0, 0, 0.45);
+}
+
+.tv-set--cream .tv-rail,
+.tv-set--cream .tv-column {
+  display: contents;
+}
+
+.tv-set--cream .tv-rail::before {
+  content: '';
+  position: relative; /* over the base */
+  z-index: 0;
+  grid-row: pad-t / rim-b;
+  grid-column: pad-l / rim-r;
+  border-radius: 3px;
+  pointer-events: none;
+  box-shadow:
+    inset 0 5px 7px -3px rgba(0, 0, 0, 0.55),
+    inset 5px 0 6px -4px rgba(0, 0, 0, 0.4),
+    inset -3px 0 4px -2px rgba(0, 0, 0, 0.3),
+    inset 0 -2px 0 rgba(255, 220, 170, 0.14),
+    0 0 0 1px rgba(20, 10, 3, 0.45);
+}
+
+.tv-set--cream .tv-rail > *,
+.tv-set--cream .tv-column > * {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+}
+
+/* left: the top row, each at the 3D set's place (centred 12.5px down; the
+   lamp 1.03 of 1.6 across); the slots below */
+.tv-set--cream .tv-badge {
+  grid-row: r1;
+  grid-column: left;
+  justify-self: start;
+  align-self: start;
+  margin-top: 1px;
+}
+
+/* its lettering 0.4 across (55px), as in 3D */
+.tv-set--cream .tv-badge-text {
+  font-size: 12.5px;
+  letter-spacing: 3.5px;
+}
+
+.tv-set--cream .tv-lamp {
+  grid-row: r1;
+  grid-column: left;
+  justify-self: start;
+  align-self: start;
+  margin: 7.5px 0 0 61%; /* centred on MENU's centre (12.5px down) */
+}
+
+.tv-set--cream .tv-input {
+  grid-row: r1;
+  grid-column: left;
+  justify-self: end;
+  align-self: start;
+}
+
+.tv-set--cream .tv-louvres {
+  grid-row: r2 / pad-b;
+  grid-column: left;
+  align-self: end;
+  gap: 6px;
+}
+
+.tv-set--cream .tv-louvre {
+  height: 4px;
+}
+
+/* middle: the switches and dials, centred on the board */
+.tv-set--cream .tv-switch,
+.tv-set--cream .tv-lever,
+.tv-set--cream .tv-heart,
+.tv-set--cream .tv-mini-knob,
+.tv-set--cream .tv-column > .knob-group {
+  grid-row: r1 / pad-b;
+  align-self: center;
+  justify-self: center;
+}
+
+.tv-set--cream .tv-switch {
+  grid-column: power;
+}
+
+.tv-set--cream .tv-lever {
+  grid-column: lever;
+  zoom: 1.25; /* its nut 20px, as the 3D set's (0.15) */
+}
+
+.tv-set--cream .tv-heart {
+  grid-column: heart;
+  width: 19px;
+  height: 19px;
+}
+
+.tv-set--cream .tv-mini-knob {
+  grid-column: bright;
+  width: 30px;
+  height: 30px;
+}
+
+.tv-set--cream .tv-column > .knob-group:nth-child(2) {
+  grid-column: volume;
+}
+
+.tv-set--cream .dial-volume {
+  zoom: 0.65; /* 47px, as the 3D set's (0.17 round) */
+}
+
+.tv-set--cream .tv-tuning-strip {
+  grid-row: r3;
+  grid-column: power / vol-end;
+  height: 29px;
+}
+
+/* right: the channel dial (0.38 round, 105px), the notch over it */
+.tv-set--cream .tv-column > .knob-group:first-child {
+  grid-column: dial;
+}
+
+.tv-set--cream .dial-channel {
+  width: 105px;
+  height: 126px;
+}
+
+.tv-set--cream .knob-channel {
+  width: 105px;
+  height: 105px;
+}
+
+.tv-set--cream .knob-numbers {
+  --knob-number-r: -36px;
+}
+
+.tv-set--cream .knob-number {
+  font-size: 8.5px;
+}
+
+.tv-set--cream .dial-ring-pointer {
+  top: 1px;
+  margin-left: -5px;
+  border-left-width: 5px;
+  border-right-width: 5px;
+  border-top-width: 8px;
+}
+
+/* MENU and power: plain grey domed caps (0.085 round, 23px), as in 3D */
+.tv-set--cream .tv-badge-knob,
+.tv-set--cream .tv-switch {
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  filter: none;
+  background: radial-gradient(circle at 38% 32%, #b4b3ad, #7f7e78 60%, #5f5e59);
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.55),
+    inset 0 1px 1px rgba(255, 255, 255, 0.35);
+}
+
+.tv-set--cream .tv-badge-knob.is-pressed,
+.tv-set--cream .tv-switch.is-on {
+  transform: scale(0.9);
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.5),
+    inset 0 2px 3px rgba(0, 0, 0, 0.35);
+}
+
+/* the runners: the side panels, 14px wide, 7px past the base */
+.tv-set--cream .tv-leg {
+  width: 14px;
+  height: 7px;
+}
+
+/* the aerial where it stood on the shell before the set widened (the
+   shell's the same size; 23% of 660px is 24.1% of 688px) */
+.tv-set--cream .tv-antenna {
+  right: 24.1%;
+}
+
+/* ---- Narrow screens: the same base, stacked -----------------------------------
+   The left column (MENU, the badge, the lamp and TV/VCR over the speaker
+   slots) on top, across the board; the middle and right below it: the
+   switches and dials beside the channel dial, the tuning strip under them.
+   A narrower rim and gap (--rim, --gap). On phones, the tuning strip takes
+   a line of its own under the dial, and the dial gets smaller. */
+@media (max-width: 680px) {
   .tv-set--cream {
-    width: min(92vw, 688px);
+    --rim: 14px;
+    --gap: 12px;
   }
 
   .tv-set--cream .tv-board {
     grid-template-columns:
-      [rim-l] 24.8px [pad-l] 16.5px [left] minmax(170px, 220px) 16.5px [power] auto 16.5px [lever] auto 16.5px
-      [heart] auto minmax(16.5px, 1fr) [bright] auto 16.5px [volume] auto [vol-end] 16.5px [dial] auto 16.5px
-      [rim-r] 24.8px;
-    /* the content rows: the top row (as tall as TV/VCR), the rest, the tuning
-       strip; 137.4px together, as the 3D board's 1.0 inside the gap */
-    grid-template-rows: [frame] auto [neck] 30px [rim-t] 24.8px [pad-t] 16.5px [r1] 38px [r2] 70.4px [r3] 29px [pad-b] 16.5px [rim-b] 24.8px;
-    row-gap: 0;
+      [rim-l] var(--rim) [pad-l] var(--gap) [power] auto var(--gap) [lever] auto var(--gap) [heart] auto
+      minmax(var(--gap), 1fr) [bright] auto var(--gap) [volume] auto [vol-end] var(--gap) [dial] auto [pad-r] var(--gap)
+      [rim-r] var(--rim);
+    grid-template-rows:
+      [frame] auto [neck] 30px [rim-t] var(--rim) [pad-t] var(--gap) [top] auto [grille] auto [gap-1] var(--gap)
+      [ctrl] auto [gap-2] var(--gap) [strip] auto [pad-b] var(--gap) [rim-b] var(--rim);
   }
 
-  .tv-set--cream .tv-frame {
-    grid-row: frame;
-    margin: 0 6.8%; /* 594px: the 3D shell's 4.32 to the base's 5.0 */
-  }
-
-  .tv-set--cream .tv-frame::after {
-    bottom: -30px;
-    height: 30px;
-  }
-
-  /* the base, and the board recessed inside its rim */
-  .tv-set--cream .tv-board::before {
-    grid-row: rim-t / -1;
-    box-shadow:
-      /* the side panels (the 3D set's runners, 0.1 wide) */
-      inset 14px 0 0 rgba(0, 0, 0, 0.22),
-      inset -14px 0 0 rgba(0, 0, 0, 0.22),
-      inset 0 2px 0 rgba(255, 225, 185, 0.3),
-      0 18px 36px rgba(0, 0, 0, 0.6),
-      0 4px 8px rgba(0, 0, 0, 0.45);
-  }
-
-  .tv-set--cream .tv-rail,
-  .tv-set--cream .tv-column {
-    display: contents;
-  }
-
-  .tv-set--cream .tv-rail::before {
-    content: '';
-    position: relative; /* over the base */
-    z-index: 0;
-    grid-row: pad-t / rim-b;
-    grid-column: pad-l / rim-r;
-    border-radius: 3px;
-    pointer-events: none;
-    box-shadow:
-      inset 0 5px 7px -3px rgba(0, 0, 0, 0.55),
-      inset 5px 0 6px -4px rgba(0, 0, 0, 0.4),
-      inset -3px 0 4px -2px rgba(0, 0, 0, 0.3),
-      inset 0 -2px 0 rgba(255, 220, 170, 0.14),
-      0 0 0 1px rgba(20, 10, 3, 0.45);
-  }
-
-  .tv-set--cream .tv-rail > *,
-  .tv-set--cream .tv-column > * {
-    position: relative;
-    z-index: 1;
-    margin: 0;
-  }
-
-  /* left: the top row, each at the 3D set's place (centred 12.5px down; the
-     lamp 1.03 of 1.6 across); the slots below */
-  .tv-set--cream .tv-badge {
-    grid-row: r1;
-    grid-column: left;
-    justify-self: start;
-    align-self: start;
-    margin-top: 1px;
-  }
-
-  /* its lettering 0.4 across (55px), as in 3D */
-  .tv-set--cream .tv-badge-text {
-    font-size: 12.5px;
-    letter-spacing: 3.5px;
+  /* the top: spaced as on wider screens, over no more than the left
+     column's 220px (from the left): MENU and the badge, the lamp 61% across,
+     TV/VCR at the end */
+  .tv-set--cream .tv-badge,
+  .tv-set--cream .tv-lamp,
+  .tv-set--cream .tv-input {
+    grid-row: top;
+    grid-column: power / pad-r;
   }
 
   .tv-set--cream .tv-lamp {
-    grid-row: r1;
-    grid-column: left;
-    justify-self: start;
-    align-self: start;
-    margin: 7.5px 0 0 61%; /* centred on MENU's centre (12.5px down) */
+    margin-left: calc(min(100%, 220px) * 0.61);
   }
 
   .tv-set--cream .tv-input {
-    grid-row: r1;
-    grid-column: left;
-    justify-self: end;
-    align-self: start;
+    justify-self: start;
+    margin-left: calc(min(100%, 220px) - 44px);
   }
 
   .tv-set--cream .tv-louvres {
-    grid-row: r2 / pad-b;
-    grid-column: left;
-    align-self: end;
-    gap: 6px;
+    display: flex; /* the other sets hide theirs on narrow screens */
+    grid-row: grille;
+    grid-column: power / pad-r;
+    align-self: start;
+    gap: 4px;
+    margin-top: var(--gap);
   }
 
-  .tv-set--cream .tv-louvre {
-    height: 4px;
-  }
-
-  /* middle: the switches and dials, centred on the board */
+  /* below: the switches and dials, centred on the channel dial */
   .tv-set--cream .tv-switch,
   .tv-set--cream .tv-lever,
   .tv-set--cream .tv-heart,
   .tv-set--cream .tv-mini-knob,
-  .tv-set--cream .tv-column > .knob-group {
-    grid-row: r1 / pad-b;
-    align-self: center;
-    justify-self: center;
-  }
-
-  .tv-set--cream .tv-switch {
-    grid-column: power;
-  }
-
-  .tv-set--cream .tv-lever {
-    grid-column: lever;
-    zoom: 1.25; /* its nut 20px, as the 3D set's (0.15) */
-  }
-
-  .tv-set--cream .tv-heart {
-    grid-column: heart;
-    width: 19px;
-    height: 19px;
-  }
-
-  .tv-set--cream .tv-mini-knob {
-    grid-column: bright;
-    width: 30px;
-    height: 30px;
-  }
-
   .tv-set--cream .tv-column > .knob-group:nth-child(2) {
-    grid-column: volume;
+    grid-row: ctrl / pad-b;
   }
 
-  .tv-set--cream .dial-volume {
-    zoom: 0.65; /* 47px, as the 3D set's (0.17 round) */
+  .tv-set--cream .tv-column > .knob-group:first-child {
+    grid-row: ctrl / pad-b;
   }
 
   .tv-set--cream .tv-tuning-strip {
-    grid-row: r3;
-    grid-column: power / vol-end;
-    height: 29px;
+    grid-row: strip;
+  }
+}
+
+/* Phones: the tuning strip on its own line, the whole board's width; the
+   switches and dials in one row over it, the dial smaller. */
+@media (max-width: 430px) {
+  .tv-set--cream {
+    --rim: 12px;
+    --gap: 10px;
   }
 
-  /* right: the channel dial (0.38 round, 105px), the notch over it */
+  .tv-set--cream .tv-switch,
+  .tv-set--cream .tv-lever,
+  .tv-set--cream .tv-heart,
+  .tv-set--cream .tv-mini-knob,
+  .tv-set--cream .tv-column > .knob-group:first-child,
+  .tv-set--cream .tv-column > .knob-group:nth-child(2) {
+    grid-row: ctrl;
+  }
+
+  .tv-set--cream .tv-tuning-strip {
+    grid-column: power / pad-r;
+  }
+
   .tv-set--cream .tv-column > .knob-group:first-child {
-    grid-column: dial;
+    zoom: 0.85;
+  }
+}
+
+@media (max-width: 360px) {
+  .tv-set--cream {
+    --gap: 8px;
   }
 
-  .tv-set--cream .dial-channel {
-    width: 105px;
-    height: 126px;
-  }
-
-  .tv-set--cream .knob-channel {
-    width: 105px;
-    height: 105px;
-  }
-
-  .tv-set--cream .knob-numbers {
-    --knob-number-r: -36px;
-  }
-
-  .tv-set--cream .knob-number {
-    font-size: 8.5px;
-  }
-
-  .tv-set--cream .dial-ring-pointer {
-    top: 1px;
-    margin-left: -5px;
-    border-left-width: 5px;
-    border-right-width: 5px;
-    border-top-width: 8px;
-  }
-
-  /* MENU and power: plain grey domed caps (0.085 round, 23px), as in 3D */
-  .tv-set--cream .tv-badge-knob,
-  .tv-set--cream .tv-switch {
-    width: 23px;
-    height: 23px;
-    border-radius: 50%;
-    filter: none;
-    background: radial-gradient(circle at 38% 32%, #b4b3ad, #7f7e78 60%, #5f5e59);
-    box-shadow:
-      0 2px 3px rgba(0, 0, 0, 0.55),
-      inset 0 1px 1px rgba(255, 255, 255, 0.35);
-  }
-
-  .tv-set--cream .tv-badge-knob.is-pressed,
-  .tv-set--cream .tv-switch.is-on {
-    transform: scale(0.9);
-    box-shadow:
-      0 1px 1px rgba(0, 0, 0, 0.5),
-      inset 0 2px 3px rgba(0, 0, 0, 0.35);
-  }
-
-  /* the runners: the side panels, 14px wide, 7px past the base */
-  .tv-set--cream .tv-leg {
-    width: 14px;
-    height: 7px;
-  }
-
-  /* the aerial where it stood on the shell before the set widened (the
-     shell's the same size; 23% of 660px is 24.1% of 688px) */
-  .tv-set--cream .tv-antenna {
-    right: 24.1%;
+  .tv-set--cream .tv-column > .knob-group:first-child {
+    zoom: 0.76;
   }
 }
