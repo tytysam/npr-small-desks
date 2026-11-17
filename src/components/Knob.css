@@ -45,7 +45,7 @@
 
 .dial-ring-pointer {
   position: absolute;
-  top: 19px; /* between the "2" and the knob, as on the 3D set */
+  top: 17px; /* centred between the "1" and the knob, as on the 3D set */
   left: 50%;
   width: 0;
   height: 0;
@@ -147,6 +147,11 @@
     linear-gradient(180deg, #e8dfc8 0 9%, transparent 9%),
     linear-gradient(90deg, #111, #3a3a3a 45%, #1b1b1b);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Numbers printed on the knob (the cream set's; see TVCream.css). */
+.knob-numbers {
+  display: none;
 }
 
 /* Small chrome hub over the bar */

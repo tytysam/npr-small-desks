@@ -15,12 +15,16 @@ const CSS_H = 300;
  * "blending" occlusion puts the element *behind* the canvas and punches a
  * depth-only hole in the scene where the screen is. pointer-events are off so
  * orbiting and knob drags over the picture still reach the canvas wrapper.
+ *
+ * `scale` draws it smaller than SCREEN_W x SCREEN_H (the cream set's).
+ * `squircle` shapes it as one (where corner-shape is supported), to fill
+ * the cream set's glass edge to edge.
  */
-const ScreenSurface = ({ position, ...screenProps }) => (
+const ScreenSurface = ({ position, scale = 1, squircle = false, ...screenProps }) => (
   <Html
     transform
     occlude="blending"
-    distanceFactor={4}
+    distanceFactor={4 * scale}
     position={position}
     zIndexRange={[10, 0]}
     style={{ width: CSS_W, height: CSS_H, pointerEvents: 'none' }}
@@ -30,7 +34,8 @@ const ScreenSurface = ({ position, ...screenProps }) => (
         width: CSS_W,
         height: CSS_H,
         background: '#000',
-        borderRadius: '14% / 18%',
+        borderRadius: squircle ? '50%' : '14% / 18%',
+        cornerShape: squircle ? 'squircle' : undefined,
         overflow: 'hidden',
       }}
     >

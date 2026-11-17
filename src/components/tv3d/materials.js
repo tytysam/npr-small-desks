@@ -14,6 +14,17 @@ export const PALETTE = {
   heart: '#c8372a',
 };
 
+/**
+ * The cream set's plastic (its dish knobs and buttons): the cream of its
+ * shell, a mid grey, the ink printed on them, and the finish they share.
+ */
+export const PLASTIC = {
+  cream: '#e3d8c0',
+  grey: '#7f7e78',
+  ink: '#3d362c',
+  finish: { roughness: 0.4, clearcoat: 0.5, clearcoatRoughness: 0.3 },
+};
+
 /** The guide's ♥ (its thumb tab and listings): Courier New, bold. */
 export const HEART_FONT = 'bold 200px "Courier New", monospace';
 
@@ -71,11 +82,12 @@ const makeCanvas = (w, h) => {
 };
 
 /**
- * Wood textures for a preset ('walnut' | 'honey') from the shared grain
- * generator (src/js/woodGrain.js): colour, bump and roughness maps.
+ * Wood textures for a wood (a WOOD key) cut for a part ('body' | 'bezel'),
+ * from the shared grain generator (src/js/woodGrain.js): colour, bump and
+ * roughness maps.
  */
-export const makeWoodTexture = (name) => {
-  const wood = getWood(name);
+export const makeWoodTexture = (name, cut) => {
+  const wood = getWood(name, cut);
   return {
     map: finishTexture(wood.color),
     bumpMap: finishTexture(wood.bump, { srgb: false }),
@@ -179,8 +191,36 @@ const roundedRectRing = (w, h, r, perCorner) => {
  * Lofts a sequence of rounded-rectangle rings ({ w, h, r, z }) into one
  * smooth surface, facing outward/forward. Used for the CRT bezel's profile.
  */
-export const makeLoftGeometry = (rings, perCorner = 10) => {
-  const loops = rings.map(({ w, h, r, z }) => roundedRectRing(w, h, r, perCorner).map(([x, y]) => [x, y, z]));
+export const makeLoftGeometry = (rings, perCorner = 10) =>
+  loftLoops(rings.map(({ w, h, r, z }) => roundedRectRing(w, h, r, perCorner).map(([x, y]) => [x, y, z])));
+
+/**
+ * A "pillow" ring, as a 1950s picture tube is shaped: a superellipse
+ * (half-sizes `a`, `b`; `n` above 2 squares it off, bowing every side
+ * gently), wider at the top than the bottom by `taper` (0.03 = 3% each way).
+ * Counter-clockwise from the right, like roundedRectRing.
+ */
+const pillowRing = ({ a, b, n, taper = 0 }, count) =>
+  Array.from({ length: count }, (_, i) => {
+    const t = (i / count) * Math.PI * 2;
+    const c = Math.cos(t);
+    const s = Math.sin(t);
+    const y = b * Math.sign(s) * Math.abs(s) ** (2 / n);
+    const x = a * Math.sign(c) * Math.abs(c) ** (2 / n) * (1 + taper * (y / b));
+    return [x, y];
+  });
+
+/** A flat pillow (pillowRing's outline, filled): the cream set's glass. */
+export const makePillowFaceGeometry = (ring, count = 160) => {
+  const shape = new THREE.Shape(pillowRing(ring, count).map(([x, y]) => new THREE.Vector2(x, y)));
+  return new THREE.ShapeGeometry(shape);
+};
+
+/** makeLoftGeometry for pillow rings ({ a, b, n, taper, z }): the cream set's shell. */
+export const makePillowLoftGeometry = (rings, count = 160) =>
+  loftLoops(rings.map((ring) => pillowRing(ring, count).map(([x, y]) => [x, y, ring.z])));
+
+const loftLoops = (loops) => {
   const n = loops[0].length;
   const positions = new Float32Array(loops.length * n * 3);
   loops.forEach((loop, j) =>
@@ -329,8 +369,8 @@ export const makeLabelTexture = (
   return texture;
 };
 
-/** Numbered ring (2–13) with a pointer at twelve o'clock, printed on the panel around the channel knob. */
-export const makeChannelRingTexture = () => {
+/** Numbered ring (1–12) with a pointer at twelve o'clock, printed on the panel around the channel knob. */
+export const makeChannelRingTexture = ({ pointer = 'arrow' } = {}) => {
   const size = 512;
   const canvas = makeCanvas(size, size);
   const ctx = canvas.getContext('2d');
@@ -346,16 +386,55 @@ export const makeChannelRingTexture = () => {
     const angle = (i * 30 - 90) * (Math.PI / 180);
     const x = cx + Math.cos(angle) * radius;
     const y = cy + Math.sin(angle) * radius;
-    ctx.fillText(String(i + 2), x, y);
+    ctx.fillText(String(i + 1), x, y);
   }
-  // amber pointer triangle at the top, just inside the numerals
+  // the amber pointer at the top, just inside the numerals: a triangle, or
+  // a dot (the teak set's), midway between the "1" and its bar handle's tip
   ctx.fillStyle = PALETTE.amber;
   ctx.beginPath();
-  ctx.moveTo(cx - 12, size * 0.14);
-  ctx.lineTo(cx + 12, size * 0.14);
-  ctx.lineTo(cx, size * 0.14 + 18);
-  ctx.closePath();
+  if (pointer === 'dot') {
+    ctx.arc(cx, size * 0.179, 8, 0, Math.PI * 2);
+  } else {
+    ctx.moveTo(cx - 12, size * 0.14);
+    ctx.lineTo(cx + 12, size * 0.14);
+    ctx.lineTo(cx, size * 0.14 + 18);
+    ctx.closePath();
+  }
   ctx.fill();
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  return texture;
+};
+
+/**
+ * The numbers printed on the cream set's channel knob (its dish's top), in a
+ * ring that turns with it: so they run anticlockwise, each upright when
+ * it's at the top, under the fixed notch. Inside a fine printed circle.
+ */
+export const makeDishNumbersTexture = () => {
+  const size = 512;
+  const canvas = makeCanvas(size, size);
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, size, size);
+  const cx = size / 2;
+  const ink = PLASTIC.ink;
+  ctx.strokeStyle = ink;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(cx, cx, size * 0.455, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = ink;
+  ctx.font = 'bold 40px "Courier New", monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (let i = 0; i < 12; i += 1) {
+    ctx.save();
+    ctx.translate(cx, cx);
+    ctx.rotate((-i * 30 * Math.PI) / 180);
+    ctx.fillText(String(i + 1), 0, -size * 0.355);
+    ctx.restore();
+  }
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 8;
@@ -400,13 +479,28 @@ const roundedRect = (path, x, y, w, h, r) => {
   path.quadraticCurveTo(x, y, x + r, y);
 };
 
+// The same, its corners true quarter circles: the lofted bezels'
+// (roundedRectRing) corners, so a frame can sit concentric with one.
+const roundedRectArcs = (path, x, y, w, h, r) => {
+  path.moveTo(x + r, y);
+  path.lineTo(x + w - r, y);
+  path.absarc(x + w - r, y + r, r, -Math.PI / 2, 0, false);
+  path.lineTo(x + w, y + h - r);
+  path.absarc(x + w - r, y + h - r, r, 0, Math.PI / 2, false);
+  path.lineTo(x + r, y + h);
+  path.absarc(x + r, y + h - r, r, Math.PI / 2, Math.PI, false);
+  path.lineTo(x, y + r);
+  path.absarc(x + r, y + r, r, Math.PI, (3 * Math.PI) / 2, false);
+};
+
 /**
  * A rounded-rectangle frame with a rounded-rectangle opening, extruded toward +Z.
  *
  * Note three.js bevels push the walls *outward* from the shape's contour, so
  * the outer edge grows and the opening shrinks by `bevelSize` at mid-depth;
  * callers size `outer*`/`inner*` accordingly. `innerOffset` moves the opening
- * off-centre.
+ * off-centre. Corners are quadratic curves (squarer than circles) unless
+ * `arcs`: true quarter circles, to sit concentric with a lofted bezel.
  */
 export const makeFrameGeometry = ({
   outerW,
@@ -420,11 +514,13 @@ export const makeFrameGeometry = ({
   bevelThickness = bevelSize,
   bevelSegments = 3,
   innerOffset = [0, 0],
+  arcs = false,
 }) => {
+  const corner = arcs ? roundedRectArcs : roundedRect;
   const shape = new THREE.Shape();
-  roundedRect(shape, -outerW / 2, -outerH / 2, outerW, outerH, radius);
+  corner(shape, -outerW / 2, -outerH / 2, outerW, outerH, radius);
   const hole = new THREE.Path();
-  roundedRect(hole, innerOffset[0] - innerW / 2, innerOffset[1] - innerH / 2, innerW, innerH, innerRadius);
+  corner(hole, innerOffset[0] - innerW / 2, innerOffset[1] - innerH / 2, innerW, innerH, innerRadius);
   shape.holes.push(hole);
   return new THREE.ExtrudeGeometry(shape, {
     depth,
@@ -533,11 +629,26 @@ export const makeGuideTextures = (issues) => {
 };
 
 /**
- * The set's back: a hardboard panel with vent slots, the printed caution, a
- * rating plate, and the inspector's tag, signed. `width` × `height` in canvas
- * pixels; keep the aspect equal to the plane's.
+ * The hardboard back, laid out for its cabinet (cabinets.js `back`): flecked
+ * hardboard, a screw in each corner, rows of vent slots, the printed caution,
+ * the rating plate and the inspector's tag, signed and stamped. Drawn at the
+ * cabinet's own proportions, the same scale on every set (`size` is in
+ * pixels), so nothing is stretched; `scale` shrinks the plate, the caution
+ * and the tag where the back is short (the cream set's base). `screws`
+ * sets the screws' finish ('steel' or 'brass') and size (`scale`).
  */
-export const makeBackPanelTexture = ({ width = 2048, height = 1454 } = {}) => {
+export const makeBackPanelTexture = ({
+  model = 'NP-R1',
+  serial = '000001',
+  size: [width, height] = [2048, 1454],
+  screwInset = 70,
+  vents = { x: 250, y: 150, cols: 26, rows: 3, slotH: 150 },
+  caution = { x: 2048 * 0.47, y: 750 },
+  plate = { x: 160, y: 1080 },
+  tag = { x: 1600, y: 1165 },
+  scale = 1,
+  screws = {},
+} = {}) => {
   const canvas = makeCanvas(width, height);
   const ctx = canvas.getContext('2d');
   const text = (str, x, y, font, color, align = 'center') => {
@@ -554,42 +665,45 @@ export const makeBackPanelTexture = ({ width = 2048, height = 1454 } = {}) => {
   board.addColorStop(1, '#6e4c2e');
   ctx.fillStyle = board;
   ctx.fillRect(0, 0, width, height);
-  for (let i = 0; i < 9000; i += 1) {
+  const flecks = Math.round((9000 * width * height) / (2048 * 1454));
+  for (let i = 0; i < flecks; i += 1) {
     ctx.fillStyle = `rgba(${Math.random() < 0.5 ? '255,230,200' : '20,10,0'},${0.04 + Math.random() * 0.06})`;
     ctx.fillRect(Math.random() * width, Math.random() * height, 2 + Math.random() * 3, 1 + Math.random() * 2);
   }
 
   // Screws, one per corner.
   [
-    [70, 70],
-    [width - 70, 70],
-    [70, height - 70],
-    [width - 70, height - 70],
+    [screwInset, screwInset],
+    [width - screwInset, screwInset],
+    [screwInset, height - screwInset],
+    [width - screwInset, height - screwInset],
   ].forEach(([x, y]) => {
-    const head = ctx.createRadialGradient(x - 8, y - 8, 2, x, y, 26);
-    head.addColorStop(0, '#e8e4dc');
-    head.addColorStop(1, '#6d6a64');
+    const k = screws.scale ?? 1;
+    const [light, dark, slot] =
+      screws.finish === 'brass' ? ['#f4dca0', '#8a6a34', '#4a3414'] : ['#e8e4dc', '#6d6a64', '#3a3834'];
+    const head = ctx.createRadialGradient(x - 8 * k, y - 8 * k, 2 * k, x, y, 26 * k);
+    head.addColorStop(0, light);
+    head.addColorStop(1, dark);
     ctx.fillStyle = head;
     ctx.beginPath();
-    ctx.arc(x, y, 24, 0, Math.PI * 2);
+    ctx.arc(x, y, 24 * k, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = '#3a3834';
-    ctx.lineWidth = 5;
+    ctx.strokeStyle = slot;
+    ctx.lineWidth = 5 * k;
     ctx.beginPath();
-    ctx.moveTo(x - 15, y - 6);
-    ctx.lineTo(x + 15, y + 6);
+    ctx.moveTo(x - 15 * k, y - 6 * k);
+    ctx.lineTo(x + 15 * k, y + 6 * k);
     ctx.stroke();
   });
 
-  // Vent slots: three rows across the top, where the tube's heat gets out.
+  // Vent slots across the top, where the tube's heat gets out.
   const slotW = 26;
-  const slotH = 150;
-  for (let row = 0; row < 3; row += 1) {
-    for (let col = 0; col < 26; col += 1) {
-      const x = 250 + col * 60;
-      const y = 150 + row * 190;
+  for (let row = 0; row < vents.rows; row += 1) {
+    for (let col = 0; col < vents.cols; col += 1) {
+      const x = vents.x + col * 60;
+      const y = vents.y + row * (vents.slotH + 40);
       const path = new Path2D();
-      roundedRect(path, x, y, slotW, slotH, slotW / 2);
+      roundedRect(path, x, y, slotW, vents.slotH, slotW / 2);
       ctx.fillStyle = '#140b05';
       ctx.fill(path);
       ctx.strokeStyle = 'rgba(255, 220, 180, 0.12)';
@@ -598,99 +712,202 @@ export const makeBackPanelTexture = ({ width = 2048, height = 1454 } = {}) => {
     }
   }
 
-  // The printed caution, centre bottom.
-  const ink = 'rgba(18, 10, 4, 0.82)';
-  const cx = width * 0.47;
-  text('CAUTION', cx, 750, 'bold 64px Georgia, serif', ink);
-  [
-    'TO REDUCE THE RISK OF ELECTRIC SHOCK, DO NOT',
-    'REMOVE BACK. NO USER-SERVICEABLE PARTS INSIDE.',
-    'REFER SERVICING TO QUALIFIED SERVICE PERSONNEL.',
-  ].forEach((line, i) => text(line, cx, 815 + i * 44, 'bold 34px "Courier New", monospace', ink));
-
-  // Rating plate, bottom left.
-  const plate = ctx.createLinearGradient(160, 1080, 760, 1320);
-  plate.addColorStop(0, '#d9d7d0');
-  plate.addColorStop(0.5, '#a9a69e');
-  plate.addColorStop(1, '#cfccc4');
-  ctx.fillStyle = plate;
-  ctx.fillRect(160, 1080, 600, 250);
-  ctx.strokeStyle = '#3d3b37';
-  ctx.lineWidth = 4;
-  ctx.strokeRect(172, 1092, 576, 226);
-  const etch = '#24221e';
-  text('MODEL NP-R1', 460, 1140, 'bold 44px Georgia, serif', etch);
-  text('120 V ~ 60 Hz  145 W', 460, 1200, 'bold 30px "Courier New", monospace', etch);
-  text('SERIAL No. 000001', 460, 1248, 'bold 30px "Courier New", monospace', etch);
-  text('SMALL DESK ELECTRONICS', 460, 1292, '24px Georgia, serif', etch);
-
-  // The inspector's tag, bottom right: yellowed paper, a little askew.
-  ctx.save();
-  ctx.translate(1600, 1165);
-  ctx.rotate(-0.05);
-  const tagW = 560;
-  const tagH = 480;
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-  ctx.shadowBlur = 18;
-  ctx.shadowOffsetY = 6;
-  const paper = ctx.createLinearGradient(-tagW / 2, -tagH / 2, tagW / 2, tagH / 2);
-  paper.addColorStop(0, '#f1e6c8');
-  paper.addColorStop(1, '#d8c79e');
-  ctx.fillStyle = paper;
-  ctx.fillRect(-tagW / 2, -tagH / 2, tagW, tagH);
-  ctx.shadowColor = 'transparent';
-  const tagInk = '#2b2418';
-  ctx.fillStyle = tagInk;
-  ctx.fillRect(-tagW / 2, -tagH / 2, tagW, 70);
-  text('INSPECTED', 0, -tagH / 2 + 37, 'bold 44px Georgia, serif', '#f1e6c8');
-  const field = (label, value, y) => {
-    text(label, -tagW / 2 + 32, y, 'bold 24px "Courier New", monospace', tagInk, 'left');
-    text(value, tagW / 2 - 32, y, 'bold 30px "Courier New", monospace', tagInk, 'right');
-    ctx.fillStyle = 'rgba(43, 36, 24, 0.4)';
-    ctx.fillRect(-tagW / 2 + 32, y + 22, tagW - 64, 2);
+  // Each block below is drawn about its own origin, `scale`d.
+  const at = (x, y, draw) => {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+    draw();
+    ctx.restore();
   };
-  field('MODEL', 'NP-R1', -135);
-  field('SERIAL', '000001', -75);
-  field('DATE', 'OCT 2026', -15);
-  text('INSPECTOR', -tagW / 2 + 32, 45, 'bold 24px "Courier New", monospace', tagInk, 'left');
 
-  // Signed in blue-black ink.
-  const [sx, sy, sw, sh] = SIGNATURE.viewBox;
-  const sigW = 240;
-  const scale = sigW / sw;
-  ctx.save();
-  ctx.translate(-tagW / 2 + 40, 122 - (sh * scale) / 2);
-  ctx.scale(scale, scale);
-  ctx.translate(-sx, -sy);
-  ctx.strokeStyle = '#1d2a5c';
-  ctx.lineWidth = SIGNATURE.strokeWidth * 0.9;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  SIGNATURE.paths.forEach((d) => ctx.stroke(new Path2D(d)));
-  ctx.restore();
-  // The signature line, with the name typed under it.
-  ctx.fillStyle = 'rgba(43, 36, 24, 0.55)';
-  ctx.fillRect(-tagW / 2 + 32, 186, 300, 2);
-  text('Tyler C. Samuelson', -tagW / 2 + 32, 210, 'bold 24px "Courier New", monospace', tagInk, 'left');
+  // The printed caution.
+  const ink = 'rgba(18, 10, 4, 0.82)';
+  at(caution.x, caution.y, () => {
+    text('CAUTION', 0, 0, 'bold 64px Georgia, serif', ink);
+    [
+      'TO REDUCE THE RISK OF ELECTRIC SHOCK, DO NOT',
+      'REMOVE BACK. NO USER-SERVICEABLE PARTS INSIDE.',
+      'REFER SERVICING TO QUALIFIED SERVICE PERSONNEL.',
+    ].forEach((line, i) => text(line, 0, 65 + i * 44, 'bold 34px "Courier New", monospace', ink));
+  });
 
-  // A red rubber stamp beside it.
-  ctx.save();
-  ctx.translate(tagW / 2 - 95, 135);
-  ctx.rotate(0.3);
-  ctx.globalAlpha = 0.72;
-  ctx.strokeStyle = '#b3261e';
-  ctx.lineWidth = 6;
-  ctx.beginPath();
-  ctx.arc(0, 0, 62, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.arc(0, 0, 52, 0, Math.PI * 2);
-  ctx.stroke();
-  text('QC', 0, -12, 'bold 38px Georgia, serif', '#b3261e');
-  text('No. 7', 0, 24, 'bold 22px "Courier New", monospace', '#b3261e');
-  ctx.restore();
-  ctx.restore();
+  // The rating plate.
+  at(plate.x, plate.y, () => {
+    const metal = ctx.createLinearGradient(0, 0, 600, 240);
+    metal.addColorStop(0, '#d9d7d0');
+    metal.addColorStop(0.5, '#a9a69e');
+    metal.addColorStop(1, '#cfccc4');
+    ctx.fillStyle = metal;
+    ctx.fillRect(0, 0, 600, 250);
+    ctx.strokeStyle = '#3d3b37';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(12, 12, 576, 226);
+    const etch = '#24221e';
+    text(`MODEL ${model}`, 300, 60, 'bold 44px Georgia, serif', etch);
+    text('120 V ~ 60 Hz  145 W', 300, 120, 'bold 30px "Courier New", monospace', etch);
+    text(`SERIAL No. ${serial}`, 300, 168, 'bold 30px "Courier New", monospace', etch);
+    text('SMALL DESK ELECTRONICS', 300, 212, '24px Georgia, serif', etch);
+  });
+
+  // The inspector's tag: yellowed paper, a little askew.
+  at(tag.x, tag.y, () => {
+    ctx.rotate(-0.05);
+    const tagW = 560;
+    const tagH = 480;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+    ctx.shadowBlur = 18 * scale;
+    ctx.shadowOffsetY = 6 * scale;
+    const paper = ctx.createLinearGradient(-tagW / 2, -tagH / 2, tagW / 2, tagH / 2);
+    paper.addColorStop(0, '#f1e6c8');
+    paper.addColorStop(1, '#d8c79e');
+    ctx.fillStyle = paper;
+    ctx.fillRect(-tagW / 2, -tagH / 2, tagW, tagH);
+    ctx.shadowColor = 'transparent';
+    const tagInk = '#2b2418';
+    ctx.fillStyle = tagInk;
+    ctx.fillRect(-tagW / 2, -tagH / 2, tagW, 70);
+    text('INSPECTED', 0, -tagH / 2 + 37, 'bold 44px Georgia, serif', '#f1e6c8');
+    const field = (label, value, y) => {
+      text(label, -tagW / 2 + 32, y, 'bold 24px "Courier New", monospace', tagInk, 'left');
+      text(value, tagW / 2 - 32, y, 'bold 30px "Courier New", monospace', tagInk, 'right');
+      ctx.fillStyle = 'rgba(43, 36, 24, 0.4)';
+      ctx.fillRect(-tagW / 2 + 32, y + 22, tagW - 64, 2);
+    };
+    field('MODEL', model, -135);
+    field('SERIAL', serial, -75);
+    field('DATE', 'OCT 2026', -15);
+    text('INSPECTOR', -tagW / 2 + 32, 45, 'bold 24px "Courier New", monospace', tagInk, 'left');
+
+    // Signed in blue-black ink.
+    const [sx, sy, sw, sh] = SIGNATURE.viewBox;
+    const sigW = 240;
+    const sigScale = sigW / sw;
+    ctx.save();
+    ctx.translate(-tagW / 2 + 40, 122 - (sh * sigScale) / 2);
+    ctx.scale(sigScale, sigScale);
+    ctx.translate(-sx, -sy);
+    ctx.strokeStyle = '#1d2a5c';
+    ctx.lineWidth = SIGNATURE.strokeWidth * 0.9;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    SIGNATURE.paths.forEach((d) => ctx.stroke(new Path2D(d)));
+    ctx.restore();
+    // The signature line, with the name typed under it.
+    ctx.fillStyle = 'rgba(43, 36, 24, 0.55)';
+    ctx.fillRect(-tagW / 2 + 32, 186, 300, 2);
+    text('Tyler C. Samuelson', -tagW / 2 + 32, 210, 'bold 24px "Courier New", monospace', tagInk, 'left');
+
+    // A red rubber stamp beside it.
+    ctx.save();
+    ctx.translate(tagW / 2 - 95, 135);
+    ctx.rotate(0.3);
+    ctx.globalAlpha = 0.72;
+    ctx.strokeStyle = '#b3261e';
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.arc(0, 0, 62, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, 52, 0, Math.PI * 2);
+    ctx.stroke();
+    text('QC', 0, -12, 'bold 38px Georgia, serif', '#b3261e');
+    text('No. 7', 0, 24, 'bold 22px "Courier New", monospace', '#b3261e');
+    ctx.restore();
+  });
 
   return finishTexture(canvas);
+};
+
+/**
+ * Speaker grille cloth, as on a 1960s console: an open weave of oatmeal and
+ * brown threads with the odd gold one, tiled across the grille.
+ */
+export const makeClothTexture = ({ repeat = [10, 7] } = {}) => {
+  const size = 256;
+  const canvas = makeCanvas(size, size);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#2a2119';
+  ctx.fillRect(0, 0, size, size);
+  const pitch = 8;
+  const threads = ['#8c7a5e', '#7a6a50', '#9a8766', '#6e5f47'];
+  for (let i = 0; i < size / pitch; i += 1) {
+    // warp (vertical) and weft (horizontal), each a little uneven
+    const gold = i % 11 === 5;
+    ctx.fillStyle = gold ? '#b8955a' : threads[i % threads.length];
+    ctx.fillRect(i * pitch + 1, 0, pitch - 3, size);
+    ctx.fillStyle = gold ? '#c4a265' : threads[(i + 2) % threads.length];
+    ctx.globalAlpha = 0.85;
+    ctx.fillRect(0, i * pitch + 1, size, pitch - 3);
+    ctx.globalAlpha = 1;
+  }
+  // over-under: shade alternate crossings so the weave reads
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.14)';
+  for (let y = 0; y < size / pitch; y += 1) {
+    for (let x = (y % 2); x < size / pitch; x += 2) ctx.fillRect(x * pitch, y * pitch, pitch, pitch);
+  }
+  return finishTexture(canvas, { repeat });
+};
+
+/**
+ * Brushed metal (the teak set's brass rail): fine streaks along its length,
+ * as a colour map (to multiply the metal's colour) and a roughness map
+ * (glossier and duller lines, so highlights break up along the grain).
+ */
+export const makeBrushedTextures = ({ repeat = [3, 1] } = {}) => {
+  const w = 512;
+  const h = 128;
+  const color = makeCanvas(w, h);
+  const rough = makeCanvas(w, h);
+  const c = color.getContext('2d');
+  const r = rough.getContext('2d');
+  c.fillStyle = '#f2f2f2';
+  c.fillRect(0, 0, w, h);
+  r.fillStyle = 'rgb(80, 80, 80)';
+  r.fillRect(0, 0, w, h);
+  // Deterministic streaks: a cheap hash, so the rail looks the same every time.
+  let seed = 7;
+  const rand = () => {
+    seed = (seed * 16807) % 2147483647;
+    return seed / 2147483647;
+  };
+  for (let i = 0; i < 900; i += 1) {
+    const y = rand() * h;
+    const x = rand() * w - 60;
+    const len = 60 + rand() * 360;
+    const light = rand() > 0.5;
+    c.fillStyle = light ? `rgba(255, 255, 255, ${0.25 + rand() * 0.3})` : `rgba(90, 80, 60, ${0.12 + rand() * 0.2})`;
+    c.fillRect(x, y, len, 0.6 + rand() * 0.8);
+    const v = Math.round(light ? 50 + rand() * 25 : 105 + rand() * 40);
+    r.fillStyle = `rgb(${v}, ${v}, ${v})`;
+    r.fillRect(x, y, len, 0.6 + rand() * 0.8);
+  }
+  return { map: finishTexture(color, { repeat }), roughnessMap: finishTexture(rough, { repeat, srgb: false }) };
+};
+
+/**
+ * Brushed brass, the rail's: every brass piece on a set uses it, so they
+ * match. Only partly metallic: a full mirror facing the camera reflects the
+ * empty room behind it and reads as dark (as the Silver trim notes); the
+ * clear coat and the stretched (anisotropic) highlights carry the shine.
+ * `repeat` scales the brushing to the piece's UVs: the rail's run 0–1 across
+ * the strip; a frame's (ExtrudeGeometry) are in world units, so give it
+ * `[3 / railWidth, 1 / railHeight]` for the same grain. Returns the material
+ * and its textures, for useDisposable to free together.
+ */
+export const makeBrushedBrass = ({ repeat = [3, 1] } = {}) => {
+  const { map, roughnessMap } = makeBrushedTextures({ repeat });
+  const material = new THREE.MeshPhysicalMaterial({
+    color: '#e2bf75',
+    metalness: 0.6,
+    roughness: 1,
+    map,
+    roughnessMap,
+    clearcoat: 0.5,
+    clearcoatRoughness: 0.25,
+    anisotropy: 0.6,
+    envMapIntensity: 1.3,
+  });
+  return { material, map, roughnessMap };
 };

@@ -1,0 +1,437 @@
+/* The NP-D6: a Danish-modern teak console, restyling the walnut NP-R1
+   (TV.css) as the 3D set's teak cabinet (tv3d/cabinets.js) is built: wider
+   and lower, a plain box (no top board), all teak, picked out in brass: a ring around the tube, the
+   grille framed in brass, a brass rail, and tall pencil legs with brass ferrules. The bezel and panel
+   are teak too (src/js/cabinets.js), cut finer; the tokens below are the CSS
+   wood shown until it's painted. */
+
+.tv-set--teak {
+  --walnut-light: #8f6236;
+  --walnut-mid: #6e4626;
+  --walnut-dark: #4a2c14;
+  --honey-light: #8f6236;
+  --honey-mid: #7a5230;
+  --honey-dark: #5f3b1d;
+  --bezel-glaze: rgba(110, 60, 25, 0.5);
+  /* every piece of brass: the rail, and the rings round the tube, the dials
+     and the grille (.tv-brass-ring below) */
+  --brass: linear-gradient(180deg, #e2c48a, #c8a463 35%, #a8874e 70%, #c09a5a);
+  width: min(94vw, 1040px);
+}
+
+/* Teak is browner than walnut under the same warm light: a deeper wash. */
+.tv-set--teak .tv-console,
+.tv-set--teak .tv-board,
+.tv-set--teak .tv-legs,
+.tv-set--teak .tv-leg {
+  --wood-warmth: linear-gradient(rgba(110, 60, 25, 0.5), rgba(110, 60, 25, 0.5));
+}
+
+/* No top board: a plain box, the guide and the antenna standing on the
+   cabinet itself (its top where the board's was). */
+.tv-set--teak .tv-top-board {
+  display: none;
+}
+
+.tv-set--teak .tv-console {
+  margin-top: 0;
+}
+
+/* the aerial behind the cabinet's top edge, its mount's foot hidden by it,
+   as the walnut set's top board hides its */
+.tv-set--teak .tv-antenna {
+  z-index: 0;
+}
+
+/* ---- The control panel: teak, knobs side by side over a cloth grille ----
+   As on the 3D set: the dials across the top, the grille filling everything
+   between them and the power switch.
+
+   One spacing throughout, --teak-space: the board's padding, the gaps
+   between the bezel, the panel and the rail, and inside the panel the space
+   round and between its parts (measured to the brass, which is drawn as
+   shadows outside each part's box: margins make room for it). */
+
+.tv-set--teak {
+  --teak-space: 16px;
+}
+
+.tv-set--teak .tv-front {
+  gap: var(--teak-space);
+}
+
+.tv-set--teak .tv-column {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto 1fr auto;
+  justify-content: space-between;
+  justify-items: center;
+  gap: var(--teak-space);
+  /* the dials' rings, their gap and the padding: 154 + 132 + 3 × 16 */
+  width: 334px;
+  padding: var(--teak-space);
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(255, 245, 220, 0.14), transparent 18%, transparent 80%, rgba(60, 30, 5, 0.18)),
+    linear-gradient(var(--bezel-glaze), var(--bezel-glaze)),
+    var(--wood-honey, linear-gradient(transparent, transparent)) 50% 50% / cover,
+    repeating-linear-gradient(176deg, var(--honey-mid) 0px, var(--honey-light) 9px, var(--honey-mid) 18px, var(--honey-dark) 30px);
+  background-blend-mode: normal, soft-light, normal, normal;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 225, 185, 0.3),
+    inset 0 -2px 0 rgba(40, 20, 5, 0.45),
+    0 3px 6px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(40, 20, 5, 0.65);
+}
+
+/* ---- Brass rings: round the tube, the dials and the grille ---------------
+   3px of the rail's brass, as a pseudo-element masked to a ring (a shadow
+   can't take a gradient). --ring-at is how far outside its element the
+   ring's outer edge sits. */
+
+.tv-set--teak .tv-frame::after,
+.tv-set--teak .dial::before,
+.tv-set--teak .tv-speaker::before {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--ring-at));
+  z-index: 2;
+  padding: 3px;
+  border-radius: inherit;
+  background: var(--brass);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+
+
+/* The bezel's face is teak like the rest; the tube sits in a brass ring. */
+.tv-set--teak .tv-frame {
+  /* The space before the bevel round the tube (its 10px shadow ring) is the
+     set's spacing, not the space to the brass: the bevel reads as part of
+     the ring, so measuring to the brass looked tight. */
+  --frame-pad: calc(var(--teak-space) + 10px);
+  padding: var(--frame-pad);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 225, 185, 0.3),
+    inset 2px 0 0 rgba(255, 225, 185, 0.15),
+    inset 0 -2px 0 rgba(40, 20, 5, 0.5),
+    inset -2px 0 0 rgba(40, 20, 5, 0.35),
+    0 3px 6px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(40, 20, 5, 0.65);
+}
+
+/* The tube clips what overflows it, so its ring hangs off the bezel
+   instead, round the tube: the bezel is exactly the tube and its padding. */
+.tv-set--teak .tv-frame::after {
+  --ring-at: 3px;
+  inset: calc(var(--frame-pad) - var(--ring-at));
+  /* concentric with the tube's corners (14% / 18% of the tube), so the
+     ring's inner edge runs exactly along the glass: the tube's radius plus
+     the ring's 3px, in percentages of this box, 6px bigger than the tube */
+  border-radius: calc(14% + 2.16px) / calc(18% + 1.92px);
+}
+
+.tv-set--teak .tv-tube {
+  box-shadow:
+    0 0 0 3px #a8874e, /* under the ring, so no wood shows at its edges */
+    0 0 0 4px rgba(70, 45, 15, 0.5), /* the ring's outer line */
+    0 0 0 10px rgba(40, 20, 5, 0.25),
+    0 -7px 10px 5px rgba(25, 12, 2, 0.3),
+    inset 0 0 0 2px #000;
+}
+
+/* The knobs' numbers sit on dark escutcheons ringed in brass. The ring is
+   drawn just outside the dial (shadows don't take up room), so the numbers
+   have space inside it. */
+.tv-set--teak .dial {
+  border-radius: 50%;
+  background: #1c140c;
+  box-shadow:
+    0 0 0 6px #1c140c,
+    0 0 0 10px rgba(70, 45, 15, 0.5), /* the ring's outer line */
+    0 3px 6px 9px rgba(0, 0, 0, 0.35);
+  --ring-at: 9px;
+  margin: 10px; /* room for the ring */
+}
+
+/* No knobs: each dial is turned by a brass bar across it, as on the 3D set.
+   The knob stays as the (invisible) round thing you grab; only its bar
+   shows: smooth, the rail's brass, tapering gently to a blunt rounded tip
+   at the indicator end, pinched in at both sides toward the other, where
+   you'd grip it. */
+.tv-set--teak .knob {
+  box-shadow: none;
+}
+
+.tv-set--teak .knob:focus-visible {
+  box-shadow: 0 0 0 3px #ffb347;
+}
+
+.tv-set--teak .knob-ridges,
+.tv-set--teak .knob-face,
+.tv-set--teak .knob-cap {
+  display: none;
+}
+
+.tv-set--teak .knob-pointer {
+  top: 2%;
+  bottom: 2%;
+  width: 22%;
+  margin-left: -11%;
+  border-radius: 0;
+  background:
+    /* rounded across its width: lit on the left, shaded on the right */
+    linear-gradient(90deg, rgba(255, 245, 215, 0.4), transparent 35%, transparent 65%, rgba(60, 35, 10, 0.45)),
+    var(--brass);
+  /* the outline: tapering over the top 40% to a blunt tip, pinched in
+     at both sides 60–88% down */
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 100' preserveAspectRatio='none'%3E%3Cpath d='M7 0H13Q15.5 0 15.6 3L20 40V60Q17 74 20 88V93Q20 100 13 100H7Q0 100 0 93V88Q3 74 0 60V40L4.4 3Q4.5 0 7 0Z'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 100' preserveAspectRatio='none'%3E%3Cpath d='M7 0H13Q15.5 0 15.6 3L20 40V60Q17 74 20 88V93Q20 100 13 100H7Q0 100 0 93V88Q3 74 0 60V40L4.4 3Q4.5 0 7 0Z'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+  box-shadow: none;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.6));
+}
+
+/* The silver controls (power, TV/VCR, MENU, the play lever, the
+   brightness bar) darkened toward charcoal, so they sit back against the
+   brass. (Darker than
+   the 3D set's: flat CSS silver reads brighter than lit metal.) */
+.tv-set--teak .tv-switch-slider,
+.tv-set--teak .tv-input-slider,
+.tv-set--teak .tv-badge-knob,
+.tv-set--teak .tv-lever-nut,
+.tv-set--teak .tv-lever-handle {
+  filter: brightness(0.62) contrast(0.92); /* toward charcoal */
+}
+
+/* MENU latched in: darker still, as TV.css's (which this would replace) */
+.tv-set--teak .tv-badge-knob.is-pressed {
+  filter: brightness(0.5) contrast(0.92);
+}
+
+/* The brightness knob on the rail: the same bar, small, and no knob, in
+   the play lever's chrome (a shade darker), which reads against the brass. The drop shadow is on
+   the (invisible) knob, so the bar's outline doesn't clip it. */
+.tv-set--teak .tv-mini-knob {
+  position: relative;
+  width: 27px;
+  height: 27px;
+  background: none;
+  box-shadow: none;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.6));
+}
+
+.tv-set--teak .tv-mini-knob:focus-visible {
+  box-shadow: 0 0 0 2px var(--amber);
+}
+
+.tv-set--teak .tv-mini-knob::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 7px;
+  margin-left: -3.5px;
+  /* the play lever's chrome, a shade darker */
+  background: linear-gradient(90deg, #5e5e5e, #dcdcdc 40%, #9e9e9e 65%, #424242);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 100' preserveAspectRatio='none'%3E%3Cpath d='M7 0H13Q15.5 0 15.6 3L20 40V60Q17 74 20 88V93Q20 100 13 100H7Q0 100 0 93V88Q3 74 0 60V40L4.4 3Q4.5 0 7 0Z'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 100' preserveAspectRatio='none'%3E%3Cpath d='M7 0H13Q15.5 0 15.6 3L20 40V60Q17 74 20 88V93Q20 100 13 100H7Q0 100 0 93V88Q3 74 0 60V40L4.4 3Q4.5 0 7 0Z'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+  filter: brightness(0.7) contrast(0.92); /* the 2D silver's darkening, past its own */
+}
+
+/* The channel dial's bar as small as the volume dial's (its 72px knob's
+   bar, on this 82px knob), the dial round it still the bigger one. */
+.tv-set--teak .knob-channel .knob-pointer {
+  top: 6.4px;
+  bottom: 6.4px;
+  width: 15.8px;
+  margin-left: -7.9px;
+}
+
+/* The channel dial's pointer is a dot, midway between the "1" and the bar's
+   tip. */
+.tv-set--teak .dial-ring-pointer {
+  top: 20px;
+  width: 5px;
+  height: 5px;
+  margin-left: -2.5px;
+  border: none;
+  border-radius: 50%;
+  background: #ffb347;
+}
+
+.tv-set--teak .knob-label {
+  margin-top: 4px;
+  color: #e8c886;
+  font-weight: bold;
+  opacity: 1;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.6);
+}
+
+/* Grille cloth: an open weave of oatmeal and brown, with the odd gold thread. */
+.tv-set--teak .tv-speaker {
+  grid-column: 1 / -1;
+  align-self: stretch;
+  justify-self: stretch;
+  width: auto;
+  position: relative;
+  /* A heavier frame than the dials' rings, as on the 3D set: 7px of brass
+     (0.05 there, against the 0.12 spacing's 16px) round a 2px dark
+     surround. The margin makes room for it, so the spacing still measures
+     to the brass. */
+  margin: 10px;
+  --ring-at: 9px;
+  min-height: 150px;
+  border-radius: 2px;
+  background:
+    repeating-linear-gradient(90deg, rgba(196, 162, 101, 0.55) 0 1px, transparent 1px 44px),
+    repeating-linear-gradient(0deg, rgba(150, 132, 102, 0.55) 0 2px, rgba(30, 22, 15, 0.35) 2px 4px),
+    repeating-linear-gradient(90deg, #8c7a5e 0 2px, #3a2e22 2px 4px);
+  /* framed in brass */
+  box-shadow:
+    0 0 0 2px #1e150c,
+    0 0 0 10px rgba(70, 45, 15, 0.5), /* the frame's outer line */
+    inset 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+.tv-set--teak .tv-speaker::before {
+  padding: 7px;
+  border-radius: 4px;
+}
+
+.tv-set--teak .tv-switch {
+  grid-column: 1 / -1;
+}
+
+/* ---- A brass rail ------------------------------------------------------- */
+
+.tv-set--teak .tv-rail {
+  border: none;
+  border-radius: 3px;
+  background: var(--brass);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 245, 215, 0.6),
+    inset 0 -1px 0 rgba(80, 55, 20, 0.6),
+    0 2px 4px rgba(0, 0, 0, 0.45);
+}
+
+.tv-set--teak .tv-input-labels {
+  color: #2a1d10;
+  text-shadow: 0 1px 0 rgba(255, 240, 210, 0.4);
+}
+
+.tv-set--teak .tv-louvres {
+  width: 170px;
+}
+
+.tv-set--teak .tv-louvre {
+  box-shadow: 0 1px 0 rgba(255, 245, 215, 0.45);
+}
+
+/* ---- No base: pencil legs straight from the body ------------------------ */
+
+.tv-set--teak .tv-plinth {
+  display: none;
+}
+
+.tv-set--teak .tv-console {
+  z-index: 1; /* over the legs' tops */
+}
+
+.tv-set--teak .tv-legs {
+  width: 90%;
+  margin-top: -8px; /* the tops tucked up behind the body */
+}
+
+/* Tapered round legs, splayed outward from behind the body, a brass collar
+   where each meets it and a brass ferrule at the foot (the rail's brass). */
+.tv-set--teak .tv-leg {
+  width: 16px;
+  height: 134px;
+  background:
+    linear-gradient(90deg, rgba(255, 225, 185, 0.3), transparent 40%, rgba(0, 0, 0, 0.5)) 0 0 / 100% 100%,
+    var(--brass) 0 8px / 100% 5px no-repeat,
+    var(--brass) 0 100% / 100% 18px no-repeat,
+    var(--wood-warmth),
+    var(--wood) 30% 40% / 600px auto,
+    var(--wood-fallback);
+  background-blend-mode: normal, normal, normal, soft-light, normal, normal;
+  clip-path: polygon(0 0, 100% 0, 72% 100%, 28% 100%);
+  transform-origin: 50% 0;
+}
+
+.tv-set--teak .tv-leg-left {
+  transform: rotate(8deg);
+}
+
+.tv-set--teak .tv-leg-right {
+  transform: rotate(-8deg);
+}
+
+/* Stacked, the screen over the controls, from tablet widths down (beside
+   the wide panel the tube squeezes): the dials side by side, then the grille
+   over the power switch, the grille taking whatever room is left, as on the
+   walnut set. */
+@media (max-width: 1024px) {
+  .tv-set--teak .tv-front {
+    flex-direction: column;
+  }
+
+  .tv-set--teak .tv-column {
+    width: 100%;
+    grid-template-columns: auto auto 1fr;
+    grid-template-rows: 1fr auto;
+    justify-content: stretch;
+    align-items: center;
+  }
+
+  .tv-set--teak .knob-group {
+    grid-row: 1 / -1;
+  }
+
+  .tv-set--teak .tv-speaker {
+    display: block;
+    grid-column: auto;
+    min-height: 60px;
+  }
+
+  .tv-set--teak .tv-switch {
+    grid-column: 3;
+  }
+}
+
+@media (max-width: 680px) {
+  /* the board's own padding here (TV.css) */
+  .tv-set--teak {
+    --teak-space: 10px;
+  }
+
+  /* As on the walnut set: the dials (smaller) beside the grille over the
+     switch, rather than a stack of rows. */
+  .tv-set--teak .knob-group {
+    zoom: 0.8;
+  }
+
+  .tv-set--teak .tv-speaker {
+    min-height: 50px;
+  }
+
+  .tv-set--teak .tv-leg {
+    width: 11px;
+    height: 90px;
+  }
+}
+
+/* Small phones: the dials smaller still (they're bigger than the walnut
+   set's), to leave the grille room beside them. */
+@media (max-width: 499px) {
+  .tv-set--teak .knob-group {
+    zoom: 0.62;
+  }
+}

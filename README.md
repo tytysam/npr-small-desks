@@ -52,8 +52,9 @@ without a YouTube API key. A key is only needed to refresh the lineup; see
 | Chrome button by the NP-R1 badge | MENU: opens the SETUP menu |
 | Book stack on top | The TV guide |
 | Red ♥ button on the rail | Heart the concert on screen (again to un-heart) |
+| Camera button (top right, 3D) | The Scene pane: camera views and lighting |
 | "?" (top right) | A short owner's manual |
-| 2D / 3D switch (top right) | Swap sets. In 3D, drag to look around |
+| 2D / 3D switch (top right) | Swap sets. In 3D, drag to look around, wheel or pinch to zoom, double-click to reset |
 
 ### Keyboard
 
@@ -71,6 +72,7 @@ without a YouTube API key. A key is only needed to refresh the lineup; see
 | O / Esc | Open / close SETUP |
 | G | Open the TV guide |
 | H | Heart / un-heart the concert on screen |
+| C | 3D: step through the camera views |
 | ? | Owner's manual |
 
 Media keys and the lock screen work too: play/pause, and next/previous for
@@ -95,6 +97,17 @@ VCR's tape counter. Pausing works differently too. A live channel doesn't
 wait, so pressing play rejoins it at the current moment. A tape picks up
 where you left off.
 
+### Scene
+
+In 3D, the camera button beside "?" opens the Scene pane, for the room
+around the set. It isn't modal, so the set keeps playing while you change things, and
+every choice is remembered.
+
+| Row | Choices |
+|---|---|
+| View | Front · ¾ · Back (the inspection sticker) · Top (the guide) · Watch (the bezel up close), eased into; **C** steps through them |
+| Lighting | Morning (low, pale-gold sun from the right) · Afternoon (the default) · Evening (a warm lamp, the room and wall dimming) · Lights out (only the picture lights the set, with a faint flicker) |
+
 ### SETUP
 
 Drawn inside the tube. The channel control picks a row and the volume
@@ -111,6 +124,7 @@ control changes it, so it works the same with the knobs, keys, 2D or 3D.
 | Hiss | Tuning hiss while the antenna moves |
 | Clicks | The controls' mechanical sounds: dial detents, the power switch, the lever, buttons, the TV/VCR slide, and soft knob ticks. They follow volume and mute, and click with the set off too |
 | Captions | The video's captions (English, including auto-generated, where the concert has any), off by default |
+| Cabinet | Which set you're watching, in both 2D and 3D: the walnut NP-R1 (the default); the NP-D6, a 1960s Danish-style teak console picked out in brass, with a cloth grille and pencil legs; or the NP-S9, after Stig Lindberg's late-1950s Swedish set, its tube in a cream shell on a low teak base. Same controls on each |
 
 ### The TV guide
 
@@ -182,20 +196,27 @@ fonts).
 src/
   App.jsx             app state: tuning, volume, power, menus, shortcuts
   components/
-    TV.jsx            the 2D set
+    TV.jsx            the 2D set (TV.css; TVTeak.css and TVCream.css restyle it per cabinet)
     tv3d/             the 3D set (loaded on first use)
-      TVModel.jsx     cabinet, controls, antenna, guide stack
+      TVModel.jsx     the cabinet, and where its controls go
+      cabinets.js     each cabinet's measurements (layout.js derives the rest)
+      controls.jsx    push-buttons, antenna, guide stack: shared by every cabinet
+      SceneCamera.jsx camera controls and views
+      SceneLights.jsx lighting moods (moods.js), eased between
       materials.js    procedural textures and geometry
     Screen.jsx        the picture tube (shared by both sets)
     Osd.jsx           on-screen display and the SETUP menu
     Guide.jsx         the TV guide
     Help.jsx          the owner's manual
+    ScenePane.jsx     the Scene pane
   hooks/              tuner, antenna gesture, retune, settings, hearts, shortcuts…
   js/
     schedule.js       the broadcast schedule
     listings.js       the guide's pages and search
     hearts.js         the hearts API client and ranking
     woodGrain.js      procedural wood, shared by both sets
+    cabinets.js       the cabinets: names, badges, woods
+    sceneSettings.js  the Scene pane's options
     …
 worker/
   index.js            the Worker (only /api/* runs it) and the Hearts Durable Object

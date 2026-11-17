@@ -4,9 +4,28 @@
   box-sizing: border-box;
 }
 
+/* The wall's tones, set by App from the Scene pane (src/js/sceneSettings.js).
+   Registered as colours so a change of wall or lighting fades, not cuts. */
+@property --wall-hi {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #262626;
+}
+@property --wall-mid {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #141414;
+}
+@property --wall-lo {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #0c0c0c;
+}
+
 body {
   /* Also the backdrop seen through the WebGL canvas in 3D mode. */
-  background: radial-gradient(ellipse at 50% 30%, #262626 0%, #141414 60%, #0c0c0c 100%) fixed #141414;
+  background: radial-gradient(ellipse at 50% 30%, var(--wall-hi) 0%, var(--wall-mid) 60%, var(--wall-lo) 100%) fixed var(--wall-mid);
+  transition: --wall-hi 0.9s ease, --wall-mid 0.9s ease, --wall-lo 0.9s ease;
   min-height: 100vh;
 }
 

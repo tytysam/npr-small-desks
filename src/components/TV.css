@@ -123,6 +123,7 @@
 .tv-console,
 .tv-board,
 .tv-plinth,
+.tv-legs,
 .tv-leg {
   --wood: var(--wood-walnut, linear-gradient(transparent, transparent));
   /* soft-light warmth, standing in for the 3D set's warm key light on varnish */
@@ -235,7 +236,8 @@
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(255, 245, 220, 0.14), transparent 18%, transparent 80%, rgba(60, 30, 5, 0.22)),
-    linear-gradient(rgba(255, 175, 60, 0.55), rgba(255, 175, 60, 0.55)),
+    /* the warm glaze (lighter on a pale bezel: TVTeak.css) */
+    linear-gradient(var(--bezel-glaze, rgba(255, 175, 60, 0.55)), var(--bezel-glaze, rgba(255, 175, 60, 0.55))),
     var(--wood-honey, linear-gradient(transparent, transparent)) 50% 50% / cover,
     repeating-linear-gradient(
       176deg,
@@ -292,6 +294,100 @@
     0 9px 8px 1px rgba(255, 228, 175, 0.22),
     inset 0 0 0 2px #000;
   overflow: hidden;
+}
+
+/* Walnut under the warm light: a deeper, redder wash than the default, so it
+   reads darker than the teak set (TVTeak.css has its own). */
+.tv-set--walnut .tv-top-board,
+.tv-set--walnut .tv-console,
+.tv-set--walnut .tv-board,
+.tv-set--walnut .tv-plinth,
+.tv-set--walnut .tv-legs,
+.tv-set--walnut .tv-leg {
+  --wood-warmth: linear-gradient(rgba(110, 40, 12, 0.55), rgba(110, 40, 12, 0.55));
+}
+
+/* The walnut set's honey bezel a little wider round the tube, toward the 3D
+   set's proportion. */
+.tv-set--walnut .tv-frame {
+  padding: 30px;
+}
+
+/* The control column's chrome trim is drawn 3px outside it (shadows), so it
+   steps in that much all round: 16px from the board's edge and the bezel,
+   measured to the chrome, its top and bottom level with the bezel's. */
+.tv-set--walnut .tv-front {
+  gap: 16px;
+}
+
+.tv-set--walnut .tv-column {
+  margin: 3px;
+}
+
+/* Stacked, the screen over the controls, from 835px down (below that the
+   tube squeezes beside the column): the knobs side by side, then the speaker
+   over the power switch, the speaker taking whatever room is left. The
+   column runs the bezel's width, its chrome level with the bezel's sides. */
+@media (max-width: 835px) {
+  .tv-set--walnut .tv-front {
+    flex-direction: column;
+  }
+
+  .tv-set--walnut .tv-column {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    grid-template-rows: 1fr auto;
+    align-items: center;
+    justify-items: center;
+    gap: 10px 16px;
+    width: auto;
+    padding: 12px 14px;
+  }
+
+  .tv-set--walnut .knob-group {
+    grid-row: 1 / -1;
+  }
+
+  .tv-set--walnut .tv-speaker {
+    display: block;
+    align-self: stretch;
+    width: 100%;
+    min-height: 40px;
+  }
+}
+
+/* Small phones: the knobs a little smaller, to leave the speaker room. */
+@media (max-width: 499px) {
+  .tv-set--walnut .knob-group {
+    zoom: 0.8;
+  }
+}
+
+/* The narrowest phones: the tuning strip (the concert's name) on a line of
+   its own under the rail's other controls, the rail growing to hold it. */
+@media (max-width: 424px) {
+  .tv-set--walnut .tv-rail,
+  .tv-set--teak .tv-rail {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    row-gap: 8px;
+  }
+
+  .tv-set--walnut .tv-tuning-strip,
+  .tv-set--teak .tv-tuning-strip {
+    order: 1;
+    flex-basis: 100%;
+  }
+}
+
+/* The walnut set's channel pointer, 10% smaller than Knob.css's, still
+   centred between the "1" and the knob. */
+.tv-set--walnut .dial-ring-pointer {
+  top: 17.3px;
+  margin-left: -3.6px;
+  border-left-width: 3.6px;
+  border-right-width: 3.6px;
+  border-top-width: 5.4px;
 }
 
 /* ---- Control column ----------------------------------------------------- */
@@ -915,12 +1011,14 @@
     padding: 10px;
   }
 
-  .tv-front {
+  .tv-front,
+  .tv-set--walnut .tv-front {
     flex-direction: column;
     gap: 14px;
   }
 
-  .tv-frame {
+  .tv-frame,
+  .tv-set--walnut .tv-frame {
     padding: 14px;
   }
 

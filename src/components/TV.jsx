@@ -4,7 +4,10 @@ import ChannelKnob from './ChannelKnob';
 import BrightnessKnob from './BrightnessKnob';
 import Antenna from './Antenna';
 import useWoodImages from '../hooks/useWoodImages';
+import { cabinetFor } from '../js/cabinets';
 import './TV.css';
+import './TVTeak.css';
+import './TVCream.css';
 
 // The CSS wood shown until the shared grain (useWoodImages) is painted:
 // feTurbulence has no source image, so these filters paint organic grain onto
@@ -62,14 +65,18 @@ const TV = ({
   hearted = false,
   canHeart = false,
   onHeartToggle,
+  cabinet = 'walnut',
 }) => {
-  const wood = useWoodImages();
+  // The cabinet (SETUP's Cabinet row): TV.css is the walnut NP-R1, and each
+  // other cabinet restyles it from its own stylesheet (TVTeak.css, TVCream.css).
+  const { key, model, woods } = cabinetFor(cabinet);
+  const wood = useWoodImages(woods);
   const woodStyle = wood
-    ? { '--wood-walnut': `url(${wood.walnut})`, '--wood-honey': `url(${wood.honey})`, '--wood-ready': 1 }
+    ? { '--wood-walnut': `url(${wood.body})`, '--wood-honey': `url(${wood.bezel})`, '--wood-ready': 1 }
     : undefined;
 
   return (
-    <div className="tv-set" style={woodStyle}>
+    <div className={`tv-set tv-set--${key}`} style={woodStyle}>
       <WoodGrainFilters />
 
       <Antenna {...antenna} />
@@ -144,7 +151,9 @@ const TV = ({
                 title="Menu"
                 onClick={onMenuToggle}
               />
-              <span className="tv-badge-text" aria-hidden="true">NP-R1</span>
+              <span className="tv-badge-text" aria-hidden="true">
+                {model}
+              </span>
             </div>
 
             <div className="tv-tuning-strip">
@@ -173,8 +182,9 @@ const TV = ({
               </span>
             </div>
 
+            {/* the cream set's speaker is a taller stack, as on its 3D base */}
             <div className="tv-louvres" aria-hidden="true">
-              {Array.from({ length: 5 }, (_, i) => (
+              {Array.from({ length: key === 'cream' ? 9 : 5 }, (_, i) => (
                 <span key={i} className="tv-louvre" />
               ))}
             </div>

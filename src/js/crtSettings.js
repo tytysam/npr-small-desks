@@ -1,6 +1,9 @@
+import { CABINETS, DEFAULT_CABINET } from './cabinets';
+
 /**
- * Picture settings shown in the set's SETUP menu. `level` items run 0–10,
- * `toggle` items are on/off, `choice` items step through `options`.
+ * The settings in the set's SETUP menu: the picture, the sound and the
+ * cabinet. `level` items run 0–10, `toggle` items are on/off, `choice` items
+ * step through `options`.
  */
 export const CRT_ITEMS = [
   { key: 'broadcast', label: 'Broadcast', type: 'choice', options: [[true, 'Live'], [false, 'VCR']] },
@@ -12,6 +15,7 @@ export const CRT_ITEMS = [
   { key: 'hiss', label: 'Hiss', type: 'toggle' },
   { key: 'clicks', label: 'Clicks', type: 'toggle' },
   { key: 'captions', label: 'Captions', type: 'toggle' },
+  { key: 'cabinet', label: 'Cabinet', type: 'choice', options: CABINETS.map((c) => [c.key, c.label]) },
 ];
 
 export const CRT_DEFAULTS = {
@@ -24,6 +28,7 @@ export const CRT_DEFAULTS = {
   hiss: true,
   clicks: true,
   captions: false,
+  cabinet: DEFAULT_CABINET,
 };
 
 const LEVEL_MAX = 10;

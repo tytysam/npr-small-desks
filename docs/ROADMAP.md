@@ -1,6 +1,6 @@
 # Roadmap
 
-What's worth doing next on the small-desk TV, in six groups. Items move from
+What's worth doing next on the small-desk TV, in seven groups. Items move from
 **Planned** → **Done** as they land; each notes where the work lives.
 
 Order agreed: performance → functional additions → (after review) broadcast
@@ -328,12 +328,14 @@ unscheduled, roughly in order of size.
   only carries presence and channel changes; autoplay policy is the catch.
 - **4.10 Phone as remote.** Open a link on a phone to control the set on a
   laptop. Needs the same realtime layer as 4.9.
-- **4.11 More cabinets.** 1950s Bakelite, 1980s silver portable, Trinitron.
-  The 2D tokens (`TV.css`), the 3D palette (`tv3d/materials.js`) and the
-  shared wood generator keep much of this declarative.
-- **4.12 A "small desk" room.** The 3D set on a desk with a lamp, tinted by
-  the current concert's thumbnail colour (the iframe itself can't be
-  sampled).
+- **4.11 More cabinets.** — **Started** (November 2026; see 7.3): the
+  cabinet is a setting; the teak NP-D6 and the cream NP-S9 are the first
+  new ones. A possible follow-up: let the NP-S9's screen swivel. Next
+  candidates: a 1980s silver portable, a 1950s rounded plastic set, a
+  generic 1970s silver-and-black set (not branded).
+- **4.12 A "small desk" room.** The 3D set on a desk with a lamp. —
+  **Shelved** (November 2026): the floors felt like too much around the
+  set, and a desk would likely too. The thumbnail tint was tried (7.2).
 
 ---
 
@@ -531,3 +533,146 @@ most.
   `X-Visitor` are 400, and writes past 30 a minute get 429.
 - `worker/`, `src/js/hearts.js` (unit-tested), `src/hooks/useHearts.js`,
   `src/components/Guide.jsx`, `Osd.jsx`, `TV.jsx`, `tv3d/TVModel.jsx`.
+
+---
+
+## 7. Scene
+
+The room around the set: how the 3D set is framed and lit, and what it
+stands against. Agreed November 2026 as two phases built together, with a
+third to follow.
+
+### 7.1 Camera views — **Done**
+- **Views.** Front, ¾, Back (the inspection sticker), Top (down onto the
+  guide) and Watch (the bezel up close), eased into over about half a
+  second (instant under reduced motion). **C** steps through them; the
+  Scene pane has a button for each; double-clicking anywhere but a control
+  goes back to the front.
+- **Controls.** drei's `CameraControls` replaced `OrbitControls` for the
+  eased moves. Same feel: drag to orbit, wheel or pinch to zoom, no panning,
+  knob drags still hold the camera. It can now tilt further over the top
+  (for the Top view) and zoom closer (for Watch). A resize refits the view
+  unless you've orbited away from it.
+- **Soft edges.** The canvas fades into the wall at its sides, and at top
+  and bottom in the close views, so close-ups don't end in a
+  hard line. Only the canvas is masked: the tube's DOM layer is its sibling
+  (masking an ancestor would flatten its CSS-3D transform).
+- `tv3d/SceneCamera.jsx`; the cabinet layout it aims at moved into
+  `tv3d/layout.js`, shared with `TVModel.jsx`.
+
+### 7.2 Scene pane — **Done**
+In 3D, a camera button beside "?" opens a card styled like the owner's manual. It
+isn't modal: the set keeps playing and reacting while it's open; ✕ or Esc
+closes it and focus returns to the button. Settings persist
+(`npr-small-desk:scene`).
+
+| Row | Choices |
+|---|---|
+| View | the views above |
+| Lighting | Morning · Afternoon (as before; was Daylight) · Evening · Lights out |
+
+- **Lighting moods** are one table (`tv3d/moods.js`): ambient, key, fill and
+  rim lights, environment reflections, the contact shadow and the tube's
+  glow. Moods ease into each other over 0.9 s, written straight onto the
+  lights like the lamp fades (`SceneLights.jsx`).
+- **Lights out.** The room goes dark and a cool light in front of the tube,
+  following power and brightness, lights the bezel and rail, with a faint
+  flicker (redrawn ~9 times a second, only in the dark moods). The picture
+  itself can't be sampled (a cross-origin iframe), so the glow is a neutral
+  TV blue rather than the picture's colour.
+- **The wall** (the page background) dims to match the mood in 3D: CSS
+  colour properties registered with `@property`, so it fades.
+- **Woods.** `woodGrain.js` now has woods and cuts (body, bezel):
+  `getWood(wood, cut)`. The set stays walnut and honey; teak, blond, oak and
+  ebony are kept for 4.11.
+- **Trimmed after a first pass:** a wall-colour choice, a cabinet-finish
+  choice (both sets), a slow idle spin and the Quality switches (shadows,
+  sharp rendering) were built and taken out again; the pane is 3D-only.
+  Later, a Floor row (a braided rug, oak boards) and a Showroom mood went
+  too; Morning replaced Showroom. A glow tinted by the concert's thumbnail,
+  with a matching pool of light on the wall, was tried and removed as one
+  effect too many: the glow stays the TV blue.
+- **Fixed along the way.** drei's `Environment` re-applied its settings and
+  re-rendered its cube map every time the 3D set re-rendered (it compares
+  children by identity, and inline JSX is new each render), which happens
+  on most app updates. Memoised, it now renders once, and the moods can
+  dim its reflections.
+- Checked in headless Chrome: each mood and view, the pane's focus,
+  persistence and Esc, double-click reset, and knob drags not orbiting. Unit tests for the
+  settings module and the pane.
+- `src/js/sceneSettings.js` (unit-tested), `src/hooks/useSceneSettings.js`,
+  `src/components/ScenePane.jsx` (tested), `tv3d/SceneLights.jsx`,
+  `tv3d/moods.js`.
+
+### 7.3 Cabinets (4.11) — **First cabinet done**
+Phase 3. Agreed: the teak console first, chosen from SETUP, and every
+cabinet carries exactly the same controls (only where they sit and how
+they look changes). 4.12 is shelved.
+- **The cabinet is a setting**: SETUP's last row, `Cabinet: Walnut · Teak`,
+  stored with the other SETUP settings (`npr-small-desk:crt`). It swaps the
+  set at once, in both sets; the tube, and the menu on it, stay put.
+- **Shared data** (`src/js/cabinets.js`, no three.js): each cabinet's
+  name, rail badge (NP-R1, NP-D6) and woods.
+- **3D**: each cabinet's measurements are in `tv3d/cabinets.js` (body,
+  bezel, top board, plinth, where the guide and antenna stand, the control
+  panel, the rail's control positions, the legs, the floor, the camera's
+  framing); `layout.js` derives the rest. The controls every cabinet shares
+  moved to `tv3d/controls.jsx`; `TVModel` builds the body from the
+  measurements and places the controls. Panel kinds: a chrome-trimmed
+  metal `column` (walnut) or a wooden `grille` panel (teak); rails: a
+  routed `groove` or a `brass` strip; legs: `slab` or `pencil`.
+  `SceneCamera` frames whichever cabinet is showing, and reframes on a
+  change.
+- **2D**: `.tv-set--<cabinet>` on the set; `TVTeak.css` restyles `TV.css`
+  (tokens, the panel as a grid, the cloth, the brass rail, pencil legs).
+  The wood images are painted per cabinet (`useWoodImages(woods)`).
+- **The NP-D6**: wider and lower (7.8 × 4.5 against 6.5 × 4.7), all teak
+  (straight, fine grain; the bezel and panel cut finer) picked out in
+  brass: a ring round the tube, the cloth grille framed (the spec's `trim`), the knobs side by side on
+  dark escutcheons ringed in brass, a brass rail. A plain box (no top
+  board), tall pencil legs with brass collars and ferrules, rising straight into
+  the body. The cabinet's grain is one tile across its widest board, so the
+  top reads as one piece.
+- Checked: before and after the refactor, screenshots of the walnut set
+  with the power off (2D, and all five 3D views) match pixel for pixel,
+  bar the faint noise two baseline runs show between themselves. The teak
+  console in both sets and every view; switching from SETUP in both sets.
+
+- **The NP-S9** ("Cream"), after Stig Lindberg's late-1950s Swedish design
+  (unbranded): the tube in its own cream plastic shell on a short neck and
+  swivel plate (fixed, for now) over a low teak base. Refined against the
+  reference photos: the front is a "pillow" outline (a superellipse, a
+  little wider at the top; `makePillowLoftGeometry`) with a slim rolled lip
+  around glass that fills nearly all of it; behind, the shell runs straight
+  back before rounding into a puffy back with a large round boss. The
+  picture is drawn at 96% on this set, so the rectangle the 3D screen layer
+  cuts through the scene stays inside the outline (its corners had punched
+  through the shell's wall). In 2D: rounder corners, a thin lip shaded as a
+  roll, and a slight backward tilt for the taper. Its guide lies centred on
+  the shell's top, and its antenna stands
+  on the shell's curved top wherever it's placed (`shellTopAt`) rather than
+  at one height, which left it floating toward the back.
+- **The backs**: each set's hardboard back is drawn for it
+  (`makeBackPanelTexture`, laid out by its cabinet's `back`), at the same
+  scale on every set rather than the walnut back stretched over it: the
+  teak's wider, with more vent slots; the cream base's a long low strip, one
+  row of vents and the plate, caution and tag side by side, smaller. Each
+  carries its own model and serial.
+- **Channel dials** on every set are printed 1–12 (they were the US VHF
+  2–13). Only printing: the dial steps through the lineup either way.
+- **The NP-D6's brass rail** in 3D is brushed brass (`makeBrushedTextures`:
+  streaks in colour and roughness), only partly metallic, with a clear coat,
+  stretched highlights and eased edges. A full mirror facing the camera
+  reflected the empty room and read as dull and dark against the wood. Every control is on the base front: speaker slots,
+  the tuning strip, grey plastic knobs and buttons (power is a push-button
+  that latches in while on), the channel dial on a dark escutcheon. The
+  guide and the antenna stand on the shell's top. It added the `pod` body,
+  the `base` panel, the `none` rail and `runners` legs, and rail positions
+  as [x, y]. In 2D, `TVCream.css` lays the same markup out as a grid, the
+  board's `::before` becoming the base.
+
+### 7.4 Next — Planned
+More cabinets, one at a time: each is a `tv3d/cabinets.js` entry (plus a
+new panel, rail or leg kind if it needs one), a 2D stylesheet, and a
+`src/js/cabinets.js` entry.
+
