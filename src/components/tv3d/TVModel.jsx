@@ -30,6 +30,7 @@ import {
   makeChannelRingTexture,
   makeVolumeTicksTexture,
   makeDishNumbersTexture,
+  PLASTIC,
   makeFrameGeometry,
   makeDomeGeometry,
   makeBackPanelTexture,
@@ -69,15 +70,15 @@ const VOLUME_KNOB = { radius: 0.3, height: 0.19, ticks: 0.92, ridges: 52 };
 // and its channel knob: the knob, and the number ring printed round it
 const CHANNEL_KNOB = { radius: 0.32, ring: 1.12 };
 
-/** A ring `d` out from the tube's opening, its corners concentric with it. */
 /** A dish knob's printed index line, toward its edge. */
 const DishIndex = ({ radius }) => (
   <mesh position={[0, radius * 0.72, 0.001]}>
     <planeGeometry args={[radius * 0.08, radius * 0.3]} />
-    <meshBasicMaterial color="#3d362c" />
+    <meshBasicMaterial color={PLASTIC.ink} />
   </mesh>
 );
 
+/** A ring `d` out from the tube's opening, its corners concentric with it. */
 const aroundOpening = (OPENING, d, z) => ({ w: OPENING.w + 2 * d, h: OPENING.h + 2 * d, r: OPENING.r + d, z });
 
 /**
@@ -392,7 +393,6 @@ const TVModel = ({
   const layout = cabinetLayout(cabinet);
   const { spec, CABINET, CABINET_Y, BOARD, BOARD_Z, FRONT_Z, TOP_FACE, BEZEL, OPENING, OPENING_Z, TUBE_Z, GUIDE } = layout;
   const { panel, rail, shell } = spec;
-  const knobFinish = panel.knobs?.finish;
   // the rail's metal (lever, MENU, power and TV/VCR sliders): silver and
   // chrome, or a shade darker against the teak set's brass
   const darkMetal = rail.metal === 'dark';
@@ -400,6 +400,13 @@ const TVModel = ({
   const chromeColor = darkMetal ? DARK_CHROME : undefined;
   const volumeKnob = panel.knobs?.volume ?? VOLUME_KNOB;
   const channelKnob = panel.knobs?.channel ?? CHANNEL_KNOB;
+  // dish knobs (the cream set's): the numbers, or an index line, printed on
+  // each knob, turning with it
+  const dish = panel.knobs?.style === 'dish';
+  const bar = panel.knobs?.style === 'bar';
+  // brightness: the cabinet's size, or a bar a little bigger than the knob
+  // (as on the 2D set)
+  const brightnessRadius = panel.knobs?.brightness?.radius ?? (bar ? 0.135 : 0.096);
   const tuningW = rail.tuningW ?? 2.4;
   const inputStyle = { ...INPUT_STYLE, ...rail.inputStyle };
   const louvres = { n: 5, pitch: 0.06, y: 0, ...rail.louvres };
@@ -551,11 +558,9 @@ const TVModel = ({
   const glareTexture = useDisposable(makeGlareTexture, []);
   const backPanelTexture = useDisposable(() => makeBackPanelTexture({ model, ...spec.back }), [model, spec.back]);
   // a dot for a bar handle to point at; the knobs' triangle otherwise
-  const ringPointer = panel.knobs?.style === 'bar' ? 'dot' : 'arrow';
+  const ringPointer = bar ? 'dot' : 'arrow';
   const channelRingTexture = useDisposable(() => makeChannelRingTexture({ pointer: ringPointer }), [ringPointer]);
   const volumeTicksTexture = useDisposable(makeVolumeTicksTexture, []);
-  // dish knobs (the cream set's): the channel numbers printed on the knob
-  const dish = panel.knobs?.style === 'dish';
   const dishNumbersTexture = useDisposable(() => (dish ? makeDishNumbersTexture() : null), [dish]);
   const badgeTexture = useDisposable(
     () =>
@@ -860,13 +865,12 @@ const TVModel = ({
         <Knob3D
           position={[...panel.channel, PANEL_Z]}
           // a bar handle as small as the volume dial's, on the bigger dial
-          radius={panel.knobs?.style === 'bar' ? volumeKnob.radius : channelKnob.radius}
+          radius={bar ? volumeKnob.radius : channelKnob.radius}
           height={0.2}
           angleDeg={dialPosition * CHANNEL_DETENT}
           onDelta={handleChannelDelta}
           onDragStart={startDrag}
           onDragEnd={endDrag}
-          finish={knobFinish}
           style={panel.knobs?.style}
           material={trimBrass?.material}
           ridgeCount={dish ? 72 : undefined}
@@ -893,7 +897,6 @@ const TVModel = ({
           onDragStart={startDrag}
           onDragEnd={endDrag}
           ridgeCount={volumeKnob.ridges}
-          finish={knobFinish}
           style={panel.knobs?.style}
           material={trimBrass?.material}
           label={!dish && <Plate texture={volumeTicksTexture} position={[0, 0, 0.004]} size={[volumeKnob.ticks, volumeKnob.ticks]} />}
@@ -924,7 +927,7 @@ const TVModel = ({
 
         {/* power: a push-button, latched in while on (cream) */}
         {panel.power.kind === 'button' && (
-          <PushButton position={[...powerAt, PANEL_Z]} finish={rail.buttons ?? 'grey'} pressed={isOn} onPress={onPowerToggle} />
+          <PushButton position={[...powerAt, PANEL_Z]} finish="grey" pressed={isOn} onPress={onPowerToggle} />
         )}
         {/* or a slide switch: right for on */}
         {panel.power.kind !== 'button' && (
@@ -1068,18 +1071,17 @@ const TVModel = ({
         </mesh>
         <pointLight ref={pilotLightRef} position={[...at(rail.lamp), 0.25]} color={PALETTE.amber} distance={1} />
 
-        {/* brightness: a small knob, or a bar handle like the dials', in the
-            play lever's chrome so it reads against the brass rail */}
+        {/* brightness: a small black knob; a bar handle like the dials', in
+            the play lever's chrome so it reads against the brass rail; or a
+            small dish with an index line */}
         <Knob3D
           position={[...at(rail.brightness), 0]}
-          // a bar a little bigger than the knob, as on the 2D set; a dish
-          // (with an index line) the cabinet's size
-          radius={panel.knobs?.brightness?.radius ?? (panel.knobs?.style === 'bar' ? 0.135 : 0.096)}
+          radius={brightnessRadius}
           height={0.08}
-          finish={knobFinish ?? 'black'}
+          finish="black"
           ridgeCount={dish ? 32 : 30}
           style={panel.knobs?.style}
-          face={dish && <DishIndex radius={panel.knobs.brightness.radius} />}
+          face={dish && <DishIndex radius={brightnessRadius} />}
           material={barChrome}
           angleDeg={((brightness - BRIGHTNESS_MIN) / (BRIGHTNESS_MAX - BRIGHTNESS_MIN)) * VOLUME_SWEEP - VOLUME_SWEEP / 2}
           onDelta={handleBrightnessDelta}

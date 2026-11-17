@@ -14,6 +14,17 @@ export const PALETTE = {
   heart: '#c8372a',
 };
 
+/**
+ * The cream set's plastic (its dish knobs and buttons): the cream of its
+ * shell, a mid grey, the ink printed on them, and the finish they share.
+ */
+export const PLASTIC = {
+  cream: '#e3d8c0',
+  grey: '#7f7e78',
+  ink: '#3d362c',
+  finish: { roughness: 0.4, clearcoat: 0.5, clearcoatRoughness: 0.3 },
+};
+
 /** The guide's ♥ (its thumb tab and listings): Courier New, bold. */
 export const HEART_FONT = 'bold 200px "Courier New", monospace';
 
@@ -407,7 +418,7 @@ export const makeDishNumbersTexture = () => {
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, size, size);
   const cx = size / 2;
-  const ink = '#3d362c';
+  const ink = PLASTIC.ink;
   ctx.strokeStyle = ink;
   ctx.lineWidth = 3;
   ctx.beginPath();

@@ -1,7 +1,7 @@
 import { useRef, useMemo, useCallback, useState } from 'react';
 import * as THREE from 'three';
 import { normalizeDelta } from '../../hooks/useKnobDrag';
-import { makeKnurlTexture, PALETTE } from './materials';
+import { makeKnurlTexture, PALETTE, PLASTIC } from './materials';
 import useDisposable from './useDisposable';
 
 const RAD_TO_DEG = 180 / Math.PI;
@@ -9,7 +9,6 @@ const RAD_TO_DEG = 180 / Math.PI;
 const FINISHES = {
   chrome: { rim: PALETTE.chrome, face: '#d6d6d6', bar: '#1a1a1a', metalness: 0.75 },
   black: { rim: '#1e1e1e', face: '#262626', bar: '#6a665c', metalness: 0.25 },
-  grey: { rim: '#8e8e8a', face: '#bdbdb8', bar: '#4a4a47', metalness: 0.1 },
 };
 const DEG_TO_RAD = Math.PI / 180;
 
@@ -64,9 +63,6 @@ const BarHandle = ({ radius, material }) => {
   return <mesh geometry={geometry} material={material} position={[0, 0, bevel + 0.005]} castShadow />;
 };
 
-// The cream set's dish knob: a cream plastic skirt and a grey cap.
-const DISH = { skirt: '#e3d8c0', cap: '#7f7e78' };
-
 /**
  * A two-tone dish knob (the cream set's, after late-'50s sets): a wide,
  * shallow skirt in the shell's cream plastic, finely fluted round its edge,
@@ -78,28 +74,28 @@ const DishKnob = ({ radius, ridgeCount, face, lit }) => {
   const edge = radius * 0.16; // the fluted edge's height
   const cap = radius * 0.4;
   const glow = { emissive: '#ffffff', emissiveIntensity: lit ? 0.06 : 0 };
-  const plastic = { roughness: 0.4, clearcoat: 0.5, clearcoatRoughness: 0.3 };
+  const plastic = PLASTIC.finish;
   return (
     <>
       {/* the fluted edge */}
       <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, edge / 2]} castShadow>
         <cylinderGeometry args={[radius, radius, edge, 96, 1, true]} />
-        <meshPhysicalMaterial color={DISH.skirt} {...plastic} roughnessMap={knurl} bumpMap={knurl} bumpScale={2} {...glow} />
+        <meshPhysicalMaterial color={PLASTIC.cream} {...plastic} roughnessMap={knurl} bumpMap={knurl} bumpScale={2} {...glow} />
       </mesh>
       {/* its rounded shoulder, then the skirt's top, rising a little to the cap */}
       <mesh position={[0, 0, edge]}>
         <torusGeometry args={[radius * 0.97, radius * 0.03, 12, 96]} />
-        <meshPhysicalMaterial color={DISH.skirt} {...plastic} {...glow} />
+        <meshPhysicalMaterial color={PLASTIC.cream} {...plastic} {...glow} />
       </mesh>
       <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, edge + radius * 0.01]} castShadow>
         <cylinderGeometry args={[cap, radius * 0.97, radius * 0.02, 96]} />
-        <meshPhysicalMaterial color={DISH.skirt} {...plastic} {...glow} />
+        <meshPhysicalMaterial color={PLASTIC.cream} {...plastic} {...glow} />
       </mesh>
       {face && <group position={[0, 0, edge + radius * 0.016]}>{face}</group>}
       {/* the domed cap */}
       <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, edge + radius * 0.02]} scale={[1, 0.5, 1]} castShadow>
         <sphereGeometry args={[cap, 48, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <meshPhysicalMaterial color={DISH.cap} {...plastic} {...glow} />
+        <meshPhysicalMaterial color={PLASTIC.grey} {...plastic} {...glow} />
       </mesh>
     </>
   );

@@ -26,9 +26,10 @@ import { makeLayout } from './layout';
  *   above a perforated speaker; `grille` a wooden panel with the knobs side
  *   by side above a cloth grille; `base` puts them straight on the front
  *   board (the cream set). Positions are relative to its centre (level with
- *   the bezel's, unless `y` says otherwise). Optional: the knobs' finish and
- *   volume knob size, the channel knob's size (`channel`: its radius and its
- *   number ring's), or a bar handle instead of a knob (`style`), dark
+ *   the bezel's, unless `y` says otherwise). Optional: the knobs' sizes
+ *   (`volume`; `channel`, its radius and its number ring's; `brightness`)
+ *   and `style`: a bar handle instead of a knob (`bar`), or two-tone dish
+ *   knobs (`dish`, the numbers printed on the channel's); dark
  *   `escutcheons` behind knobs, power as a `button`.
  * - rail: the lower rail, `groove` (routed into the board), `brass` (a
  *   brushed strip) or `none`; its controls' positions, as x or [x, y]; the
@@ -213,16 +214,17 @@ export const CABINET_SPECS = {
     antenna: { x: 1.25, z: 0.55 },
     // Everything on the base front: two-tone dish knobs (cream skirts, grey
     // caps), the channel's numbers printed on its skirt under a brass notch;
-    // power a push-button. Laid out on one gap,
-    // 0.12, kept at the board's edges (4.64 × 1.24, so x ±2.32, y ±0.62)
-    // and between the groups, in three columns: the louvres under the MENU
-    // button, badge, pilot lamp and TV/VCR selector (spread edge to edge);
-    // then the switches (power, play lever and heart) from the left a gap
-    // apart and the brightness and volume dials at the right, a gap apart,
-    // by the channel dial, all centred on the channel dial's centre (the
-    // play lever on its hex nut); the tuning strip, edge to edge, at the
-    // bottom. MENU and power are plain grey domed caps. The channel dial beside all three, the
-    // board's full height less the gap.
+    // MENU and power plain grey domed caps. Laid out on one gap, 0.12, kept
+    // at the board's edges (4.64 × 1.24, so x ±2.32, y ±0.62) and between
+    // the groups, in three columns (TVCream.css lays out the 2D set the same):
+    // - left (x -2.2 to -0.6): MENU, the badge, the pilot lamp and TV/VCR
+    //   spread across the top, MENU, badge and lamp centred level; the
+    //   louvres below, down to the gap;
+    // - middle (x -0.48 to 1.32): power, the play lever and the heart from
+    //   the left a gap apart, brightness and volume at the right a gap
+    //   apart, all centred on the channel dial's centre (the play lever on
+    //   its hex nut); the tuning strip, edge to edge, along the bottom;
+    // - right: the channel dial, the board's height less the gap.
     panel: {
       kind: 'base',
       x: 0,
@@ -242,9 +244,9 @@ export const CABINET_SPECS = {
     rail: {
       kind: 'none',
       y: -2.4,
-      buttons: 'dish',
+      buttons: 'grey',
       menu: [-2.115, 0.409],
-      badge: [-1.627, 0.402], // spaced by its lettering (0.4 across), not its plate; its letters centred on MENU's
+      badge: [-1.627, 0.402], // spaced by its lettering (0.4 across), not its plate
       tuning: [0.42, -0.395],
       tuningW: 1.8,
       input: [-0.76, 0.3525],

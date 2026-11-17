@@ -4,7 +4,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import useDisposable from './useDisposable';
 import useFade from './useFade';
 import useAntennaGesture from '../../hooks/useAntennaGesture';
-import { PALETTE, makeGuideTextures, makeGlyphTexture } from './materials';
+import { PALETTE, PLASTIC, makeGuideTextures, makeGlyphTexture } from './materials';
 import { GUIDE_SIZE } from './layout';
 import { LAMP } from './lamps';
 
@@ -40,16 +40,13 @@ const MENU_TRAVEL = MENU_HEIGHT / 3; // sinks a third of its height
 const HEART_RADIUS = MENU_RADIUS * 0.8;
 const HEART_INLAY = 1.15; // the heart's width, in button radii
 const HEART_SQUASH = 0.8; // as .heart-glyph squashes the guide's ♥
-// The cream set's buttons: a plain grey plastic cap, domed like its dish
-// knobs' caps.
-const DISH_PLASTIC = { roughness: 0.4, clearcoat: 0.5, clearcoatRoughness: 0.3 };
 
 /**
  * A push-button on the rail: MENU (silver, latched in while SETUP is open)
  * and the heart (red, latched in while the concert is hearted); on the
- * cream set, MENU and power are domed grey caps, as on its dish knobs
- * (`finish="dish"`), or grey plastic (`finish="grey"`); on the teak
- * set MENU is a shade darker (`finish="darkSilver"`). It sinks
+ * cream set, MENU and power are plain grey plastic caps, domed like its dish
+ * knobs' (`finish="grey"`); on the teak set MENU is a shade darker
+ * (`finish="darkSilver"`). It sinks
  * into the cabinet while `pressed` and springs back out; frames only render
  * while it's moving. A `disabled` button ignores clicks.
  */
@@ -108,47 +105,45 @@ export const PushButton = ({ position, pressed, onPress, disabled = false, finis
         document.body.style.cursor = '';
       }}
     >
-      {finish === 'dish' && (
-        <group ref={groupRef}>
-          {/* the cap: a grey stem, domed on top */}
-          <mesh position={[0, 0, MENU_HEIGHT / 2]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-            <cylinderGeometry args={[MENU_RADIUS, MENU_RADIUS, MENU_HEIGHT, 48]} />
-            <meshPhysicalMaterial color="#7f7e78" {...DISH_PLASTIC} emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
-          </mesh>
-          <mesh position={[0, 0, MENU_HEIGHT]} rotation={[Math.PI / 2, 0, 0]} scale={[1, 0.4, 1]} castShadow>
-            <sphereGeometry args={[MENU_RADIUS, 48, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
-            <meshPhysicalMaterial color="#7f7e78" {...DISH_PLASTIC} emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
-          </mesh>
-        </group>
-      )}
-      {finish !== 'dish' && (
       <group ref={groupRef}>
-        <mesh position={[0, 0, MENU_HEIGHT / 2]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-          <cylinderGeometry args={[radius, radius * 1.08, MENU_HEIGHT, 32]} />
-          {finish === 'heart' ? (
-            // red enamel, glowing faintly while latched; colour and glow set by useFade
-            <meshStandardMaterial ref={capRef} roughness={0.35} metalness={0.1} emissive="#ff5a46" />
-          ) : finish === 'grey' ? (
-            // grey plastic, as on the cream set's base
-            <meshStandardMaterial color="#bdbdb8" roughness={0.5} metalness={0.1} emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
-          ) : (
-            // silver, or a shade darker (`darkSilver`, the teak set's)
-            <Silver color={finish === 'darkSilver' ? DARK_SILVER : undefined} emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
-          )}
-        </mesh>
-        {finish === 'heart' ? (
+        {finish === 'grey' ? (
+          // grey plastic: a straight stem, domed on top
+          <>
+            <mesh position={[0, 0, MENU_HEIGHT / 2]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+              <cylinderGeometry args={[MENU_RADIUS, MENU_RADIUS, MENU_HEIGHT, 48]} />
+              <meshPhysicalMaterial color={PLASTIC.grey} {...PLASTIC.finish} emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
+            </mesh>
+            <mesh position={[0, 0, MENU_HEIGHT]} rotation={[Math.PI / 2, 0, 0]} scale={[1, 0.4, 1]} castShadow>
+              <sphereGeometry args={[MENU_RADIUS, 48, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
+              <meshPhysicalMaterial color={PLASTIC.grey} {...PLASTIC.finish} emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
+            </mesh>
+          </>
+        ) : (
+          <mesh position={[0, 0, MENU_HEIGHT / 2]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+            <cylinderGeometry args={[radius, radius * 1.08, MENU_HEIGHT, 32]} />
+            {finish === 'heart' ? (
+              // red enamel, glowing faintly while latched; colour and glow set by useFade
+              <meshStandardMaterial ref={capRef} roughness={0.35} metalness={0.1} emissive="#ff5a46" />
+            ) : (
+              // silver, or a shade darker (`darkSilver`, the teak set's)
+              <Silver color={finish === 'darkSilver' ? DARK_SILVER : undefined} emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
+            )}
+          </mesh>
+        )}
+        {/* the face: the heart's ♥, or a dark centre on metal */}
+        {finish === 'heart' && (
           <mesh position={[0, 0, MENU_HEIGHT + 0.001]}>
             <planeGeometry args={[HEART_RADIUS * HEART_INLAY, ((HEART_RADIUS * HEART_INLAY) / heart.aspect) * HEART_SQUASH]} />
             <meshStandardMaterial map={heart.texture} transparent alphaTest={0.05} roughness={0.5} />
           </mesh>
-        ) : (
+        )}
+        {(finish === 'silver' || finish === 'darkSilver') && (
           <mesh position={[0, 0, MENU_HEIGHT + 0.001]}>
             <circleGeometry args={[MENU_RADIUS * 0.25, 20]} />
             <meshStandardMaterial color="#2a2a2a" roughness={0.6} />
           </mesh>
         )}
       </group>
-      )}
     </group>
   );
 };
