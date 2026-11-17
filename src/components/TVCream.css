@@ -76,6 +76,9 @@
   filter: none;
   mix-blend-mode: normal;
   opacity: 1;
+  /* not the grain overlay's fade (TV.css): switching to this cabinet would
+     fade the base in from the other sets' faded-out overlay */
+  transition: none;
   background:
     linear-gradient(180deg, rgba(255, 228, 190, 0.3), transparent 12%, transparent 85%, rgba(0, 0, 0, 0.35)),
     linear-gradient(rgba(165, 55, 20, 0.68), rgba(165, 55, 20, 0.68)), /* the red stain, as strong as in 3D */
