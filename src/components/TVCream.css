@@ -8,9 +8,10 @@
    and the board's ::before becomes the teak base behind them. */
 
 .tv-set--cream {
-  --walnut-light: #8f6236;
-  --walnut-mid: #6e4626;
-  --walnut-dark: #4a2c14;
+  /* red-stained teak (woodGrain.js's redTeak) */
+  --walnut-light: #9c5232;
+  --walnut-mid: #7a3a22;
+  --walnut-dark: #52200f;
   --cream-hi: #f4ecda;
   --cream: #e6dcc6;
   --cream-lo: #c9bea6;
@@ -56,9 +57,9 @@
   opacity: 1;
   background:
     linear-gradient(180deg, rgba(255, 228, 190, 0.3), transparent 12%, transparent 85%, rgba(0, 0, 0, 0.35)),
-    linear-gradient(rgba(110, 60, 25, 0.5), rgba(110, 60, 25, 0.5)),
+    linear-gradient(rgba(165, 55, 20, 0.68), rgba(165, 55, 20, 0.68)), /* the stain, as strong as in 3D */
     var(--wood-walnut, linear-gradient(transparent, transparent)) center / cover,
-    repeating-linear-gradient(178deg, var(--walnut-mid) 0px, #7a5030 9px, var(--walnut-mid) 16px, #553216 27px);
+    repeating-linear-gradient(178deg, var(--walnut-mid) 0px, #84432a 9px, var(--walnut-mid) 16px, #5a2414 27px);
   background-blend-mode: normal, soft-light, normal, normal;
   box-shadow:
     /* the side panels, standing proud of the front */
@@ -153,14 +154,15 @@
 
 /* ---- The base front: every control ---------------------------------------- */
 
-/* The rail: the badge and the tuning strip above; the speaker slots, the
-   TV/VCR slide, the heart, the lever, the lamp and brightness below. */
+/* The rail, as on the 3D base: MENU, the badge and the TV/VCR slide above
+   the speaker slots (as wide as them, spread edge to edge), the tuning strip
+   above the heart, the lever, the lamp and brightness. */
 .tv-set--cream .tv-rail {
   z-index: 1;
   grid-row: 2;
   grid-column: 1;
   display: grid;
-  grid-template-columns: 150px auto auto auto auto 1fr;
+  grid-template-columns: 220px auto auto auto 1fr;
   grid-template-rows: auto auto;
   align-items: center;
   gap: 12px 14px;
@@ -188,7 +190,9 @@
 }
 
 .tv-set--cream .tv-input {
-  grid-row: 2;
+  grid-row: 1;
+  grid-column: 1;
+  justify-self: end;
   margin: 0;
 }
 
@@ -199,17 +203,24 @@
   grid-row: 2;
 }
 
-/* Grey plastic knobs and buttons, as on the 3D set's base. */
-.tv-set--cream .tv-mini-knob,
-.tv-set--cream .tv-badge-knob,
-.tv-set--cream .knob {
+/* Grey plastic buttons, as on the 3D set's base. */
+.tv-set--cream .tv-badge-knob {
   filter: saturate(0) brightness(0.9) contrast(0.85);
 }
 
+/* Brightness: a small dish knob, like the dials (below), with an index
+   line: from the top, the line, the grey cap, the skirt, its fluted edge. */
 .tv-set--cream .tv-mini-knob {
+  width: 32px;
+  height: 32px;
   background:
-    linear-gradient(90deg, transparent 42%, #4a4a47 42% 58%, transparent 58%) center top / 100% 50% no-repeat,
-    radial-gradient(circle at 38% 32%, #e0e0dc, #a8a8a3 70%);
+    linear-gradient(90deg, transparent 46%, #3d362c 46% 54%, transparent 54%) 50% 2px / 100% 6px no-repeat,
+    radial-gradient(circle closest-side, #8e8d87 0, #7f7e78 30%, #6a6964 38%, transparent 40%),
+    radial-gradient(circle closest-side, #ece3cd 45%, #e3d8c0 80%, #d8ccb2 92%, transparent 93%),
+    repeating-conic-gradient(from 0deg, #efe6d0 0deg, #cdc2a8 3deg, #efe6d0 6deg);
+  box-shadow:
+    0 3px 5px rgba(0, 0, 0, 0.5),
+    0 1px 2px rgba(0, 0, 0, 0.55);
 }
 
 /* The column: volume, the channel dial on its escutcheon, and power. */
@@ -234,15 +245,131 @@
   display: none;
 }
 
-.tv-set--cream .dial-volume {
-  zoom: 0.5;
-}
-
+/* ---- Dish knobs: two-tone, as on the 3D set --------------------------------
+   A wide, shallow skirt in the shell's cream plastic, fluted round its edge,
+   with a domed grey cap. The channel's numbers are printed on its skirt and
+   turn with it, read under a fixed brass notch; the volume knob, a small one,
+   carries an index line. */
 .tv-set--cream .dial-channel {
   order: 2;
+  width: 128px;
+  height: 128px;
+}
+
+.tv-set--cream .dial-volume {
+  width: 72px;
+  height: 72px;
+  zoom: 0.58; /* its knob as much smaller than the channel's as in 3D */
+}
+
+.tv-set--cream .dial-ring-number,
+.tv-set--cream .dial-ticks {
+  display: none;
+}
+
+/* the notch: brass, just over the knob, proportioned as in 3D */
+.tv-set--cream .dial-ring-pointer {
+  top: -1px;
+  margin-left: -4px;
+  border-left-width: 4px;
+  border-right-width: 4px;
+  border-top: 7px solid #c8a463;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.5));
+}
+
+.tv-set--cream .knob {
+  filter: none;
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.55),
+    0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.tv-set--cream .knob:focus-visible {
+  box-shadow: 0 0 0 3px #ffb347, 0 4px 8px rgba(0, 0, 0, 0.55);
+}
+
+.tv-set--cream .knob-channel {
+  width: 112px;
+  height: 112px;
+}
+
+/* the fluted edge */
+.tv-set--cream .knob-ridges {
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.35), transparent 40%, transparent 60%, rgba(0, 0, 0, 0.25)),
+    repeating-conic-gradient(from 0deg, #efe6d0 0deg, #cdc2a8 2deg, #efe6d0 4deg);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+
+/* the skirt's top, rising a little toward the cap; the fluting round it
+   only a fine edge, as it reads from the front in 3D */
+.tv-set--cream .knob-face {
+  inset: 3.5%;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.45), transparent 50%),
+    radial-gradient(circle, #ece3cd 40%, #e3d8c0 75%, #d8ccb2);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.7),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+.tv-set--cream .knob-numbers {
+  --knob-number-r: -38px;
+  display: block;
+  position: absolute;
+  inset: 0;
+}
+
+/* a fine printed circle round the numbers */
+.tv-set--cream .knob-numbers::before {
+  content: '';
+  position: absolute;
+  inset: 6%;
+  border: 1px solid rgba(61, 54, 44, 0.75);
   border-radius: 50%;
-  background: radial-gradient(closest-side, #1c140c 93%, #c8a463 94% 99%, transparent 100%);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
+}
+
+.tv-set--cream .knob-number {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  font-weight: bold;
+  color: #3d362c;
+}
+
+/* the domed grey cap */
+.tv-set--cream .knob-cap {
+  inset: 30%;
+  background: radial-gradient(circle at 38% 32%, #b4b3ad, #7f7e78 60%, #5f5e59);
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.45),
+    inset 0 1px 1px rgba(255, 255, 255, 0.4);
+}
+
+/* no bar: the channel's numbers say where it points, the volume knob's
+   index line */
+.tv-set--cream .knob-channel .knob-pointer {
+  display: none;
+}
+
+.tv-set--cream .knob-volume .knob-pointer {
+  top: 7%;
+  bottom: auto;
+  height: 16%;
+  width: 6%;
+  margin-left: -3%;
+  border-radius: 1px;
+  background: #3d362c;
+  box-shadow: none;
 }
 
 .tv-set--cream .tv-column > .knob-group:first-child {
@@ -348,6 +475,13 @@
     grid-row: 2;
   }
 
+  /* no speaker slots to sit over: back in the row, after the badge */
+  .tv-set--cream .tv-input {
+    grid-row: 2;
+    grid-column: auto;
+    justify-self: auto;
+  }
+
   .tv-set--cream .tv-column {
     grid-row: 3;
     grid-column: 1;
@@ -357,5 +491,236 @@
 
   .tv-set--cream .tv-frame {
     padding: 18px;
+  }
+}
+
+/* ---- Wider screens: the base laid out as the 3D set's ----------------------
+   At 137.6px to the 3D set's unit (its 5.0-wide base, 688px): the base
+   220px tall, its rim (0.18) round a recessed board, one gap (0.12, 16.5px)
+   inside it, at the board's edges and between the groups; a 30px neck.
+   The rail and the column give up their boxes (display: contents), so each
+   control takes its place on the base's grid:
+   - left (1.6, 220px): MENU, the badge, the pilot lamp and TV/VCR on top,
+     spread edge to edge; the speaker slots below, down to the gap;
+   - middle: power, the play lever and the heart from the left, brightness
+     and volume at the right, all centred on the channel dial's centre; the
+     tuning strip along the bottom;
+   - right: the channel dial, the board's height less the gap. */
+@media (min-width: 681px) {
+  .tv-set--cream {
+    width: min(92vw, 688px);
+  }
+
+  .tv-set--cream .tv-board {
+    grid-template-columns:
+      [rim-l] 24.8px [pad-l] 16.5px [left] minmax(170px, 220px) 16.5px [power] auto 16.5px [lever] auto 16.5px
+      [heart] auto minmax(16.5px, 1fr) [bright] auto 16.5px [volume] auto [vol-end] 16.5px [dial] auto 16.5px
+      [rim-r] 24.8px;
+    /* the content rows: the top row (as tall as TV/VCR), the rest, the tuning
+       strip; 137.4px together, as the 3D board's 1.0 inside the gap */
+    grid-template-rows: [frame] auto [neck] 30px [rim-t] 24.8px [pad-t] 16.5px [r1] 38px [r2] 70.4px [r3] 29px [pad-b] 16.5px [rim-b] 24.8px;
+    row-gap: 0;
+  }
+
+  .tv-set--cream .tv-frame {
+    grid-row: frame;
+    margin: 0 6.8%; /* 594px: the 3D shell's 4.32 to the base's 5.0 */
+  }
+
+  .tv-set--cream .tv-frame::after {
+    bottom: -30px;
+    height: 30px;
+  }
+
+  /* the base, and the board recessed inside its rim */
+  .tv-set--cream .tv-board::before {
+    grid-row: rim-t / -1;
+    box-shadow:
+      /* the side panels (the 3D set's runners, 0.1 wide) */
+      inset 14px 0 0 rgba(0, 0, 0, 0.22),
+      inset -14px 0 0 rgba(0, 0, 0, 0.22),
+      inset 0 2px 0 rgba(255, 225, 185, 0.3),
+      0 18px 36px rgba(0, 0, 0, 0.6),
+      0 4px 8px rgba(0, 0, 0, 0.45);
+  }
+
+  .tv-set--cream .tv-rail,
+  .tv-set--cream .tv-column {
+    display: contents;
+  }
+
+  .tv-set--cream .tv-rail::before {
+    content: '';
+    position: relative; /* over the base */
+    z-index: 0;
+    grid-row: pad-t / rim-b;
+    grid-column: pad-l / rim-r;
+    border-radius: 3px;
+    pointer-events: none;
+    box-shadow:
+      inset 0 5px 7px -3px rgba(0, 0, 0, 0.55),
+      inset 5px 0 6px -4px rgba(0, 0, 0, 0.4),
+      inset -3px 0 4px -2px rgba(0, 0, 0, 0.3),
+      inset 0 -2px 0 rgba(255, 220, 170, 0.14),
+      0 0 0 1px rgba(20, 10, 3, 0.45);
+  }
+
+  .tv-set--cream .tv-rail > *,
+  .tv-set--cream .tv-column > * {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+  }
+
+  /* left: the top row, each at the 3D set's place (centred 12.5px down; the
+     lamp 1.03 of 1.6 across); the slots below */
+  .tv-set--cream .tv-badge {
+    grid-row: r1;
+    grid-column: left;
+    justify-self: start;
+    align-self: start;
+    margin-top: 1px;
+  }
+
+  /* its lettering 0.4 across (55px), as in 3D */
+  .tv-set--cream .tv-badge-text {
+    font-size: 12.5px;
+    letter-spacing: 3.5px;
+  }
+
+  .tv-set--cream .tv-lamp {
+    grid-row: r1;
+    grid-column: left;
+    justify-self: start;
+    align-self: start;
+    margin: 7.5px 0 0 61%; /* centred on MENU's centre (12.5px down) */
+  }
+
+  .tv-set--cream .tv-input {
+    grid-row: r1;
+    grid-column: left;
+    justify-self: end;
+    align-self: start;
+  }
+
+  .tv-set--cream .tv-louvres {
+    grid-row: r2 / pad-b;
+    grid-column: left;
+    align-self: end;
+    gap: 6px;
+  }
+
+  .tv-set--cream .tv-louvre {
+    height: 4px;
+  }
+
+  /* middle: the switches and dials, centred on the board */
+  .tv-set--cream .tv-switch,
+  .tv-set--cream .tv-lever,
+  .tv-set--cream .tv-heart,
+  .tv-set--cream .tv-mini-knob,
+  .tv-set--cream .tv-column > .knob-group {
+    grid-row: r1 / pad-b;
+    align-self: center;
+    justify-self: center;
+  }
+
+  .tv-set--cream .tv-switch {
+    grid-column: power;
+  }
+
+  .tv-set--cream .tv-lever {
+    grid-column: lever;
+    zoom: 1.25; /* its nut 20px, as the 3D set's (0.15) */
+  }
+
+  .tv-set--cream .tv-heart {
+    grid-column: heart;
+    width: 19px;
+    height: 19px;
+  }
+
+  .tv-set--cream .tv-mini-knob {
+    grid-column: bright;
+    width: 30px;
+    height: 30px;
+  }
+
+  .tv-set--cream .tv-column > .knob-group:nth-child(2) {
+    grid-column: volume;
+  }
+
+  .tv-set--cream .dial-volume {
+    zoom: 0.65; /* 47px, as the 3D set's (0.17 round) */
+  }
+
+  .tv-set--cream .tv-tuning-strip {
+    grid-row: r3;
+    grid-column: power / vol-end;
+    height: 29px;
+  }
+
+  /* right: the channel dial (0.38 round, 105px), the notch over it */
+  .tv-set--cream .tv-column > .knob-group:first-child {
+    grid-column: dial;
+  }
+
+  .tv-set--cream .dial-channel {
+    width: 105px;
+    height: 126px;
+  }
+
+  .tv-set--cream .knob-channel {
+    width: 105px;
+    height: 105px;
+  }
+
+  .tv-set--cream .knob-numbers {
+    --knob-number-r: -36px;
+  }
+
+  .tv-set--cream .knob-number {
+    font-size: 8.5px;
+  }
+
+  .tv-set--cream .dial-ring-pointer {
+    top: 1px;
+    margin-left: -5px;
+    border-left-width: 5px;
+    border-right-width: 5px;
+    border-top-width: 8px;
+  }
+
+  /* MENU and power: plain grey domed caps (0.085 round, 23px), as in 3D */
+  .tv-set--cream .tv-badge-knob,
+  .tv-set--cream .tv-switch {
+    width: 23px;
+    height: 23px;
+    border-radius: 50%;
+    filter: none;
+    background: radial-gradient(circle at 38% 32%, #b4b3ad, #7f7e78 60%, #5f5e59);
+    box-shadow:
+      0 2px 3px rgba(0, 0, 0, 0.55),
+      inset 0 1px 1px rgba(255, 255, 255, 0.35);
+  }
+
+  .tv-set--cream .tv-badge-knob.is-pressed,
+  .tv-set--cream .tv-switch.is-on {
+    transform: scale(0.9);
+    box-shadow:
+      0 1px 1px rgba(0, 0, 0, 0.5),
+      inset 0 2px 3px rgba(0, 0, 0, 0.35);
+  }
+
+  /* the runners: the side panels, 14px wide, 7px past the base */
+  .tv-set--cream .tv-leg {
+    width: 14px;
+    height: 7px;
+  }
+
+  /* the aerial where it stood on the shell before the set widened (the
+     shell's the same size; 23% of 660px is 24.1% of 688px) */
+  .tv-set--cream .tv-antenna {
+    right: 24.1%;
   }
 }

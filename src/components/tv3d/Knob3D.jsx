@@ -64,6 +64,47 @@ const BarHandle = ({ radius, material }) => {
   return <mesh geometry={geometry} material={material} position={[0, 0, bevel + 0.005]} castShadow />;
 };
 
+// The cream set's dish knob: a cream plastic skirt and a grey cap.
+const DISH = { skirt: '#e3d8c0', cap: '#7f7e78' };
+
+/**
+ * A two-tone dish knob (the cream set's, after late-'50s sets): a wide,
+ * shallow skirt in the shell's cream plastic, finely fluted round its edge,
+ * with a smaller domed grey cap at its centre. What's printed on it turns
+ * with it (`face`, drawn on the skirt's top).
+ */
+const DishKnob = ({ radius, ridgeCount, face, lit }) => {
+  const knurl = useDisposable(() => makeKnurlTexture(ridgeCount), [ridgeCount]);
+  const edge = radius * 0.16; // the fluted edge's height
+  const cap = radius * 0.4;
+  const glow = { emissive: '#ffffff', emissiveIntensity: lit ? 0.06 : 0 };
+  const plastic = { roughness: 0.4, clearcoat: 0.5, clearcoatRoughness: 0.3 };
+  return (
+    <>
+      {/* the fluted edge */}
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, edge / 2]} castShadow>
+        <cylinderGeometry args={[radius, radius, edge, 96, 1, true]} />
+        <meshPhysicalMaterial color={DISH.skirt} {...plastic} roughnessMap={knurl} bumpMap={knurl} bumpScale={2} {...glow} />
+      </mesh>
+      {/* its rounded shoulder, then the skirt's top, rising a little to the cap */}
+      <mesh position={[0, 0, edge]}>
+        <torusGeometry args={[radius * 0.97, radius * 0.03, 12, 96]} />
+        <meshPhysicalMaterial color={DISH.skirt} {...plastic} {...glow} />
+      </mesh>
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, edge + radius * 0.01]} castShadow>
+        <cylinderGeometry args={[cap, radius * 0.97, radius * 0.02, 96]} />
+        <meshPhysicalMaterial color={DISH.skirt} {...plastic} {...glow} />
+      </mesh>
+      {face && <group position={[0, 0, edge + radius * 0.016]}>{face}</group>}
+      {/* the domed cap */}
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, edge + radius * 0.02]} scale={[1, 0.5, 1]} castShadow>
+        <sphereGeometry args={[cap, 48, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshPhysicalMaterial color={DISH.cap} {...plastic} {...glow} />
+      </mesh>
+    </>
+  );
+};
+
 /**
  * A knurled chrome rotary knob with a dark grip bar, standing proud of the faceplate, facing +Z.
  *
@@ -72,7 +113,8 @@ const BarHandle = ({ radius, material }) => {
  * plane so the gesture feels like turning a real dial from any camera angle.
  * `angleDeg` is the knob's displayed rotation (clockwise-positive, like CSS).
  * `style` 'bar' draws only a bar handle in `material` (BarHandle), over a
- * hidden disc the knob's size, so the whole dial still turns it.
+ * hidden disc the knob's size, so the whole dial still turns it; 'dish' a
+ * DishKnob, `face` printed on it. `label` stays put as the knob turns.
  */
 const Knob3D = ({
   position,
@@ -85,6 +127,7 @@ const Knob3D = ({
   ridgeCount = 60,
   finish = 'chrome',
   label,
+  face,
   style = 'knob',
   material,
 }) => {
@@ -163,7 +206,7 @@ const Knob3D = ({
     if (!dragging) document.body.style.cursor = '';
   }, [dragging]);
 
-  const knurl = useDisposable(() => (style === 'bar' ? null : makeKnurlTexture(ridgeCount)), [style, ridgeCount]);
+  const knurl = useDisposable(() => (style === 'knob' ? makeKnurlTexture(ridgeCount) : null), [style, ridgeCount]);
   const lit = hovered || dragging;
   const look = FINISHES[finish] ?? FINISHES.chrome;
 
@@ -192,7 +235,12 @@ const Knob3D = ({
           </group>
         </>
       )}
-      {style !== 'bar' && (
+      {style === 'dish' && (
+        <group rotation={[0, 0, -angleDeg * DEG_TO_RAD]}>
+          <DishKnob radius={radius} ridgeCount={ridgeCount} face={face} lit={lit} />
+        </group>
+      )}
+      {style === 'knob' && (
         <group rotation={[0, 0, -angleDeg * DEG_TO_RAD]}>
           {/* knurled chrome rim */}
           <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, height / 2]} castShadow>

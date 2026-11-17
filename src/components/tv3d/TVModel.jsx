@@ -29,6 +29,7 @@ import {
   makeLabelTexture,
   makeChannelRingTexture,
   makeVolumeTicksTexture,
+  makeDishNumbersTexture,
   makeFrameGeometry,
   makeDomeGeometry,
   makeBackPanelTexture,
@@ -65,8 +66,18 @@ const INPUT_STYLE = { onAir: 0.15, toggle: 0, labels: -0.12, onAirW: 0.24, unlit
 
 // The walnut set's knobs, unless a cabinet's panel says otherwise.
 const VOLUME_KNOB = { radius: 0.3, height: 0.19, ticks: 0.92, ridges: 52 };
+// and its channel knob: the knob, and the number ring printed round it
+const CHANNEL_KNOB = { radius: 0.32, ring: 1.12 };
 
 /** A ring `d` out from the tube's opening, its corners concentric with it. */
+/** A dish knob's printed index line, toward its edge. */
+const DishIndex = ({ radius }) => (
+  <mesh position={[0, radius * 0.72, 0.001]}>
+    <planeGeometry args={[radius * 0.08, radius * 0.3]} />
+    <meshBasicMaterial color="#3d362c" />
+  </mesh>
+);
+
 const aroundOpening = (OPENING, d, z) => ({ w: OPENING.w + 2 * d, h: OPENING.h + 2 * d, r: OPENING.r + d, z });
 
 /**
@@ -388,6 +399,7 @@ const TVModel = ({
   const silverColor = darkMetal ? DARK_SILVER : undefined;
   const chromeColor = darkMetal ? DARK_CHROME : undefined;
   const volumeKnob = panel.knobs?.volume ?? VOLUME_KNOB;
+  const channelKnob = panel.knobs?.channel ?? CHANNEL_KNOB;
   const tuningW = rail.tuningW ?? 2.4;
   const inputStyle = { ...INPUT_STYLE, ...rail.inputStyle };
   const louvres = { n: 5, pitch: 0.06, y: 0, ...rail.louvres };
@@ -542,6 +554,9 @@ const TVModel = ({
   const ringPointer = panel.knobs?.style === 'bar' ? 'dot' : 'arrow';
   const channelRingTexture = useDisposable(() => makeChannelRingTexture({ pointer: ringPointer }), [ringPointer]);
   const volumeTicksTexture = useDisposable(makeVolumeTicksTexture, []);
+  // dish knobs (the cream set's): the channel numbers printed on the knob
+  const dish = panel.knobs?.style === 'dish';
+  const dishNumbersTexture = useDisposable(() => (dish ? makeDishNumbersTexture() : null), [dish]);
   const badgeTexture = useDisposable(
     () =>
       makeLabelTexture(model, {
@@ -845,7 +860,7 @@ const TVModel = ({
         <Knob3D
           position={[...panel.channel, PANEL_Z]}
           // a bar handle as small as the volume dial's, on the bigger dial
-          radius={panel.knobs?.style === 'bar' ? volumeKnob.radius : 0.32}
+          radius={panel.knobs?.style === 'bar' ? volumeKnob.radius : channelKnob.radius}
           height={0.2}
           angleDeg={dialPosition * CHANNEL_DETENT}
           onDelta={handleChannelDelta}
@@ -854,7 +869,19 @@ const TVModel = ({
           finish={knobFinish}
           style={panel.knobs?.style}
           material={trimBrass?.material}
-          label={<Plate texture={channelRingTexture} position={[0, 0, 0.004]} size={[1.12, 1.12]} />}
+          ridgeCount={dish ? 72 : undefined}
+          label={
+            dish ? (
+              // a fixed brass notch over the dish, the channel's number under it
+              <mesh position={[0, channelKnob.radius + 0.055, 0.004]} rotation={[0, 0, -Math.PI / 2]}>
+                <circleGeometry args={[0.04, 3]} />
+                <meshStandardMaterial {...BRASS} />
+              </mesh>
+            ) : (
+              <Plate texture={channelRingTexture} position={[0, 0, 0.004]} size={[channelKnob.ring, channelKnob.ring]} />
+            )
+          }
+          face={dish && <Plate texture={dishNumbersTexture} position={[0, 0, 0]} size={[channelKnob.radius * 1.94, channelKnob.radius * 1.94]} />}
         />
 
         <Knob3D
@@ -869,7 +896,8 @@ const TVModel = ({
           finish={knobFinish}
           style={panel.knobs?.style}
           material={trimBrass?.material}
-          label={<Plate texture={volumeTicksTexture} position={[0, 0, 0.004]} size={[volumeKnob.ticks, volumeKnob.ticks]} />}
+          label={!dish && <Plate texture={volumeTicksTexture} position={[0, 0, 0.004]} size={[volumeKnob.ticks, volumeKnob.ticks]} />}
+          face={dish && <DishIndex radius={volumeKnob.radius} />}
         />
 
         {/* the speaker: perforated metal, or grille cloth in a dark surround (on
@@ -896,7 +924,7 @@ const TVModel = ({
 
         {/* power: a push-button, latched in while on (cream) */}
         {panel.power.kind === 'button' && (
-          <PushButton position={[...powerAt, PANEL_Z]} finish="grey" pressed={isOn} onPress={onPowerToggle} />
+          <PushButton position={[...powerAt, PANEL_Z]} finish={rail.buttons ?? 'grey'} pressed={isOn} onPress={onPowerToggle} />
         )}
         {/* or a slide switch: right for on */}
         {panel.power.kind !== 'button' && (
@@ -1044,12 +1072,14 @@ const TVModel = ({
             play lever's chrome so it reads against the brass rail */}
         <Knob3D
           position={[...at(rail.brightness), 0]}
-          // a bar a little bigger than the knob, as on the 2D set
-          radius={panel.knobs?.style === 'bar' ? 0.135 : 0.096}
+          // a bar a little bigger than the knob, as on the 2D set; a dish
+          // (with an index line) the cabinet's size
+          radius={panel.knobs?.brightness?.radius ?? (panel.knobs?.style === 'bar' ? 0.135 : 0.096)}
           height={0.08}
           finish={knobFinish ?? 'black'}
-          ridgeCount={30}
+          ridgeCount={dish ? 32 : 30}
           style={panel.knobs?.style}
+          face={dish && <DishIndex radius={panel.knobs.brightness.radius} />}
           material={barChrome}
           angleDeg={((brightness - BRIGHTNESS_MIN) / (BRIGHTNESS_MAX - BRIGHTNESS_MIN)) * VOLUME_SWEEP - VOLUME_SWEEP / 2}
           onDelta={handleBrightnessDelta}

@@ -65,6 +65,16 @@ const ChannelKnob = ({ dialPosition = 0, onChannelChange }) => {
       >
         <div className="knob-ridges" />
         <div className="knob-face" />
+        {/* numbers printed on the knob itself, turning with it (shown only on
+            the cream set's dish knob): anticlockwise, so the channel's sits
+            at the top */}
+        <div className="knob-numbers" aria-hidden="true">
+          {CHANNEL_NUMBERS.map((n, i) => (
+            <span key={n} className="knob-number" style={{ transform: `rotate(${-i * DETENT_DEG}deg) translateY(var(--knob-number-r))` }}>
+              {n}
+            </span>
+          ))}
+        </div>
         <div className="knob-pointer" />
         <div className="knob-cap" />
       </div>

@@ -396,6 +396,40 @@ export const makeChannelRingTexture = ({ pointer = 'arrow' } = {}) => {
   return texture;
 };
 
+/**
+ * The numbers printed on the cream set's channel knob (its dish's top), in a
+ * ring that turns with it: so they run anticlockwise, each upright when
+ * it's at the top, under the fixed notch. Inside a fine printed circle.
+ */
+export const makeDishNumbersTexture = () => {
+  const size = 512;
+  const canvas = makeCanvas(size, size);
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, size, size);
+  const cx = size / 2;
+  const ink = '#3d362c';
+  ctx.strokeStyle = ink;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(cx, cx, size * 0.455, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = ink;
+  ctx.font = 'bold 40px "Courier New", monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (let i = 0; i < 12; i += 1) {
+    ctx.save();
+    ctx.translate(cx, cx);
+    ctx.rotate((-i * 30 * Math.PI) / 180);
+    ctx.fillText(String(i + 1), 0, -size * 0.355);
+    ctx.restore();
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  return texture;
+};
+
 /** Volume tick marks over a 270° sweep. */
 export const makeVolumeTicksTexture = () => {
   const size = 256;

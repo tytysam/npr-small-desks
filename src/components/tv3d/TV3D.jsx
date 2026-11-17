@@ -84,7 +84,14 @@ const TV3D = ({ scene, view, onView, ...props }) => {
           <ContactShadows ref={contactRef} position={[0, layout.spec.floorY, 0]} opacity={MOOD_LIGHTS[scene.mood].contact} blur={2.6} scale={16} far={4} frames={1} />
         </Suspense>
       </Canvas>
-      <p className="tv3d-hint">Drag to look around · double-click to reset · turn the knobs to tune</p>
+      <p className="tv3d-hint">
+        {/* Each phrase stays whole; on narrow screens they stack, one per line. */}
+        <span>Drag to look around</span>
+        <span aria-hidden="true"> · </span>
+        <span>double-click to reset</span>
+        <span aria-hidden="true"> · </span>
+        <span>turn the knobs to tune</span>
+      </p>
     </div>
   );
 };

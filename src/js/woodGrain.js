@@ -18,6 +18,13 @@ export const WOOD = {
     late: '#5f3b1d',
     grain: { body: { straight: true, straightPx: 10 }, bezel: { straight: true, straightPx: 8 } },
   },
+  // teak stained red, as on late-'50s sets (the cream set's base): the same
+  // straight grain, warmer and redder
+  redTeak: {
+    early: '#9c5232',
+    late: '#62281a',
+    grain: { body: { straight: true, straightPx: 10 }, bezel: { straight: true, straightPx: 8 } },
+  },
   blond: { early: '#d9b27c', late: '#b88a53' },
   oak: { early: '#b48654', late: '#8a6035' },
   ebony: { early: '#4b3427', late: '#2a1b13' },

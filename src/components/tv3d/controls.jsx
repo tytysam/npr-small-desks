@@ -40,12 +40,15 @@ const MENU_TRAVEL = MENU_HEIGHT / 3; // sinks a third of its height
 const HEART_RADIUS = MENU_RADIUS * 0.8;
 const HEART_INLAY = 1.15; // the heart's width, in button radii
 const HEART_SQUASH = 0.8; // as .heart-glyph squashes the guide's ♥
-
+// The cream set's buttons: a plain grey plastic cap, domed like its dish
+// knobs' caps.
+const DISH_PLASTIC = { roughness: 0.4, clearcoat: 0.5, clearcoatRoughness: 0.3 };
 
 /**
  * A push-button on the rail: MENU (silver, latched in while SETUP is open)
  * and the heart (red, latched in while the concert is hearted); on the
- * cream set, MENU and power are grey plastic (`finish="grey"`); on the teak
+ * cream set, MENU and power are domed grey caps, as on its dish knobs
+ * (`finish="dish"`), or grey plastic (`finish="grey"`); on the teak
  * set MENU is a shade darker (`finish="darkSilver"`). It sinks
  * into the cabinet while `pressed` and springs back out; frames only render
  * while it's moving. A `disabled` button ignores clicks.
@@ -105,6 +108,20 @@ export const PushButton = ({ position, pressed, onPress, disabled = false, finis
         document.body.style.cursor = '';
       }}
     >
+      {finish === 'dish' && (
+        <group ref={groupRef}>
+          {/* the cap: a grey stem, domed on top */}
+          <mesh position={[0, 0, MENU_HEIGHT / 2]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+            <cylinderGeometry args={[MENU_RADIUS, MENU_RADIUS, MENU_HEIGHT, 48]} />
+            <meshPhysicalMaterial color="#7f7e78" {...DISH_PLASTIC} emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
+          </mesh>
+          <mesh position={[0, 0, MENU_HEIGHT]} rotation={[Math.PI / 2, 0, 0]} scale={[1, 0.4, 1]} castShadow>
+            <sphereGeometry args={[MENU_RADIUS, 48, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
+            <meshPhysicalMaterial color="#7f7e78" {...DISH_PLASTIC} emissive="#ffffff" emissiveIntensity={hovered ? 0.08 : 0} />
+          </mesh>
+        </group>
+      )}
+      {finish !== 'dish' && (
       <group ref={groupRef}>
         <mesh position={[0, 0, MENU_HEIGHT / 2]} rotation={[Math.PI / 2, 0, 0]} castShadow>
           <cylinderGeometry args={[radius, radius * 1.08, MENU_HEIGHT, 32]} />
@@ -131,6 +148,7 @@ export const PushButton = ({ position, pressed, onPress, disabled = false, finis
           </mesh>
         )}
       </group>
+      )}
     </group>
   );
 };

@@ -44,3 +44,22 @@
   pointer-events: none;
   white-space: nowrap;
 }
+
+/* Too narrow for one line: one phrase per line, no separators. */
+@media (max-width: 640px) {
+  .tv3d-hint {
+    width: max-content;
+    max-width: calc(100% - 24px);
+    text-align: center;
+    line-height: 1.5;
+    white-space: normal;
+  }
+
+  .tv3d-hint > span {
+    display: block;
+  }
+
+  .tv3d-hint > span[aria-hidden] {
+    display: none;
+  }
+}

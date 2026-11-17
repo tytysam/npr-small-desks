@@ -27,7 +27,8 @@ import { makeLayout } from './layout';
  *   by side above a cloth grille; `base` puts them straight on the front
  *   board (the cream set). Positions are relative to its centre (level with
  *   the bezel's, unless `y` says otherwise). Optional: the knobs' finish and
- *   volume knob size, or a bar handle instead of a knob (`style`), dark
+ *   volume knob size, the channel knob's size (`channel`: its radius and its
+ *   number ring's), or a bar handle instead of a knob (`style`), dark
  *   `escutcheons` behind knobs, power as a `button`.
  * - rail: the lower rail, `groove` (routed into the board), `brass` (a
  *   brushed strip) or `none`; its controls' positions, as x or [x, y]; the
@@ -210,33 +211,49 @@ export const CABINET_SPECS = {
     plinth: null,
     guide: { x: -0.2, z: 1.13 }, // centred on the shell's top, clear of the antenna
     antenna: { x: 1.25, z: 0.55 },
-    // Everything on the base front: the knobs in grey plastic, the channel
-    // dial on a dark escutcheon, power a push-button.
+    // Everything on the base front: two-tone dish knobs (cream skirts, grey
+    // caps), the channel's numbers printed on its skirt under a brass notch;
+    // power a push-button. Laid out on one gap,
+    // 0.12, kept at the board's edges (4.64 × 1.24, so x ±2.32, y ±0.62)
+    // and between the groups, in three columns: the louvres under the MENU
+    // button, badge, pilot lamp and TV/VCR selector (spread edge to edge);
+    // then the switches (power, play lever and heart) from the left a gap
+    // apart and the brightness and volume dials at the right, a gap apart,
+    // by the channel dial, all centred on the channel dial's centre (the
+    // play lever on its hex nut); the tuning strip, edge to edge, at the
+    // bottom. MENU and power are plain grey domed caps. The channel dial beside all three, the
+    // board's full height less the gap.
     panel: {
       kind: 'base',
       x: 0,
       y: -2.4,
-      channel: [1.72, 0],
-      volume: [-0.3, 0.05],
-      knobs: { finish: 'grey', volume: { radius: 0.11, height: 0.09, ticks: 0.4, ridges: 24 } },
-      escutcheons: { channel: 0.58 },
+      channel: [1.82, 0],
+      volume: [1.15, 0],
+      knobs: {
+        style: 'dish',
+        brightness: { radius: 0.11 },
+        volume: { radius: 0.17, height: 0.09, ridges: 44 },
+        // under the notch, the board's height less the gap
+        channel: { radius: 0.38 },
+      },
       speaker: null,
-      power: { at: [0.9, 0.05], kind: 'button' },
+      power: { at: [-0.395, 0], kind: 'button' },
     },
     rail: {
       kind: 'none',
       y: -2.4,
-      buttons: 'grey',
-      menu: [-2.2, 0.5],
-      badge: [-1.75, 0.5],
-      tuning: [0.35, 0.5],
-      tuningW: 1.5,
-      input: [-0.1, -0.45],
-      louvres: { x: -1.35, y: -0.1, w: 1.6, n: 9, pitch: 0.075 },
-      heart: [0.5, 0.05],
-      lever: [0.55, -0.45],
-      lamp: [0.95, -0.45],
-      brightness: [0.1, 0.05],
+      buttons: 'dish',
+      menu: [-2.115, 0.409],
+      badge: [-1.627, 0.402], // spaced by its lettering (0.4 across), not its plate; its letters centred on MENU's
+      tuning: [0.42, -0.395],
+      tuningW: 1.8,
+      input: [-0.76, 0.3525],
+      inputStyle: { onAir: 0.11, labels: -0.09 },
+      louvres: { x: -1.4, y: -0.1968, w: 1.6, n: 9, pitch: 0.0726 },
+      heart: [0.148, 0],
+      lever: [-0.115, 0],
+      lamp: [-1.174, 0.409],
+      brightness: [0.75, 0],
     },
     // The base's back, a long low strip: one row of short vents, then the
     // plate, the caution and the tag side by side, drawn smaller.

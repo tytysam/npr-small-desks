@@ -182,8 +182,9 @@ const TV = ({
               </span>
             </div>
 
+            {/* the cream set's speaker is a taller stack, as on its 3D base */}
             <div className="tv-louvres" aria-hidden="true">
-              {Array.from({ length: 5 }, (_, i) => (
+              {Array.from({ length: key === 'cream' ? 9 : 5 }, (_, i) => (
                 <span key={i} className="tv-louvre" />
               ))}
             </div>
